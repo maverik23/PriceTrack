@@ -17,6 +17,8 @@ services:
       context: .
       dockerfile: Dockerfile
     image: pricetrack:latest
+    # Reconstruir siempre la imagen al desplegar (Portainer "Pull and redeploy")
+    pull_policy: build
     container_name: pricetrack
     restart: unless-stopped
     ports:
