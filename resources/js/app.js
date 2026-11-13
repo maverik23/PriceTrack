@@ -3,9 +3,13 @@ import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
 import listGrid from './list-grid';
 import combobox from './combobox';
+import barcodeScanner from './barcode-scanner';
+import productForm from './product-form';
 
 Alpine.data('listGrid', listGrid);
 Alpine.data('combobox', combobox);
+Alpine.data('barcodeScanner', barcodeScanner);
+Alpine.data('productForm', productForm);
 window.Alpine = Alpine;
 Alpine.start();
 

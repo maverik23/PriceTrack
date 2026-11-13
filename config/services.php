@@ -28,6 +28,13 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Autocompletar artículos por código de barras (Open Food Facts, UPCitemdb)
+    'barcode_lookup' => [
+        'enabled' => (bool) env('BARCODE_LOOKUP', true),
+        'user_agent' => env('BARCODE_LOOKUP_USER_AGENT', 'PriceTrack/1.0 (self-hosted)'),
+        'timeout' => (int) env('BARCODE_LOOKUP_TIMEOUT', 6),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

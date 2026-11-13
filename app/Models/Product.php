@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'brand', 'category', 'size', 'unit', 'notes'])]
+#[Fillable(['name', 'brand', 'barcode', 'category', 'size', 'unit', 'notes'])]
 class Product extends Model
 {
     use HasFactory;

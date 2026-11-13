@@ -23,10 +23,18 @@ return [
     'string' => 'El campo :attribute debe ser texto.',
     'unique' => 'Ya existe un registro con ese :attribute.',
 
+    'custom' => [
+        'barcode' => [
+            'regex' => 'El código de barras debe tener de 6 a 14 dígitos.',
+            'unique' => 'Ese código de barras ya es de otro artículo.',
+        ],
+    ],
+
     'attributes' => [
         'name' => 'nombre',
         'notes' => 'notas',
         'brand' => 'marca',
+        'barcode' => 'código de barras',
         'category' => 'categoría',
         'size' => 'contenido',
         'unit' => 'unidad',

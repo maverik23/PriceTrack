@@ -7,6 +7,7 @@ use App\Models\Price;
 use App\Models\Product;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
+use App\Support\Barcode;
 use App\Support\ListGrid;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,21 +16,37 @@ use Illuminate\Validation\ValidationException;
 class ShoppingListItemController extends Controller
 {
     /**
-     * Agrega un artículo existente (product_id) o crea uno nuevo (name + size + unit).
+     * Agrega un artículo existente (product_id) o crea uno nuevo (name + size + unit,
+     * y opcionalmente barcode, brand y category si vienen de buscar el código).
      */
     public function store(Request $request, ShoppingList $list)
     {
+        $request->merge(['barcode' => Barcode::normalize($request->input('barcode'))]);
         $data = $request->validate([
             'product_id' => ['required_without:name', 'nullable', 'exists:products,id'],
             'name' => ['required_without:product_id', 'nullable', 'string', 'max:150'],
             'size' => ['required_with:name', 'nullable', 'numeric', 'gt:0', 'max:9999999'],
             'unit' => ['required_with:name', 'nullable', Rule::enum(Unit::class)],
+            'barcode' => ['nullable', Barcode::RULE],
+            'brand' => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'string', 'max:60'],
             'quantity' => ['nullable', 'numeric', 'gt:0', 'max:9999'],
         ]);
 
-        $product = empty($data['product_id'])
-            ? Product::create(['name' => trim($data['name']), 'size' => $data['size'], 'unit' => $data['unit']])
-            : Product::findOrFail($data['product_id']);
+        if (! empty($data['product_id'])) {
+            $product = Product::findOrFail($data['product_id']);
+        } else {
+            // Si el código ya es de un artículo (p. ej. creado en otra pestaña) se usa ese
+            $product = (empty($data['barcode']) ? null : Product::firstWhere('barcode', $data['barcode']))
+                ?? Product::create([
+                    'name' => trim($data['name']),
+                    'size' => $data['size'],
+                    'unit' => $data['unit'],
+                    'barcode' => $data['barcode'] ?? null,
+                    'brand' => Product::canonicalValue('brand', $data['brand'] ?? null),
+                    'category' => Product::canonicalValue('category', $data['category'] ?? null),
+                ]);
+        }
 
         $item = $list->items()->firstOrNew(['product_id' => $product->id]);
         $existing = $item->exists;

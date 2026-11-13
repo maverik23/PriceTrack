@@ -65,5 +65,8 @@
 <footer class="mx-auto max-w-7xl px-4 pb-8 text-xs text-slate-400">
     Precios por unidad normalizados a $/L, $/kg y $/pza · Fechas en {{ config('app.timezone') }}
 </footer>
+
+<x-barcode-scanner />
+
 </body>
 </html>

@@ -6,14 +6,24 @@ use App\Enums\Unit;
 use App\Models\Product;
 use App\Models\Provider;
 use App\Models\ShoppingList;
+use App\Services\BarcodeLookup;
+use App\Support\Barcode;
+use App\Support\ListGrid;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use RuntimeException;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
+        // Buscar (o escanear) un código de barras lleva directo al artículo
+        $barcode = Barcode::fromSearch($request->input('q'));
+        if ($barcode && $match = Product::firstWhere('barcode', $barcode)) {
+            return redirect()->route('products.show', $match);
+        }
+
         $products = Product::with('prices.provider')
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q')->trim().'%';
@@ -26,16 +36,56 @@ class ProductController extends Controller
         return view('products.index', [
             'products' => $products,
             'categories' => Product::distinctValues('category'),
+            'barcode' => $barcode,
         ]);
     }
 
     public function create(Request $request)
     {
+        // ?barcode=… (desde el buscador) precarga el código y busca sus datos en internet
+        $barcode = Barcode::fromSearch($request->query('barcode'));
+
         return view('products.create', [
-            'product' => new Product(['size' => 1, 'unit' => Unit::Item]),
+            'product' => new Product(['size' => 1, 'unit' => Unit::Item, 'barcode' => $barcode]),
             'brands' => Product::distinctValues('brand'),
             'categories' => Product::distinctValues('category'),
             'addToList' => $request->integer('add_to_list') ?: null,
+            'autoLookup' => $barcode !== null,
+        ]);
+    }
+
+    /**
+     * Busca un código de barras: primero entre los artículos guardados y, si no
+     * está, en internet para autocompletar el formulario (JSON).
+     */
+    public function lookup(Request $request, BarcodeLookup $lookup)
+    {
+        $request->merge(['barcode' => Barcode::normalize($request->input('barcode'))]);
+        $code = $request->validate(['barcode' => ['required', Barcode::RULE]])['barcode'];
+
+        $product = Product::firstWhere('barcode', $code);
+        $suggestion = null;
+        $error = null;
+
+        if (! $product) {
+            try {
+                $suggestion = $lookup->find($code);
+            } catch (RuntimeException $e) {
+                $error = $e->getMessage();
+            }
+        }
+
+        if ($suggestion) {
+            // Reusar la escritura de las marcas y categorías que ya existen ("LALA" → "Lala")
+            $suggestion['brand'] = Product::canonicalValue('brand', $suggestion['brand']);
+            $suggestion['category'] = Product::canonicalValue('category', $suggestion['category']);
+        }
+
+        return response()->json([
+            'barcode' => $code,
+            'product' => $product ? ListGrid::product($product) : null,
+            'suggestion' => $suggestion,
+            'error' => $error,
         ]);
     }
 
@@ -108,9 +158,12 @@ class ProductController extends Controller
 
     private function validated(Request $request, ?Product $product = null): array
     {
+        $request->merge(['barcode' => Barcode::normalize($request->input('barcode'))]);
+
         $validator = validator($request->all(), [
             'name' => ['required', 'string', 'max:150'],
             'brand' => ['nullable', 'string', 'max:100'],
+            'barcode' => ['nullable', Barcode::RULE, Rule::unique('products', 'barcode')->ignore($product)],
             'category' => ['nullable', 'string', 'max:60'],
             'size' => ['required', 'numeric', 'gt:0', 'max:9999999'],
             'unit' => ['required', Rule::enum(Unit::class)],

@@ -16,6 +16,9 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
   - Si el artículo no existe se crea en el momento, y la presentación se toma del nombre ("Salsa de tomate 345 ml").
   - Marca **dónde lo compraste** y ve cuánto costaría la lista completa en cada tienda y cuánto ahorraste.
   - Copia los artículos de una lista anterior para la despensa de cada semana.
+- **Código de barras.** Escanéalo con la cámara del celular (o con un lector USB/Bluetooth) para buscar el artículo, abrirlo o agregarlo a la lista.
+  - Si el código no está en tus artículos se buscan sus datos en internet ([Open Food Facts](https://world.openfoodfacts.org) y, si ahí no está, UPCitemdb) y se autocompleta nombre, marca, categoría y presentación.
+  - La cámara en vivo necesita que entres por **HTTPS** (o desde `localhost`). Por `http://` en la red de tu casa puedes tomar una foto del código y se lee igual.
 - **Historial de precios** por artículo y tienda, con gráfica del precio por unidad en el tiempo.
 - **Reportes:**
   - **Gasto promedio** semanal, mensual y anual, con desglose por mes, semana, año, tienda y categoría.
@@ -45,6 +48,7 @@ Variables opcionales (en un `.env` junto al compose, o en Portainer):
 | `APP_TIMEZONE` | `America/Mexico_City` | Zona horaria de las fechas |
 | `DB_PASSWORD` | `pricetrack` | Contraseña de MySQL (cámbiala si el servidor es accesible desde fuera) |
 | `APP_KEY` | *(se genera sola)* | Si no la defines, se genera una vez y se guarda en el volumen |
+| `BARCODE_LOOKUP` | `true` | `false` para no consultar internet al buscar un código de barras |
 
 ### Portainer
 

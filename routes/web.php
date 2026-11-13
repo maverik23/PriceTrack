@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', DashboardController::class)->name('dashboard');
 
 Route::resource('providers', ProviderController::class)->except(['create', 'show']);
+// Antes del resource para que "lookup" no se tome como {product}
+Route::get('products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
 Route::resource('products', ProductController::class);
 Route::resource('prices', PriceController::class)->except(['show']);
 

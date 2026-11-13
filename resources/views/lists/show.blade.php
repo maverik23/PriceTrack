@@ -144,23 +144,40 @@
                 {{-- Agregar artículo: autocompletar --}}
                 <tr class="bg-slate-50/50">
                     <td class="sticky left-0 z-10 bg-slate-50 px-3 py-2">
-                        <input id="grid-search" x-ref="search" type="text" class="input py-1.5" placeholder="+ Escribe un artículo…"
-                               autocomplete="off" x-model="search" :disabled="busy"
-                               @input="onSearchInput()" @focus="search && (open = true, place())"
-                               @keydown="onSearchKey($event)" @blur="setTimeout(() => open = false, 150)">
+                        <div class="flex gap-1">
+                            <input id="grid-search" type="text" class="input py-1.5" placeholder="+ Artículo o código de barras…"
+                                   autocomplete="off" x-model="search" :disabled="busy"
+                                   @input="onSearchInput()" @focus="search && (open = true, place())"
+                                   @keydown="onSearchKey($event)" @blur="setTimeout(() => open = false, 150)"
+                                   @barcode-scanned="onScanned()">
+                            <x-scan-button for="grid-search" tabindex="-1" class="py-1" />
+                        </div>
                     </td>
                     <td :colspan="providers.length + 4" class="px-3 py-2 text-xs text-slate-500">
                         <template x-if="!creating">
-                            <span>↑↓ para elegir, <kbd class="rounded bg-slate-100 px-1">Enter</kbd> para agregar. Si no existe, se crea al momento.</span>
+                            <span>↑↓ para elegir, <kbd class="rounded bg-slate-100 px-1">Enter</kbd> para agregar. Si no existe, se crea al momento. También puedes escanear o escribir el código de barras.</span>
                         </template>
                         <template x-if="creating">
                             <div class="flex flex-wrap items-center gap-2 text-sm">
-                                <span class="text-slate-600">Nuevo: <strong class="text-slate-900" x-text="creating.name"></strong> — presentación</span>
-                                <input id="grid-create-pres" x-ref="createPres" type="text" class="input w-32 py-1" placeholder="345 ml"
-                                       x-model="creating.pres" @keydown.enter.prevent="createProduct()"
-                                       @keydown.escape="creating = null; $refs.search.focus()">
-                                <button type="button" class="btn btn-primary btn-sm" @click="createProduct()">Crear y agregar</button>
-                                <button type="button" class="btn btn-ghost btn-sm" @click="creating = null">Cancelar</button>
+                                <template x-if="!creating.barcode">
+                                    <span class="text-slate-600">Nuevo: <strong class="text-slate-900" x-text="creating.name"></strong> — presentación</span>
+                                </template>
+                                <template x-if="creating.barcode">
+                                    <span class="flex items-center gap-2">
+                                        <span class="font-mono text-xs text-slate-500" x-text="creating.barcode"></span>
+                                        <input id="grid-create-name" type="text" class="input w-64 py-1" placeholder="Nombre del artículo"
+                                               x-model="creating.name" :disabled="creating.loading"
+                                               @keydown.enter.prevent="createProduct()" @keydown.escape="cancelCreate()">
+                                    </span>
+                                </template>
+                                <input id="grid-create-pres" type="text" class="input w-32 py-1" placeholder="345 ml"
+                                       x-model="creating.pres" :disabled="creating.loading" @keydown.enter.prevent="createProduct()"
+                                       @keydown.escape="cancelCreate()">
+                                <button type="button" class="btn btn-primary btn-sm" :disabled="creating.loading" @click="createProduct()">Crear y agregar</button>
+                                <button type="button" class="btn btn-ghost btn-sm" @click="cancelCreate()">Cancelar</button>
+                                <span class="text-xs text-slate-500" x-show="creating.loading">Buscando el código en internet…</span>
+                                <span class="text-xs text-slate-500" x-show="creating.source"
+                                      x-text="[creating.brand, creating.category].filter(Boolean).concat('de ' + creating.source).join(' · ')"></span>
                                 <span class="text-xs text-red-600" x-text="creating.error"></span>
                             </div>
                         </template>
@@ -209,7 +226,8 @@
                     <span class="text-xs text-slate-500" x-text="[opt.label, opt.brand].filter(Boolean).join(' · ')"></span>
                 </span>
                 <span class="shrink-0 text-xs text-amber-600" x-show="!opt.create && opt.inList">ya en la lista</span>
-                <span class="font-medium text-emerald-700" x-show="opt.create">+ Crear «<span x-text="opt.name"></span>»</span>
+                <span class="font-medium text-emerald-700" x-show="opt.create && !opt.barcode">+ Crear «<span x-text="opt.name"></span>»</span>
+                <span class="font-medium text-emerald-700" x-show="opt.barcode">+ Buscar el código <span class="font-mono" x-text="opt.barcode"></span> en internet y crear</span>
             </button>
         </template>
     </div>
