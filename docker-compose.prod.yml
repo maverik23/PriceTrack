@@ -8,6 +8,7 @@
 #   APP_TIMEZONE      zona horaria (America/Mexico_City)
 #   DB_PASSWORD       contraseña de MySQL (cámbiala si expones el servidor)
 #   APP_KEY           opcional: si no se define se genera una sola vez y se guarda en el volumen
+#   BARCODE_LOOKUP    false para no buscar en internet los datos de un código de barras (true)
 
 name: pricetrack
 
@@ -30,6 +31,7 @@ services:
       APP_LOCALE: es
       APP_FALLBACK_LOCALE: en
       APP_KEY: ${APP_KEY:-}
+      BARCODE_LOOKUP: ${BARCODE_LOOKUP:-true}
       DB_CONNECTION: mysql
       DB_HOST: db
       DB_PORT: 3306

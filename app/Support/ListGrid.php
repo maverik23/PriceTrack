@@ -22,6 +22,7 @@ class ListGrid
             'priceDateLabel' => $list->priceDate()->translatedFormat('d M Y'),
             'urls' => [
                 'items' => route('lists.items.store', $list, false),
+                'lookup' => route('products.lookup', [], false),
             ],
             'units' => Unit::meta(),
             'providers' => Provider::orderBy('name')->get(['id', 'name'])->toArray(),
@@ -36,6 +37,7 @@ class ListGrid
             'id' => $product->id,
             'name' => $product->name,
             'brand' => $product->brand,
+            'barcode' => $product->barcode,
             'category' => $product->category,
             'size' => $product->size,
             'unit' => $product->unit->value,

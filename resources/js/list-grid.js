@@ -41,6 +41,18 @@ function parsePresentation(input, productUnit, units) {
     return { pack, size, unit };
 }
 
+/**
+ * Código de barras escrito o escaneado → normalizado como App\Support\Barcode::normalize()
+ * (UPC-A de 12 dígitos → EAN-13). null si no parece un código.
+ */
+function normalizeBarcode(text) {
+    let code = (text || '').toString().replace(/[\s-]+/g, '');
+    if (!/^\d{6,14}$/.test(code)) return null;
+    if (code.length === 12) code = '0' + code;
+    else if (code.length === 14 && code[0] === '0') code = code.slice(1);
+    return code;
+}
+
 /** Busca una presentación dentro del nombre: "Salsa de tomate 345ml" → "345 ml" */
 function guessPresentation(name) {
     const m = norm(name).match(/(\d+(?:[.,]\d+)?)\s*(ml|lts?|l|litros?|grs?|g|gramos?|kgs?|kilos?|pzas?|piezas?)\b/);
@@ -74,7 +86,8 @@ export default function listGrid(config) {
         search: '',
         open: false,
         hi: 0,
-        dropStyle: '',
+        // Objeto (no texto): un :style de texto reemplaza el atributo completo y borra el display:none de x-show
+        dropStyle: {},
         creating: null,
         busy: false,
         money,
@@ -355,23 +368,28 @@ export default function listGrid(config) {
             const q = norm(this.search);
             if (!q) return [];
             const words = q.split(' ');
+            const code = normalizeBarcode(q);
             const inList = new Set(this.rows.map((r) => r.product.id));
             return this.products
-                .filter((p) => words.every((w) => p._s.includes(w)))
+                .filter((p) => (code ? p.barcode === code : words.every((w) => p._s.includes(w))))
                 .slice(0, 8)
                 .map((p) => ({ ...p, inList: inList.has(p.id) }));
         },
         get options() {
             const opts = [...this.results];
             const text = this.search.trim();
-            if (text && !this.products.some((p) => norm(p.name) === norm(text))) {
+            const code = normalizeBarcode(text);
+            if (code) {
+                // Código que no está en tus artículos: buscarlo en internet
+                if (!opts.length) opts.push({ create: true, barcode: code, name: code });
+            } else if (text && !this.products.some((p) => norm(p.name) === norm(text))) {
                 opts.push({ create: true, name: text });
             }
             return opts;
         },
         place() {
             const r = document.getElementById('grid-search').getBoundingClientRect();
-            this.dropStyle = `top:${r.bottom + 4}px;left:${r.left}px;width:${Math.max(r.width, 320)}px`;
+            this.dropStyle = { top: `${r.bottom + 4}px`, left: `${r.left}px`, width: `${Math.max(r.width, 320)}px` };
         },
         onSearchInput() {
             this.open = true;
@@ -395,8 +413,14 @@ export default function listGrid(config) {
                 this.open = false;
             }
         },
+        /** Código leído con la cámara (ya quedó escrito en el buscador). */
+        onScanned() {
+            this.open = false;
+            if (this.options[0]) this.pick(this.options[0]);
+        },
         async pick(opt) {
             this.open = false;
+            if (opt.create && opt.barcode) return this.createFromBarcode(opt.barcode);
             if (opt.create) {
                 this.creating = { name: opt.name, pres: guessPresentation(opt.name), error: '' };
                 this.$nextTick(() => document.getElementById('grid-create-pres')?.select());
@@ -407,8 +431,44 @@ export default function listGrid(config) {
             if (existing >= 0) return this.focusCell(existing, 0);
             await this.addRow({ product_id: opt.id });
         },
+        /** Código nuevo: buscar sus datos en internet y dejarlos listos para crear el artículo. */
+        async createFromBarcode(code) {
+            this.search = '';
+            const draft = { name: '', pres: '', barcode: code, brand: null, category: null, source: null, loading: true, error: '' };
+            this.creating = draft;
+            try {
+                const res = await this.request('GET', `${this.urls.lookup}?barcode=${encodeURIComponent(code)}`);
+                if (this.creating?.barcode !== code) return; // se canceló mientras buscaba
+                if (res.product) {
+                    // Ya existía (p. ej. se creó en otra pestaña): agregarlo tal cual
+                    this.creating = null;
+                    return this.addRow({ product_id: res.product.id });
+                }
+                const s = res.suggestion;
+                if (s) {
+                    Object.assign(this.creating, { name: s.name, pres: s.presentation || guessPresentation(s.name), brand: s.brand, category: s.category, source: s.source });
+                } else {
+                    this.creating.error = res.error || 'No lo encontramos en internet: escribe el nombre y la presentación.';
+                }
+            } catch (e) {
+                if (this.creating?.barcode !== code) return;
+                this.creating.error = e.message;
+            }
+            this.creating.loading = false;
+            this.$nextTick(() => document.getElementById(this.creating.name ? 'grid-create-pres' : 'grid-create-name')?.select());
+        },
+        cancelCreate() {
+            this.creating = null;
+            document.getElementById('grid-search')?.focus();
+        },
         async createProduct() {
             const draft = this.creating;
+            if (draft.loading) return;
+            const name = (draft.name || '').trim();
+            if (!name) {
+                draft.error = 'Escribe el nombre del artículo';
+                return;
+            }
             const pres = this.parseAnyPresentation(draft.pres);
             if (!pres || pres.pack !== 1) {
                 draft.error = 'Escribe la presentación, ej. 345 ml, 1 L, 680 g, 1 kg o 30 pza';
@@ -416,7 +476,9 @@ export default function listGrid(config) {
             }
             // Cerrar el aviso antes de agregar, para que el foco pase a la fila nueva
             this.creating = null;
-            const error = await this.addRow({ name: draft.name, size: pres.size, unit: pres.unit });
+            const body = { name, size: pres.size, unit: pres.unit };
+            if (draft.barcode) Object.assign(body, { barcode: draft.barcode, brand: draft.brand, category: draft.category });
+            const error = await this.addRow(body);
             if (error) {
                 this.creating = { ...draft, error };
             }

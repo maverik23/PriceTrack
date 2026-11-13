@@ -10,6 +10,7 @@
             {{ $product->sizeLabel() }}
             @if ($product->brand) · {{ $product->brand }} @endif
             @if ($product->category) · <span class="badge badge-muted">{{ $product->category }}</span> @endif
+            @if ($product->barcode) · <span class="font-mono text-xs" title="Código de barras">{{ $product->barcode }}</span> @endif
         </p>
     </div>
     <div class="flex gap-2">

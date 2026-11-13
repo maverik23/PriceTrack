@@ -10,8 +10,11 @@
     <a href="{{ route('products.create') }}" class="btn btn-primary">+ Nuevo artículo</a>
 </div>
 
-<form method="GET" class="mb-4 flex flex-wrap gap-2">
-    <input name="q" value="{{ request('q') }}" class="input max-w-xs" placeholder="Buscar por nombre o marca…">
+<form method="GET" class="mb-4 flex flex-wrap gap-2" x-data @barcode-scanned="$el.requestSubmit()">
+    <div class="flex w-full max-w-xs gap-2">
+        <input id="q" name="q" value="{{ request('q') }}" class="input" placeholder="Buscar por nombre, marca o código…">
+        <x-scan-button for="q" />
+    </div>
     <select name="category" class="input max-w-48" onchange="this.form.submit()">
         <option value="">Todas las categorías</option>
         @foreach ($categories as $category)
@@ -61,7 +64,16 @@
                 <td class="text-right tabular-nums text-slate-500">{{ $latest->count() }}</td>
             </tr>
         @empty
-            <tr><td colspan="6" class="py-10 text-center text-slate-500">No hay artículos todavía. <a class="link" href="{{ route('products.create') }}">Crea el primero</a>.</td></tr>
+            <tr><td colspan="6" class="py-10 text-center text-slate-500">
+                @if ($barcode)
+                    Ningún artículo tiene el código <span class="font-mono">{{ $barcode }}</span>.
+                    <a class="link" href="{{ route('products.create', ['barcode' => $barcode]) }}">Créalo con sus datos de internet</a>.
+                @elseif (request()->anyFilled(['q', 'category']))
+                    Sin resultados.
+                @else
+                    No hay artículos todavía. <a class="link" href="{{ route('products.create') }}">Crea el primero</a>.
+                @endif
+            </td></tr>
         @endforelse
         </tbody>
     </table>
