@@ -21,8 +21,8 @@ const UNIT_ALIASES = {
 
 // Tienda que vende "a granel" sin decir cuánto: por kg, por L o por pieza
 const BULK_UNIT = { volume: 'l', mass: 'kg', count: 'item' };
-// Price::PACK_TOLERANCE: si falta menos del 10 % de un paquete no se cuenta otro (946 ml ≈ 1 L)
-const PACK_TOLERANCE = 0.1;
+// Price::PACK_TOLERANCE: si falta menos del 15 % de un paquete no se cuenta otro (946 ml ≈ 1 L, 907 g ≈ 1 kg)
+const PACK_TOLERANCE = 0.15;
 
 const money = (v) => (v < 0 ? '-$' : '$') + Math.abs(Number(v)).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const plain = (v) => String(Number(Number(v).toFixed(3)));

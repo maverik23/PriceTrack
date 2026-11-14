@@ -13,8 +13,11 @@ class Price extends Model
 {
     use HasFactory;
 
-    /** Si a la cantidad le falta menos de esto (10 % de un paquete) no se cuenta otro paquete: 946 ml ≈ 1 L. */
-    public const PACK_TOLERANCE = 0.1;
+    /**
+     * Si para cubrir la cantidad falta menos de esto (15 % de un paquete) no se cuenta otro:
+     * 946 ml ≈ 1 L y 907 g (2 lb) ≈ 1 kg, pero 7 latas siguen siendo 7.
+     */
+    public const PACK_TOLERANCE = 0.15;
 
     protected function casts(): array
     {

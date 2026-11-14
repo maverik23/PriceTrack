@@ -58,8 +58,27 @@ class PurchaseQuantityTest extends TestCase
         $this->assertSame(1, $bottle->packsFor(1000));
         $this->assertSame(2, $bottle->packsFor(1200));
         $liter = $this->price(Product::create(['name' => 'Leche', 'size' => 1, 'unit' => 'l']), $this->walmart, 30, 1, 'l');
-        $this->assertSame(1, $liter->packsFor(1100));
-        $this->assertSame(2, $liter->packsFor(1101));
+        $this->assertSame(1, $liter->packsFor(1150));
+        $this->assertSame(2, $liter->packsFor(1151));
+        $this->assertSame(7, $liter->packsFor(7000), 'Varias piezas iguales no se redondean hacia abajo');
+    }
+
+    public function test_pound_sizes_count_as_their_metric_presentation(): void
+    {
+        // Queso de 1 kg habitual; Costco vende el bloque de 907 g (2 lb)
+        $cheddar = Product::create(['name' => 'Queso Cheddar', 'size' => 1000, 'unit' => 'g']);
+        $molida = Product::create(['name' => 'Molida 88/12', 'size' => 2, 'unit' => 'kg']);
+        $lomo = Product::create(['name' => 'Cabeza de lomo', 'size' => 1, 'unit' => 'kg']);
+        $block = $this->price($cheddar, $this->sams, 107.41, 907, 'g');
+        $this->assertSame(1, $block->packsFor(1000));
+        $this->assertSame(107.41, $block->costFor(1000));
+
+        $this->list->items()->create(['product_id' => $cheddar->id, 'quantity' => 1, 'price_id' => $block->id]);
+        $this->list->items()->create(['product_id' => $molida->id, 'quantity' => 1, 'price_id' => $this->price($molida, $this->sams, 400.27, 2.68, 'kg')->id]);
+        $this->list->items()->create(['product_id' => $lomo->id, 'quantity' => 1, 'price_id' => $this->price($lomo, $this->sams, 306.16, 2.32, 'kg')->id]);
+
+        $this->list->load('items.price', 'items.product');
+        $this->assertEqualsWithDelta(813.84, $this->list->total(), 0.001);
     }
 
     public function test_bulk_prices_charge_exactly_what_you_take(): void
