@@ -50,13 +50,13 @@ class ShoppingListItem extends Model
     }
 
     /**
-     * Estimado: cantidad × presentación habitual, al precio por unidad más barato.
-     * (Así un paquete de club 6 × 1 L no infla el estimado de "1 leche".)
+     * Estimado: lo que costaría en la tienda más barata para lo que se necesita,
+     * con el último precio de cada una (paquetes completos o a granel).
      */
     public function estimatedSubtotal(): ?float
     {
-        $cheapest = $this->product->cheapestPrice();
+        $need = $this->needBaseQty();
 
-        return $cheapest ? round($this->needBaseQty() * $cheapest->unit_price, 2) : null;
+        return $this->product->latestPrices()->map(fn (Price $price) => $price->costFor($need))->min();
     }
 }
