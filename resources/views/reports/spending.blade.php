@@ -7,6 +7,22 @@
 
 @include('reports._range')
 
+{{-- Por qué algo no aparece: lo más común es no marcar dónde se compró --}}
+@if ($gaps['unmarked'] || $gaps['future'])
+    <div class="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+        <p class="font-semibold">No todo lo que capturaste cuenta como gasto:</p>
+        <ul class="mt-1 list-inside list-disc space-y-0.5">
+            @if ($gaps['unmarked'])
+                <li>{{ $gaps['unmarked'] }} {{ $gaps['unmarked'] === 1 ? 'artículo' : 'artículos' }} de listas de este periodo sin marcar como comprado. En la lista, toca el círculo junto al precio de la tienda donde lo compraste.</li>
+            @endif
+            @if ($gaps['future'])
+                <li>{{ $gaps['future'] }} {{ $gaps['future'] === 1 ? 'compra está' : 'compras están' }} en listas con fecha futura; cuentan a partir de esa fecha. Cambia la fecha de la lista si ya compraste.</li>
+            @endif
+        </ul>
+        <p class="mt-1 text-xs text-amber-800">Los precios de «Capturar precio» sirven para comparar; el gasto sale solo de lo marcado como comprado en tus listas.</p>
+    </div>
+@endif
+
 @if ($total <= 0)
     <div class="card py-12 text-center text-slate-500">No hay compras registradas en este periodo. Marca artículos como «Comprado aquí» en tus listas.</div>
 @else
@@ -14,7 +30,7 @@
         <div class="card">
             <div class="stat-label">Total del periodo</div>
             <div class="stat-value">{{ money($total) }}</div>
-            <div class="mt-1 text-xs text-slate-500">{{ $days }} días · {{ $lists }} compras</div>
+            <div class="mt-1 text-xs text-slate-500">{{ $span }} {{ $span === 1 ? "día" : "días" }} · {{ $lists }} compras</div>
         </div>
         <div class="card">
             <div class="stat-label">Promedio semanal</div>
@@ -34,7 +50,7 @@
         </div>
     </div>
     <p class="-mt-3 mb-6 text-xs text-slate-400">
-        Promedios = gasto total ÷ {{ $days }} días (del {{ $start->translatedFormat('d M Y') }} al {{ $end->translatedFormat('d M Y') }}) × 7 / 30.4 / 365.
+        Promedios = gasto total ÷ {{ $days }} días (del {{ $start->translatedFormat('d M Y') }} al {{ $end->translatedFormat('d M Y') }}{{ $span < $days ? '; mínimo una semana' : '' }}) × 7 / 30.4 / 365.
     </p>
 
     <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">

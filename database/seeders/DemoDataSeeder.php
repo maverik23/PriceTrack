@@ -71,6 +71,8 @@ class DemoDataSeeder extends Seeder
                 foreach ($chosen as $idx) {
                     [$name, , , $size, $unit, $base, $rate, $clubPack] = $catalog[$idx];
                     $product = $products[$idx];
+                    // Fruta y tortilla se pesan: precio por kg y la cantidad que quieras
+                    $bulk = in_array($name, ['Plátano', 'Tortilla de maíz'], true);
                     $years = $start->diffInDays($listDate) / 365;
                     // Precio "escalonado" por mes para que no cambie cada semana
                     $monthStep = floor($years * 12) / 12;
@@ -78,7 +80,7 @@ class DemoDataSeeder extends Seeder
                     $seen = collect(['Walmart'])
                         ->merge(collect(["Sam's Club", 'Costco', 'Amazon'])->shuffle()->take(mt_rand(1, 2)));
 
-                    $prices = $seen->map(function ($providerName) use ($product, $providers, $providerFactor, $base, $rate, $monthStep, $size, $unit, $clubPack, $listDate, $list) {
+                    $prices = $seen->map(function ($providerName) use ($product, $providers, $providerFactor, $base, $rate, $monthStep, $size, $unit, $clubPack, $listDate, $list, $bulk) {
                         $isClub = in_array($providerName, ["Sam's Club", 'Costco']);
                         $pack = $isClub ? $clubPack : 1;
                         $unitFactor = $providerFactor[$providerName] * (1 + $rate * $monthStep);
@@ -96,6 +98,7 @@ class DemoDataSeeder extends Seeder
                             'pack_qty' => $pack,
                             'size' => $size,
                             'unit' => $unit,
+                            'bulk' => $bulk,
                             'observed_on' => $listDate,
                         ]);
                     });
@@ -108,9 +111,14 @@ class DemoDataSeeder extends Seeder
                     // En la lista de hoy deja la mitad pendiente para ver el flujo
                     $purchased = ! $isLast || mt_rand(0, 1) === 1;
 
+                    // Cantidad = lo que se necesita en presentaciones habituales (un paquete de club cubre varias)
                     $list->items()->create([
                         'product_id' => $product->id,
-                        'quantity' => $buy->pack_qty > 1 ? 1 : mt_rand(1, 2),
+                        'quantity' => match (true) {
+                            $bulk => mt_rand(5, 20) / 10,
+                            $buy->pack_qty > 1 => $buy->pack_qty,
+                            default => mt_rand(1, 2),
+                        },
                         'price_id' => $purchased ? $buy->id : null,
                     ]);
                 }

@@ -54,6 +54,10 @@
         <span data-unit-preview class="h-4 text-xs font-medium text-emerald-700 tabular-nums"></span>
         <button class="btn btn-primary">Guardar</button>
     </div>
+    <label class="col-span-full flex items-center gap-2 text-xs text-slate-600">
+        <input type="checkbox" name="bulk" value="1" class="rounded border-slate-300 text-emerald-600">
+        A granel (el precio es por el contenido, ej. $54 por 1 kg)
+    </label>
     @if ($item)
         <label class="col-span-full flex items-center gap-2 text-xs text-slate-600">
             <input type="checkbox" name="select" value="1" checked class="rounded border-slate-300 text-emerald-600">

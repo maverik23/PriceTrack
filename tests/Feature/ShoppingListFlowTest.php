@@ -46,7 +46,8 @@ class ShoppingListFlowTest extends TestCase
         $this->assertSame($samsPrice->id, $item->fresh()->price_id);
 
         $list->load('items.price', 'items.product.prices');
-        $this->assertEqualsWithDelta(124.20, $list->total(), 0.001); // 2 × 62.10
+        // Se necesitan 2 salsas; un paquete de 3 las cubre: se paga 1 paquete, no 2
+        $this->assertEqualsWithDelta(62.10, $list->total(), 0.001);
 
         // La hoja recibe los últimos precios por proveedor ya normalizados
         $grid = $this->get(route('lists.show', $list))->assertOk()->viewData('grid');

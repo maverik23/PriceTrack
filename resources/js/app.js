@@ -92,7 +92,8 @@ function updateUnitPreview(form) {
     if (!out) return;
     const price = parseFloat(form.querySelector('[name="price"]')?.value);
     const size = parseFloat(form.querySelector('[name="size"]')?.value);
-    const pack = parseInt(form.querySelector('[name="pack_qty"]')?.value || '1', 10);
+    const bulk = form.querySelector('input[type="checkbox"][name="bulk"]')?.checked;
+    const pack = bulk ? 1 : parseInt(form.querySelector('[name="pack_qty"]')?.value || '1', 10);
     const unit = form.querySelector('[name="unit"]')?.value;
     if (!price || !size || !unit || !toBase[unit]) {
         out.textContent = '';

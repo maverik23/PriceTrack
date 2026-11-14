@@ -35,6 +35,7 @@ class ReportController extends Controller
     {
         [$from, $to] = ReportService::range($request);
 
-        return view('reports.spending', ['from' => $from, 'to' => $to] + $this->reports->spending($from, $to));
+        return view('reports.spending', ['from' => $from, 'to' => $to, 'gaps' => $this->reports->spendingGaps($from, $to)]
+            + $this->reports->spending($from, $to));
     }
 }

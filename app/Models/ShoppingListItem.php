@@ -34,10 +34,19 @@ class ShoppingListItem extends Model
         return $this->belongsTo(Price::class);
     }
 
-    /** Lo que se pagó: cantidad × precio del paquete elegido. */
+    /** Lo que se necesita (o se compró) en unidad base: cantidad × presentación habitual. */
+    public function needBaseQty(): float
+    {
+        return $this->quantity * $this->product->standardBaseQty();
+    }
+
+    /**
+     * Lo que se pagó en la tienda elegida: lo justo si es a granel o los
+     * paquetes completos que cubren la cantidad (ver Price::costFor()).
+     */
     public function subtotal(): ?float
     {
-        return $this->price ? round($this->quantity * $this->price->price, 2) : null;
+        return $this->price?->costFor($this->needBaseQty());
     }
 
     /**
@@ -48,6 +57,6 @@ class ShoppingListItem extends Model
     {
         $cheapest = $this->product->cheapestPrice();
 
-        return $cheapest ? round($this->quantity * $this->product->standardBaseQty() * $cheapest->unit_price, 2) : null;
+        return $cheapest ? round($this->needBaseQty() * $cheapest->unit_price, 2) : null;
     }
 }
