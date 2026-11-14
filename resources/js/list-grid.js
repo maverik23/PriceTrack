@@ -201,10 +201,6 @@ export default function listGrid(config) {
         costOf(row, v) {
             return cents(v.bulk ? (this.need(row) * v.price) / v.base : packs(this.need(row), v.base) * v.price);
         },
-        /** Lo que se recibe con ese precio (ml, g, pza): lo justo a granel o los paquetes completos. */
-        boughtBase(row, v) {
-            return v.bulk ? this.need(row) : packs(this.need(row), v.base) * v.base;
-        },
         selectedValue(row) {
             const s = row.selected;
             return s ? { price: s.price, base: s.base_qty, unitPrice: s.unit_price, bulk: s.bulk } : null;
@@ -305,14 +301,6 @@ export default function listGrid(config) {
         get totalEstimated() {
             return this.rows.reduce((s, r) => s + (this.subtotal(r) ?? this.estimated(r) ?? 0), 0);
         },
-        /** Ahorro por unidad: (precio por unidad más caro − el que pagaste) × lo que te llevaste. */
-        get savings() {
-            return this.rows.reduce((s, r) => {
-                if (!r.selected) return s;
-                const max = Math.max(r.selected.unit_price, ...this.values(r).map((x) => x.v.unitPrice));
-                return s + Math.max(0, (max - r.selected.unit_price) * this.boughtBase(r, this.selectedValue(r)));
-            }, 0);
-        },
         /** Ahorro real: lo que costaba lo que necesitabas en la tienda más cara (paquetes completos) − lo que pagaste. */
         get realSavings() {
             return this.rows.reduce((s, r) => {
@@ -321,8 +309,13 @@ export default function listGrid(config) {
                 return s + Math.max(paid, ...this.values(r).map((x) => this.costOf(r, x.v))) - paid;
             }, 0);
         },
-        get progress() {
-            return this.rows.length ? Math.round((this.purchasedCount / this.rows.length) * 100) : 0;
+        /** Lo que compraste, pero cada artículo en la tienda más barata para esa cantidad (paquetes completos). */
+        get cheapestTotal() {
+            return this.rows.reduce((s, r) => s + (r.selected ? (this.bestBuy(r)?.cost ?? this.subtotal(r)) : 0), 0);
+        },
+        /** Lo que te habrías ahorrado comprando cada artículo en su tienda más barata. */
+        get possibleSavings() {
+            return Math.max(0, this.totalPurchased - this.cheapestTotal);
         },
         basket(pid) {
             let covered = 0;

@@ -16,7 +16,7 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
   - En **Cant.** pones lo que necesitas: `2` (presentaciones) o el contenido, `610 g`. Lo pagado se calcula con los **paquetes completos** que vende cada tienda, o lo justo si es a granel (610 g a $54/kg = $32.94).
   - Cada tarjeta muestra el **total** de lo que necesitas en esa tienda (ej. 4 paquetes de 18 L = $376.48). El ★ marca el más barato por unidad y el total en verde, dónde sale más barato llevarte lo que necesitas: si necesitas 1 kg y Sam's solo vende 2 kg, quizá conviene Walmart.
   - Si el artículo no existe se crea en el momento, y la presentación se toma del nombre ("Salsa de tomate 345 ml").
-  - Marca **dónde lo compraste** y ve cuánto costaría la lista completa en cada tienda y cuánto ahorraste: el ahorro **real** (con los paquetes que hay que comprar) y el ahorro **por unidad**.
+  - Marca **dónde lo compraste** y ve el ticket de cada tienda, cuánto ahorraste contra la más cara y el **total más barato**: lo mismo que compraste en la tienda más barata de cada artículo, con el **posible ahorro** que te quedó.
   - Copia los artículos de una lista anterior para la despensa de cada semana.
 - **Código de barras.** Escanéalo con la cámara del celular (o con un lector USB/Bluetooth) para buscar el artículo, abrirlo o agregarlo a la lista.
   - Si el código no está en tus artículos se buscan sus datos en internet ([Open Food Facts](https://world.openfoodfacts.org) y, si ahí no está, UPCitemdb) y se autocompleta nombre, marca, categoría y presentación.
@@ -92,7 +92,8 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 - **Total por tienda y estimados** = lo que pagarías por lo que necesitas con los paquetes de cada tienda (o lo justo a granel). Lo pendiente se estima en la tienda más barata para esa cantidad.
 - **Lo pagado** = los paquetes completos que cubren lo que necesitas (si te falta menos de 15 % de un paquete no se cuenta otro: 946 ml ≈ 1 L, el bloque de 907 g ≈ 1 kg), o lo justo si se vende a granel.
 - **Gasto** = lo pagado en los artículos marcados como comprados, en la fecha de la lista. Los promedios usan el gasto por día del periodo real (mínimo una semana).
-- **Ahorro** = *real*: lo que te costaba lo mismo en la tienda más cara, con sus paquetes, menos lo que pagaste; *por unidad*: la diferencia de $/kg, $/L o $/pza por lo que te llevaste.
+- **Ahorro** = lo que te costaba lo mismo en la tienda más cara, con sus paquetes, menos lo que pagaste.
+- **Total más barato** = lo que compraste, cada artículo en la tienda más barata para esa cantidad (con sus paquetes). **Posible ahorro** = lo que pagaste menos ese total.
 - **Inflación** = por cada artículo en cada tienda se toma el precio unitario promedio de cada mes, arrastrando el último precio conocido. Luego se encadena la media geométrica de las variaciones mes a mes.
 
 ## Código
