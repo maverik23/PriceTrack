@@ -31,16 +31,17 @@
         <div class="card">
             <div class="stat-label">Ahorro vs. el más caro</div>
             <div class="stat-value text-emerald-700" x-text="money(realSavings)"></div>
-            <div class="mt-1 text-sm text-slate-500" title="Real: lo que costaba lo que necesitabas en la tienda más cara, con los paquetes que hay que comprar ahí. Por unidad: la diferencia de $/kg, $/L o $/pza por lo que te llevaste.">
-                real, con paquetes completos · por unidad: <span class="font-medium text-slate-700" x-text="money(savings)"></span>
+            <div class="mt-1 text-sm text-slate-500" title="Lo que costaba lo que compraste en la tienda más cara, con los paquetes que hay que comprar ahí, menos lo que pagaste">
+                real, con paquetes completos
             </div>
         </div>
         <div class="card">
-            <div class="stat-label">Progreso</div>
-            <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-                <div class="h-full rounded-full bg-emerald-500 transition-all" :style="`width: ${progress}%`"></div>
+            <div class="stat-label">Total más barato</div>
+            <div class="stat-value" x-text="money(cheapestTotal)"></div>
+            <div class="mt-1 text-sm text-slate-500">lo que compraste, en la tienda más barata de cada artículo</div>
+            <div class="mt-1 text-sm text-slate-500">
+                Posible ahorro: <span class="font-semibold tabular-nums" :class="possibleSavings >= 0.01 ? 'text-amber-700' : 'text-emerald-700'" x-text="money(possibleSavings)"></span>
             </div>
-            <div class="mt-2 text-sm text-slate-500"><span x-text="progress"></span>% comprado</div>
         </div>
     </div>
 
