@@ -115,6 +115,7 @@ class ShoppingListItemController extends Controller
             'pack_qty' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'size' => ['required', 'numeric', 'gt:0', 'max:9999999'],
             'unit' => ['required', Rule::enum(Unit::class)],
+            'bulk' => ['nullable', 'boolean'],
         ]);
 
         $product = $item->product;
@@ -136,6 +137,7 @@ class ShoppingListItemController extends Controller
             'pack_qty' => $data['pack_qty'] ?? 1,
             'size' => $data['size'],
             'unit' => $unit,
+            'bulk' => (bool) ($data['bulk'] ?? false),
         ])->save();
 
         // Si ya estaba comprado en ese proveedor, la compra pasa al precio nuevo

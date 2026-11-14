@@ -195,8 +195,30 @@ class ReportService
     /**
      * Gasto: artículos de listas con precio elegido (lo comprado).
      * Los promedios se calculan con la tasa diaria del periodo real
-     * (desde la primera compra del rango hasta el fin del rango / hoy).
+     * (desde la primera compra del rango hasta el fin del rango / hoy),
+     * de al menos una semana: con una sola compra hoy, el promedio semanal
+     * es esa compra y no 7 veces ella.
      */
+    /**
+     * Lo que no entra en el gasto del periodo y suele confundir: artículos de
+     * listas ya pasadas sin marcar como comprados y compras en listas con fecha futura.
+     *
+     * @return array{unmarked: int, future: int}
+     */
+    public function spendingGaps(CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $today = CarbonImmutable::today();
+
+        return [
+            'unmarked' => ShoppingListItem::whereNull('price_id')
+                ->whereHas('shoppingList', fn ($q) => $q->whereBetween('shopped_on', [$from->toDateString(), $to->min($today)->toDateString()]))
+                ->count(),
+            'future' => ShoppingListItem::whereNotNull('price_id')
+                ->whereHas('shoppingList', fn ($q) => $q->where('shopped_on', '>', $today->toDateString()))
+                ->count(),
+        ];
+    }
+
     public function spending(CarbonImmutable $from, CarbonImmutable $to): array
     {
         $items = ShoppingListItem::with(['price.provider', 'product', 'shoppingList'])
@@ -216,7 +238,7 @@ class ReportService
 
         if ($rows->isEmpty()) {
             return [
-                'total' => 0.0, 'days' => 0, 'start' => null, 'end' => null,
+                'total' => 0.0, 'days' => 0, 'span' => 0, 'start' => null, 'end' => null,
                 'daily' => 0.0, 'weekly' => 0.0, 'monthly' => 0.0, 'annual' => 0.0,
                 'lists' => 0, 'perList' => 0.0,
                 'byWeek' => collect(), 'byMonth' => collect(), 'byYear' => collect(),
@@ -226,7 +248,8 @@ class ReportService
 
         $start = $rows->first()->date->max($from)->startOfDay();
         $end = $to->min(CarbonImmutable::today())->max($rows->last()->date)->startOfDay();
-        $days = (int) $start->diffInDays($end) + 1;
+        $span = (int) $start->diffInDays($end) + 1;
+        $days = max(7, $span);
         $daily = $total / $days;
         $lists = $rows->pluck('list_id')->unique()->count();
 
@@ -276,6 +299,7 @@ class ReportService
         return [
             'total' => $total,
             'days' => $days,
+            'span' => $span,
             'start' => $start,
             'end' => $end,
             'daily' => $daily,

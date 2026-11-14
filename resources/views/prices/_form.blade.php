@@ -47,6 +47,11 @@
             @endforeach
         </select>
     </div>
+    <label class="flex items-start gap-2 text-sm text-slate-600 sm:col-span-2">
+        <input type="hidden" name="bulk" value="0">
+        <input type="checkbox" name="bulk" value="1" @checked(old('bulk', $price->bulk)) class="mt-0.5 rounded border-slate-300 text-emerald-600">
+        <span>A granel: el precio es por el contenido (ej. $54 por 1 kg) y compras la cantidad que quieras.</span>
+    </label>
     <div class="sm:col-span-2">
         <label class="label" for="notes">Notas</label>
         <input id="notes" name="notes" value="{{ old('notes', $price->notes) }}" class="input" placeholder="Oferta, 2×1, sucursal…">

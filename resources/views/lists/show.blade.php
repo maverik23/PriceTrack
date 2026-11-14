@@ -30,8 +30,10 @@
         </div>
         <div class="card">
             <div class="stat-label">Ahorro vs. el más caro</div>
-            <div class="stat-value text-emerald-700" x-text="money(savings)"></div>
-            <div class="mt-1 text-sm text-slate-500">mismo contenido, por unidad</div>
+            <div class="stat-value text-emerald-700" x-text="money(realSavings)"></div>
+            <div class="mt-1 text-sm text-slate-500" title="Real: lo que costaba lo que necesitabas en la tienda más cara, con los paquetes que hay que comprar ahí. Por unidad: la diferencia de $/kg, $/L o $/pza por lo que te llevaste.">
+                real, con paquetes completos · por unidad: <span class="font-medium text-slate-700" x-text="money(savings)"></span>
+            </div>
         </div>
         <div class="card">
             <div class="stat-label">Progreso</div>
@@ -49,6 +51,7 @@
                 Los precios se guardan con fecha <strong class="text-slate-700" x-text="priceDateLabel"></strong>.
                 Escribe y usa <kbd class="rounded bg-slate-100 px-1">Tab</kbd> / <kbd class="rounded bg-slate-100 px-1">Enter</kbd> / <kbd class="rounded bg-slate-100 px-1">↑↓</kbd>.
                 <kbd class="rounded bg-slate-100 px-1">Enter</kbd> sobre un precio anterior lo confirma para esta fecha; borrarlo deshace lo capturado hoy.
+                En <strong class="text-slate-700">Cant.</strong> pon lo que necesitas (<code>2</code> o <code>610 g</code>). Si se vende a granel escribe el precio como <code>54/kg</code>.
             </p>
             <p class="flex items-center gap-3 whitespace-nowrap">
                 <span class="flex items-center gap-1"><span class="size-3 rounded-full bg-emerald-600"></span> comprado aquí</span>
@@ -88,7 +91,9 @@
                         </td>
 
                         <td class="px-1 py-1 transition-colors" :class="flashed[row.id + ':qty'] && 'bg-emerald-100'">
-                            <input type="text" inputmode="decimal" class="cell-input" :data-cell="ri + '-0'"
+                            <input type="text" class="cell-input" :data-cell="ri + '-0'"
+                                   :inputmode="units[row.product.unit].dimension === 'count' ? 'decimal' : 'text'"
+                                   title="Cuánto necesitas: presentaciones (2) o el contenido (610 g, 1.5 kg)"
                                    x-model="qty[row.id]" @focus="$event.target.select()" @change="commitQty(row)"
                                    @keydown="onCellKey($event, ri, 0, row, null)" aria-label="Cantidad">
                         </td>
@@ -108,7 +113,7 @@
                                 </div>
                                 <div class="flex items-center gap-1 pl-5">
                                     <input type="text" tabindex="-1" class="pres-input flex-1" :placeholder="row.product.label"
-                                           title="Presentación: 345 ml, 1 L, 6 x 1 L, 2 x 680 g, 30 pza…"
+                                           title="Presentación: 345 ml, 1 L, 6 x 1 L, 2 x 680 g, 30 pza… o «por kg» si se vende a granel"
                                            x-model="drafts[key(row, p.id)].pres" @focus="$event.target.select()"
                                            @change="commit(row, p.id)" @keydown.enter.prevent="commit(row, p.id, true)">
                                     <span class="shrink-0 text-[11px] whitespace-nowrap tabular-nums"
@@ -127,6 +132,12 @@
                                 <div>
                                     <div class="font-semibold text-emerald-700 tabular-nums" x-text="compareText(row, cheapest(row).v)"></div>
                                     <div class="text-slate-500" x-text="providerName(cheapest(row).pid)"></div>
+                                    {{-- Con paquetes completos para lo que necesitas puede ganar otra tienda --}}
+                                    <div class="mt-1 border-t border-slate-100 pt-1 text-slate-500" title="Lo más barato para llevarte lo que necesitas, con los paquetes que vende cada tienda">
+                                        <span x-text="'Para ' + needLabel(row) + ':'"></span>
+                                        <span class="font-semibold tabular-nums text-slate-700" x-text="money(bestBuy(row).cost)"></span>
+                                        <span x-show="bestBuy(row).pid !== cheapest(row).pid" class="font-medium text-amber-700" x-text="providerName(bestBuy(row).pid)"></span>
+                                    </div>
                                 </div>
                             </template>
                         </td>

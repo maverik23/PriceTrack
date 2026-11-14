@@ -82,6 +82,12 @@ class ListGrid
         }
 
         $content = num($price->size).' '.$price->unit->label();
+        $presentation = match (true) {
+            // Mismo texto que entiende parsePresentation() de list-grid.js
+            $price->bulk => 'por '.($price->size == 1 ? $price->unit->label() : $content),
+            $price->pack_qty > 1 => $price->pack_qty.' × '.$content,
+            default => $content,
+        };
 
         return [
             'id' => $price->id,
@@ -91,7 +97,8 @@ class ListGrid
             'pack_qty' => $price->pack_qty,
             'size' => $price->size,
             'unit' => $price->unit->value,
-            'presentation' => $price->pack_qty > 1 ? $price->pack_qty.' × '.$content : $content,
+            'bulk' => $price->bulk,
+            'presentation' => $presentation,
             'base_qty' => $price->base_qty,
             'unit_price' => $price->unit_price,
             'observed_on' => $price->observed_on->format('Y-m-d'),

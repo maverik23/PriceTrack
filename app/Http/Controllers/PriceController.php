@@ -133,6 +133,7 @@ class PriceController extends Controller
 
         $data = $validator->validate();
         $data['pack_qty'] = $data['pack_qty'] ?? 1;
+        $data['bulk'] = $request->boolean('bulk');
         unset($data['item_id'], $data['redirect']);
 
         return $data;
