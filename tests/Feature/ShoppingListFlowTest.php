@@ -67,7 +67,7 @@ class ShoppingListFlowTest extends TestCase
         $this->assertNull($item->fresh()->price_id);
     }
 
-    public function test_estimates_are_normalized_by_unit(): void
+    public function test_estimates_use_the_cheapest_store_for_what_you_need(): void
     {
         $walmart = Provider::create(['name' => 'Walmart']);
         $costco = Provider::create(['name' => 'Costco']);
@@ -79,8 +79,13 @@ class ShoppingListFlowTest extends TestCase
         Price::create($base + ['provider_id' => $walmart->id, 'price' => 30.00, 'pack_qty' => 1]);  // 30/L
         Price::create($base + ['provider_id' => $costco->id, 'price' => 150.00, 'pack_qty' => 6]);  // 25/L
 
-        // Estimado: 2 L × 25 $/L, no 2 × paquete de 6
-        $this->assertEqualsWithDelta(50.00, $item->fresh()->estimatedSubtotal(), 0.001);
+        // Estimado: lo más barato para llevarte 2 L. Costco es más barato por litro (25 $/L)
+        // pero solo vende 6 L ($150); 2 L en Walmart cuestan $60
+        $this->assertEqualsWithDelta(60.00, $item->fresh()->estimatedSubtotal(), 0.001);
+
+        // Con 6 L ya conviene el paquete de Costco
+        $item->update(['quantity' => 6]);
+        $this->assertEqualsWithDelta(150.00, $item->fresh()->estimatedSubtotal(), 0.001);
 
     }
 

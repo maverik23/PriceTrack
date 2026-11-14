@@ -66,14 +66,19 @@ function splitRate(draft) {
     return m ? { price: m[1], pres: 'por ' + m[2] } : draft;
 }
 
+/** Contenido en ml / g / pza para mostrar: "610 g", "1.5 kg", "72 L", "12 pza". */
+function amountText(base, dimension) {
+    base = Math.round(base * 10) / 10;
+    if (dimension === 'count') return `${plain(base)} pza`;
+    const [small, big] = dimension === 'mass' ? ['g', 'kg'] : ['ml', 'L'];
+    return base >= 1000 ? `${plain(base / 1000)} ${big}` : `${plain(base)} ${small}`;
+}
+
 /** Cantidad para mostrar: "2" presentaciones, o el contenido si es fraccionaria ("610 g", "1.5 kg", "12 pza"). */
 function qtyText(row, q, units) {
     const u = units[row.product.unit];
     if (Math.abs(q - Math.round(q)) < 0.0001) return plain(Math.round(q));
-    const base = Math.round(q * row.product.size * u.base * 10) / 10;
-    if (u.dimension === 'count') return `${plain(base)} pza`;
-    const [small, big] = u.dimension === 'mass' ? ['g', 'kg'] : ['ml', 'L'];
-    return base >= 1000 ? `${plain(base / 1000)} ${big}` : `${plain(base)} ${small}`;
+    return amountText(q * row.product.size * u.base, u.dimension);
 }
 
 /**
@@ -182,11 +187,6 @@ export default function listGrid(config) {
         need(row) {
             return this.quantity(row) * this.stdBase(row);
         },
-        needLabel(row) {
-            const q = this.quantity(row);
-            if (Math.abs(q - Math.round(q)) >= 0.0001) return qtyText(row, q, this.units);
-            return Math.round(q) === 1 ? row.product.label : `${Math.round(q)} × ${row.product.label}`;
-        },
         cellValue(row, pid) {
             const draft = this.drafts[this.key(row, pid)];
             if (!draft) return null;
@@ -213,6 +213,30 @@ export default function listGrid(config) {
         bestBuy(row) {
             const vals = this.values(row).map((x) => ({ pid: x.pid, cost: this.costOf(row, x.v) }));
             return vals.length ? vals.reduce((a, b) => (b.cost < a.cost ? b : a)) : null;
+        },
+        isBestBuy(row, pid) {
+            return this.bestBuy(row)?.pid === pid && this.values(row).length > 1;
+        },
+        /** Total de la tarjeta: lo que pagarías en esa tienda por lo que necesitas. */
+        cellTotal(row, pid) {
+            const v = this.cellValue(row, pid);
+            return v ? this.costOf(row, v) : null;
+        },
+        /** Lo que te llevas: "4 paq." o, a granel, el contenido ("1.1 kg"). Nada si es un solo paquete. */
+        takeText(row, pid) {
+            const v = this.cellValue(row, pid);
+            if (!v) return '';
+            if (v.bulk) return amountText(this.need(row), this.units[row.product.unit].dimension);
+            const n = packs(this.need(row), v.base);
+            return n > 1 ? `${n} paq.` : '';
+        },
+        totalTitle(row, pid) {
+            const v = this.cellValue(row, pid);
+            if (!v) return '';
+            const need = amountText(this.need(row), this.units[row.product.unit].dimension);
+            if (v.bulk) return `${need} a granel`;
+            const n = packs(this.need(row), v.base);
+            return `Para ${need}: ${n} × ${money(v.price)}`;
         },
         values(row) {
             return this.providers.map((p) => ({ pid: p.id, v: this.cellValue(row, p.id) })).filter((x) => x.v);
@@ -245,9 +269,9 @@ export default function listGrid(config) {
         subtotal(row) {
             return row.selected ? this.costOf(row, this.selectedValue(row)) : null;
         },
+        /** Pendiente: en la tienda más barata para lo que necesitas (igual que ShoppingListItem::estimatedSubtotal()). */
         estimated(row) {
-            const c = this.cheapest(row);
-            return c ? this.quantity(row) * this.stdBase(row) * c.v.unitPrice : null;
+            return this.bestBuy(row)?.cost ?? null;
         },
         isStale(row, pid) {
             const c = row.cells[pid];
@@ -307,7 +331,7 @@ export default function listGrid(config) {
                 const v = this.cellValue(r, pid);
                 if (v) {
                     covered++;
-                    total += this.quantity(r) * this.stdBase(r) * v.unitPrice;
+                    total += this.costOf(r, v);
                 }
             }
             return { covered, total };

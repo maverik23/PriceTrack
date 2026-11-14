@@ -14,7 +14,7 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
   - Cambia un precio, presiona `Tab` o `Enter` y queda registrado como **precio nuevo con la fecha de la lista**. El historial anterior se conserva.
   - La presentación se escribe tal cual: `6 x 1 L`, `2 x 680 g`, `30 pza`. Si se vende **a granel** (fruta, tortilla, salchichonería) escribe el precio como `54/kg` o `25 por 100 g`.
   - En **Cant.** pones lo que necesitas: `2` (presentaciones) o el contenido, `610 g`. Lo pagado se calcula con los **paquetes completos** que vende cada tienda, o lo justo si es a granel (610 g a $54/kg = $32.94).
-  - Además del más barato por unidad, cada artículo muestra **dónde sale más barato llevarte lo que necesitas**: si necesitas 1 kg y Sam's solo vende 2 kg, quizá conviene Walmart.
+  - Cada tarjeta muestra el **total** de lo que necesitas en esa tienda (ej. 4 paquetes de 18 L = $376.48). El ★ marca el más barato por unidad y el total en verde, dónde sale más barato llevarte lo que necesitas: si necesitas 1 kg y Sam's solo vende 2 kg, quizá conviene Walmart.
   - Si el artículo no existe se crea en el momento, y la presentación se toma del nombre ("Salsa de tomate 345 ml").
   - Marca **dónde lo compraste** y ve cuánto costaría la lista completa en cada tienda y cuánto ahorraste: el ahorro **real** (con los paquetes que hay que comprar) y el ahorro **por unidad**.
   - Copia los artículos de una lista anterior para la despensa de cada semana.
@@ -89,6 +89,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 
 - **Precio por unidad** = precio ÷ (piezas × contenido convertido a ml, g o pza). Se muestra en $/L, $/kg o $/pza.
 - **Más barato** = el menor precio por unidad entre el **último** precio registrado en cada tienda.
+- **Total por tienda y estimados** = lo que pagarías por lo que necesitas con los paquetes de cada tienda (o lo justo a granel). Lo pendiente se estima en la tienda más barata para esa cantidad.
 - **Lo pagado** = los paquetes completos que cubren lo que necesitas (si te falta menos de 10 % de un paquete no se cuenta otro: 946 ml ≈ 1 L), o lo justo si se vende a granel.
 - **Gasto** = lo pagado en los artículos marcados como comprados, en la fecha de la lista. Los promedios usan el gasto por día del periodo real (mínimo una semana).
 - **Ahorro** = *real*: lo que te costaba lo mismo en la tienda más cara, con sus paquetes, menos lo que pagaste; *por unidad*: la diferencia de $/kg, $/L o $/pza por lo que te llevaste.

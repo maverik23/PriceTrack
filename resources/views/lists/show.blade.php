@@ -26,7 +26,7 @@
         <div class="card">
             <div class="stat-label">Estimado total</div>
             <div class="stat-value" x-text="money(totalEstimated)"></div>
-            <div class="mt-1 text-sm text-slate-500">pendientes al más barato por unidad</div>
+            <div class="mt-1 text-sm text-slate-500">pendientes en la tienda más barata para lo que necesitas</div>
         </div>
         <div class="card">
             <div class="stat-label">Ahorro vs. el más caro</div>
@@ -61,16 +61,14 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="sheet w-full border-collapse text-sm" :style="`min-width: ${400 + providers.length * 170}px`">
+            <table class="sheet w-full border-collapse text-sm" :style="`min-width: ${320 + providers.length * 180}px`">
                 <thead class="bg-slate-50 text-xs text-slate-500">
                 <tr>
                     <th class="sticky left-0 z-10 bg-slate-50 px-3 py-2 text-left font-semibold">Artículo</th>
-                    <th class="w-20 px-2 py-2 text-right font-semibold">Cant.</th>
+                    <th class="w-24 min-w-24 px-2 py-2 text-right font-semibold">Cant.</th>
                     <template x-for="p in providers" :key="p.id">
-                        <th class="min-w-40 px-2 py-2 text-right font-semibold text-slate-700" x-text="p.name"></th>
+                        <th class="min-w-44 px-2 py-2 text-right font-semibold text-slate-700" x-text="p.name"></th>
                     </template>
-                    <th class="w-32 px-2 py-2 text-right font-semibold">Más barato</th>
-                    <th class="w-28 px-2 py-2 text-right font-semibold">Subtotal</th>
                     <th class="w-8"></th>
                 </tr>
                 </thead>
@@ -99,7 +97,7 @@
                         </td>
 
                         <template x-for="(p, pi) in providers" :key="p.id">
-                            <td class="min-w-40 px-1 py-1 transition-colors" :class="cellClass(row, p.id)">
+                            <td class="min-w-44 px-1 py-1 transition-colors" :class="cellClass(row, p.id)">
                                 <div class="flex items-center gap-1">
                                     <button type="button" tabindex="-1" class="size-4 shrink-0 rounded-full border transition"
                                             :class="isBought(row, p.id) ? 'border-emerald-600 bg-emerald-600' : (row.cells[p.id] ? 'border-slate-300 bg-white hover:border-emerald-500' : 'invisible')"
@@ -120,31 +118,22 @@
                                           :class="isCheapest(row, p.id) ? 'font-semibold text-emerald-700' : 'text-slate-500'"
                                           x-text="(isCheapest(row, p.id) ? '★ ' : '') + unitText(row, p.id)"></span>
                                 </div>
-                                <div class="flex min-h-3 justify-between gap-1 pl-6 text-[10px] leading-tight">
-                                    <span :class="errors[key(row, p.id)] ? 'text-red-600' : 'text-slate-400'" x-text="cellNote(row, p.id)"></span>
-                                    <span class="text-red-500" x-text="diffText(row, p.id)"></span>
+                                <div class="flex min-h-4 flex-wrap items-baseline justify-between gap-x-1 pl-6 text-[10px] leading-tight">
+                                    <span>
+                                        <span :class="errors[key(row, p.id)] ? 'text-red-600' : 'text-slate-400'" x-text="cellNote(row, p.id)"></span>
+                                        <span class="text-red-500" x-text="diffText(row, p.id)"></span>
+                                    </span>
+                                    {{-- Lo que pagarías aquí por lo que necesitas: paquetes completos o lo justo a granel --}}
+                                    <span x-show="!errors[key(row, p.id)] && cellTotal(row, p.id) !== null" class="ml-auto text-[11px] whitespace-nowrap tabular-nums"
+                                          :title="totalTitle(row, p.id)">
+                                        <span class="text-slate-400" x-text="takeText(row, p.id)"></span>
+                                        <span class="font-semibold" :class="isBestBuy(row, p.id) ? 'text-emerald-700' : 'text-slate-700'"
+                                              x-text="money(cellTotal(row, p.id) ?? 0)"></span>
+                                    </span>
                                 </div>
                             </td>
                         </template>
 
-                        <td class="px-2 py-2 text-right text-xs">
-                            <template x-if="cheapest(row)">
-                                <div>
-                                    <div class="font-semibold text-emerald-700 tabular-nums" x-text="compareText(row, cheapest(row).v)"></div>
-                                    <div class="text-slate-500" x-text="providerName(cheapest(row).pid)"></div>
-                                    {{-- Con paquetes completos para lo que necesitas puede ganar otra tienda --}}
-                                    <div class="mt-1 border-t border-slate-100 pt-1 text-slate-500" title="Lo más barato para llevarte lo que necesitas, con los paquetes que vende cada tienda">
-                                        <span x-text="'Para ' + needLabel(row) + ':'"></span>
-                                        <span class="font-semibold tabular-nums text-slate-700" x-text="money(bestBuy(row).cost)"></span>
-                                        <span x-show="bestBuy(row).pid !== cheapest(row).pid" class="font-medium text-amber-700" x-text="providerName(bestBuy(row).pid)"></span>
-                                    </div>
-                                </div>
-                            </template>
-                        </td>
-                        <td class="px-2 py-2 text-right tabular-nums">
-                            <div x-show="row.selected" class="font-semibold text-slate-900" x-text="money(subtotal(row) ?? 0)"></div>
-                            <div x-show="!row.selected && estimated(row) !== null" class="text-slate-400" x-text="'≈ ' + money(estimated(row) ?? 0)"></div>
-                        </td>
                         <td class="px-1 py-2 text-center">
                             <button type="button" tabindex="-1" class="rounded px-1 text-lg leading-none text-slate-300 hover:bg-red-50 hover:text-red-600"
                                     title="Quitar de la lista" @click="removeRow(row)">×</button>
@@ -156,7 +145,7 @@
                 <tr class="bg-slate-50/50">
                     <td class="sticky left-0 z-10 bg-slate-50 px-3 py-2">
                         <div class="flex gap-1">
-                            <input id="grid-search" type="text" class="input py-1.5" placeholder="+ Artículo o código de barras…"
+                            <input id="grid-search" type="text" class="input py-1.5" placeholder="+ Artículo o código"
                                    autocomplete="off" x-model="search" :disabled="busy"
                                    @input="onSearchInput()" @focus="search && (open = true, place())"
                                    @keydown="onSearchKey($event)" @blur="setTimeout(() => open = false, 150)"
@@ -164,7 +153,7 @@
                             <x-scan-button for="grid-search" tabindex="-1" class="py-1" />
                         </div>
                     </td>
-                    <td :colspan="providers.length + 4" class="px-3 py-2 text-xs text-slate-500">
+                    <td :colspan="providers.length + 2" class="px-3 py-2 text-xs text-slate-500">
                         <template x-if="!creating">
                             <span>↑↓ para elegir, <kbd class="rounded bg-slate-100 px-1">Enter</kbd> para agregar. Si no existe, se crea al momento. También puedes escanear o escribir el código de barras.</span>
                         </template>
@@ -200,7 +189,7 @@
                 <tr>
                     <td colspan="2" class="sticky left-0 z-10 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
                         Todo en un solo lugar
-                        <div class="font-normal text-slate-400">cant. × presentación habitual</div>
+                        <div class="font-normal text-slate-400">lo que necesitas, con los paquetes de cada tienda</div>
                     </td>
                     <template x-for="p in providers" :key="p.id">
                         <td class="px-2 py-2 text-right tabular-nums" :class="isBestBasket(p.id) && 'bg-emerald-50'">
@@ -210,15 +199,16 @@
                                  x-text="basket(p.id).covered + ' de ' + rows.length + ' artículos'"></div>
                         </td>
                     </template>
-                    <td colspan="3"></td>
+                    <td></td>
                 </tr>
                 <tr>
-                    <td colspan="2" class="sticky left-0 z-10 bg-slate-50 px-3 py-2 font-semibold text-slate-600">Comprado aquí</td>
+                    <td colspan="2" class="sticky left-0 z-10 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
+                        Comprado aquí
+                        <div class="font-normal text-slate-500">Total: <span class="font-semibold text-slate-900 tabular-nums" x-text="money(totalPurchased)"></span></div>
+                    </td>
                     <template x-for="p in providers" :key="p.id">
                         <td class="px-2 py-2 text-right text-sm tabular-nums" x-text="boughtAt(p.id) ? money(boughtAt(p.id)) : '—'"></td>
                     </template>
-                    <td class="px-2 py-2 text-right text-slate-500">Total</td>
-                    <td class="px-2 py-2 text-right text-sm font-semibold text-slate-900 tabular-nums" x-text="money(totalPurchased)"></td>
                     <td></td>
                 </tr>
                 </tfoot>
