@@ -90,7 +90,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 - **Precio por unidad** = precio ÷ (piezas × contenido convertido a ml, g o pza). Se muestra en $/L, $/kg o $/pza.
 - **Más barato** = el menor precio por unidad entre el **último** precio registrado en cada tienda.
 - **Total por tienda y estimados** = lo que pagarías por lo que necesitas con los paquetes de cada tienda (o lo justo a granel). Lo pendiente se estima en la tienda más barata para esa cantidad.
-- **Lo pagado** = los paquetes completos que cubren lo que necesitas (si te falta menos de 10 % de un paquete no se cuenta otro: 946 ml ≈ 1 L), o lo justo si se vende a granel.
+- **Lo pagado** = los paquetes completos que cubren lo que necesitas (si te falta menos de 15 % de un paquete no se cuenta otro: 946 ml ≈ 1 L, el bloque de 907 g ≈ 1 kg), o lo justo si se vende a granel.
 - **Gasto** = lo pagado en los artículos marcados como comprados, en la fecha de la lista. Los promedios usan el gasto por día del periodo real (mínimo una semana).
 - **Ahorro** = *real*: lo que te costaba lo mismo en la tienda más cara, con sus paquetes, menos lo que pagaste; *por unidad*: la diferencia de $/kg, $/L o $/pza por lo que te llevaste.
 - **Inflación** = por cada artículo en cada tienda se toma el precio unitario promedio de cada mes, arrastrando el último precio conocido. Luego se encadena la media geométrica de las variaciones mes a mes.
