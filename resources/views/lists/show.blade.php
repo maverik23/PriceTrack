@@ -188,8 +188,8 @@
                 <tfoot class="bg-slate-50 text-xs" x-show="rows.length">
                 <tr>
                     <td colspan="2" class="sticky left-0 z-10 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
-                        Todo en un solo lugar
-                        <div class="font-normal text-slate-400">lo que necesitas, con los paquetes de cada tienda</div>
+                        Total por proveedor
+                        <div class="font-normal text-slate-400">suma de las tarjetas de cada tienda</div>
                     </td>
                     <template x-for="p in providers" :key="p.id">
                         <td class="px-2 py-2 text-right tabular-nums" :class="isBestBasket(p.id) && 'bg-emerald-50'">
@@ -203,7 +203,7 @@
                 </tr>
                 <tr>
                     <td colspan="2" class="sticky left-0 z-10 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
-                        Comprado aquí
+                        Ticket: lo que compraste ahí
                         <div class="font-normal text-slate-500">Total: <span class="font-semibold text-slate-900 tabular-nums" x-text="money(totalPurchased)"></span></div>
                     </td>
                     <template x-for="p in providers" :key="p.id">
