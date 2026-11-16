@@ -68,13 +68,16 @@ class PriceFetcher
             $price = $this->chedrauiRegionalPrice($base, (string) $item['itemId'], $postalCode) ?? $price;
         }
 
-        // Fruta, verdura, carne…: se venden por kg y el precio es por 1 kg
+        // Fruta, verdura, carne…: se venden por kg y el precio es por 1 kg. Lo demás trae
+        // "Contenido del empaque": "1 pieza con 1.8L", "6 piezas de 355 ml"
         $unit = Unit::tryFrom(strtolower((string) ($item['measurementUnit'] ?? '')));
 
         return [
             'price' => round($price, 2),
             'name' => $product['productName'] ?? null,
-            'presentation' => $unit && $unit !== Unit::Item ? ['pack_qty' => 1, 'size' => 1.0, 'unit' => $unit->value, 'bulk' => true] : null,
+            'presentation' => $unit && $unit !== Unit::Item
+                ? ['pack_qty' => 1, 'size' => 1.0, 'unit' => $unit->value, 'bulk' => true]
+                : self::presentation($product['Contenido del empaque'][0] ?? null),
             'source' => 'Chedraui',
         ];
     }
@@ -112,15 +115,31 @@ class PriceFetcher
         }
 
         $data = $this->json($this->get($this->origin($url)."/rest/v2/mexico/products/{$m[1]}", [
-            'fields' => 'code,name,price(value)', 'lang' => 'es_MX', 'curr' => 'MXN',
+            'fields' => 'code,name,price(value),classifications(features(name,featureValues))', 'lang' => 'es_MX', 'curr' => 'MXN',
         ]));
+
+        // Característica "Contenido Neto": "8 pzas de 387 g"
+        $content = collect($data['classifications'] ?? [])->flatMap(fn ($c) => $c['features'] ?? [])
+            ->firstWhere('name', 'Contenido Neto')['featureValues'][0]['value'] ?? null;
 
         return [
             'price' => round((float) ($data['price']['value'] ?? 0), 2),
             'name' => $data['name'] ?? null,
-            'presentation' => null,
+            'presentation' => self::presentation($content),
             'source' => 'Costco',
         ];
+    }
+
+    /**
+     * Piezas, contenido y unidad a partir de un texto de la tienda ("8 pzas de 387 g").
+     *
+     * @return array{pack_qty: int, size: float, unit: string, bulk: bool}|null
+     */
+    public static function presentation(?string $text): ?array
+    {
+        $parsed = BarcodeLookup::parseQuantity($text);
+
+        return $parsed ? ['pack_qty' => $parsed['pack'], 'size' => $parsed['each'], 'unit' => $parsed['unit'], 'bulk' => false] : null;
     }
 
     // ---------- Cualquier otra página ----------

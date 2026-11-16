@@ -121,10 +121,14 @@ class BarcodeLookup
         return $data;
     }
 
+    /** Envases que agrupan piezas: "8 pzas de 375 g", "12 latas de 355 ml", "1 pieza con 1.8L", "6 pack 1 L". */
+    private const PACK_WORDS = 'pzas?|piezas?|latas?|botellas?|paquetes?|bolsas?|sobres?|frascos?|cajas?|envases?|unidades|pack';
+
     /**
-     * Presentación escrita en el empaque: "6 x 355 ml" → 2130 ml, "1,5 kg", "500g", "30 piezas", "12 fl oz"…
+     * Presentación escrita en el empaque: "6 x 355 ml" → 2130 ml, "8 pzas de 375 g", "1,5 kg", "500g", "30 piezas", "12 fl oz"…
      *
-     * @return array{size: float, unit: string, label: string}|null size y unit son el contenido total
+     * @return array{size: float, unit: string, label: string, pack: int, each: float}|null size y unit son el contenido
+     *                                                                                      total; pack y each, las piezas y lo que trae cada una
      */
     public static function parseQuantity(?string $text): ?array
     {
@@ -133,7 +137,8 @@ class BarcodeLookup
 
         // El sistema métrico manda: "355 ml (12 fl oz)" → 355 ml
         foreach ([self::METRIC, self::IMPERIAL] as $units) {
-            $pattern = '/(?:(\d+)\s*[x*]\s*)?(\d+(?:\.\d+)?)\s*('.implode('|', array_keys($units)).')\b/';
+            $pack = '(?:(\d+)\s*(?:[x*]|(?:'.self::PACK_WORDS.')\s*(?:de|con|x)?)\s*)?';
+            $pattern = '/'.$pack.'(\d+(?:\.\d+)?)\s*('.implode('|', array_keys($units)).')\b/';
             if (! preg_match($pattern, $s, $m)) {
                 continue;
             }
@@ -151,6 +156,8 @@ class BarcodeLookup
                 'size' => round($size * $count, 3),
                 'unit' => $unit->value,
                 'label' => $count > 1 ? "{$count} × {$label}" : $label,
+                'pack' => $count,
+                'each' => $size,
             ];
         }
 
