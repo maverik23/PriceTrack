@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Enums\Unit;
 use App\Models\Price;
 use App\Models\Product;
+use App\Models\ProductLink;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
+use App\Services\PriceUpdater;
 use App\Support\Barcode;
 use App\Support\ListGrid;
 use Illuminate\Http\Request;
@@ -126,29 +128,61 @@ class ShoppingListItemController extends Controller
             ]);
         }
 
-        $price = Price::firstOrNew([
-            'product_id' => $product->id,
-            'provider_id' => $data['provider_id'],
-            'shopping_list_id' => $list->id,
-            'observed_on' => $list->priceDate()->toDateString(),
-        ]);
-        $price->fill([
+        $price = Price::record($product, (int) $data['provider_id'], $list, [
             'price' => $data['price'],
             'pack_qty' => $data['pack_qty'] ?? 1,
             'size' => $data['size'],
             'unit' => $unit,
             'bulk' => (bool) ($data['bulk'] ?? false),
-        ])->save();
-
-        // Si ya estaba comprado en ese proveedor, la compra pasa al precio nuevo
-        if ($item->price && $item->price->provider_id === $price->provider_id) {
-            $item->update(['price_id' => $price->id]);
-        }
+        ]);
+        $item->followPrice($price);
 
         return response()->json([
             'price' => ListGrid::price($price, $list),
             'item' => ListGrid::item($item, $list),
         ]);
+    }
+
+    /**
+     * Consulta en línea las tiendas con enlace de este artículo y registra los
+     * precios con la fecha de la lista (como si se capturaran en la hoja).
+     */
+    public function fetchPrices(ShoppingList $list, ShoppingListItem $item, PriceUpdater $updater)
+    {
+        set_time_limit(180);
+        $results = $item->product->links()->with('product')->get()
+            ->map(fn (ProductLink $link) => $this->recordFetched($updater->update($link, $list), $item));
+
+        return $this->fetchedResponse($list, $item, $results->all());
+    }
+
+    /** Guarda el enlace del artículo en una tienda (pegado en la celda) y consulta su precio. */
+    public function saveLink(Request $request, ShoppingList $list, ShoppingListItem $item, PriceUpdater $updater)
+    {
+        $data = $request->validate([
+            'provider_id' => ['required', 'exists:providers,id'],
+            'url' => ['required', 'string', 'max:1000', 'url:https'],
+        ]);
+
+        $link = $item->product->links()->updateOrCreate(['provider_id' => $data['provider_id']], ['url' => $data['url'], 'error' => null]);
+
+        return $this->fetchedResponse($list, $item, [$this->recordFetched($updater->update($link, $list), $item)]);
+    }
+
+    private function recordFetched(array $result, ShoppingListItem $item): array
+    {
+        if ($result['price']) {
+            $item->followPrice($result['price']);
+        }
+
+        return ['provider_id' => $result['provider_id'], 'ok' => $result['ok'], 'message' => $result['message']];
+    }
+
+    private function fetchedResponse(ShoppingList $list, ShoppingListItem $item, array $results)
+    {
+        $item->refresh()->load(['product.prices', 'product.links', 'price']);
+
+        return response()->json(['row' => ListGrid::row($item, $list), 'results' => $results]);
     }
 
     /**

@@ -52,6 +52,7 @@ class ShoppingListController extends Controller
         $list->load([
             'items' => fn ($q) => $q->orderBy('id'),
             'items.product.prices',
+            'items.product.links',
             'items.price',
         ]);
 

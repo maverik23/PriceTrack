@@ -49,6 +49,50 @@
     </div>
 </div>
 
+{{-- Página del artículo en cada tienda: el botón consulta el precio de hoy --}}
+<div class="card mb-6">
+    <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div>
+            <h2 class="card-title">Precios en línea</h2>
+            <p class="text-xs text-slate-500">
+                Pega la dirección del artículo en la página de cada tienda.
+                Código postal: <a class="link" href="{{ route('providers.index') }}">{{ $postalCode ?: 'sin definir' }}</a>.
+                Walmart, Sam's, Soriana y Amazon suelen bloquear la consulta automática.
+            </p>
+        </div>
+        <form method="POST" action="{{ route('products.prices.fetch', $product) }}">
+            @csrf
+            <button class="btn btn-primary btn-sm" @disabled($links->isEmpty())>Obtener precios</button>
+        </form>
+    </div>
+    <form method="POST" action="{{ route('products.links.update', $product) }}" class="space-y-2">
+        @csrf @method('PUT')
+        @foreach ($providers as $provider)
+            @php($link = $links->get($provider->id))
+            <div class="grid grid-cols-1 gap-1 sm:grid-cols-[9rem_1fr] sm:items-start sm:gap-3">
+                <label class="pt-2 text-sm font-medium text-slate-700" for="link-{{ $provider->id }}">{{ $provider->name }}</label>
+                <div class="min-w-0">
+                    <div class="flex gap-2">
+                        <input id="link-{{ $provider->id }}" name="links[{{ $provider->id }}]" type="url" class="input"
+                               value="{{ old('links.'.$provider->id, $link?->url) }}" placeholder="https://…">
+                        @if ($link)
+                            <a href="{{ $link->url }}" target="_blank" rel="noopener" class="btn btn-ghost shrink-0" title="Abrir la página en la tienda">↗</a>
+                        @endif
+                    </div>
+                    @if ($link?->checked_at)
+                        <p class="mt-0.5 text-xs {{ $link->error ? 'text-red-600' : 'text-slate-500' }}">
+                            {{ $link->error ?: 'Consultado '.$link->checked_at->diffForHumans() }}
+                        </p>
+                    @endif
+                </div>
+            </div>
+        @endforeach
+        <div class="flex justify-end">
+            <button class="btn btn-secondary btn-sm">Guardar enlaces</button>
+        </div>
+    </form>
+</div>
+
 <div class="card mb-6">
     <h2 class="card-title mb-3">Agregar precio</h2>
     @include('prices._quick', ['product' => $product, 'providers' => $providers])

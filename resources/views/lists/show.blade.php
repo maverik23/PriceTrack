@@ -13,7 +13,14 @@
             <h1 class="text-2xl font-semibold text-slate-900">{{ $list->name }}</h1>
             <p class="text-sm text-slate-500">{{ ucfirst($list->shopped_on->translatedFormat('l d \d\e F Y')) }} @if ($list->notes) · {{ $list->notes }} @endif</p>
         </div>
-        <a href="{{ route('lists.edit', $list) }}" class="btn btn-secondary">Editar lista</a>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <span class="text-xs text-slate-500" x-text="fetchStatus"></span>
+            <button type="button" class="btn btn-primary" :disabled="fetching" @click="fetchAll()"
+                    title="Consulta en línea las tiendas donde el artículo tiene enlace y guarda los precios de hoy">
+                <span x-text="fetching ? 'Consultando…' : 'Obtener precios'"></span>
+            </button>
+            <a href="{{ route('lists.edit', $list) }}" class="btn btn-secondary">Editar lista</a>
+        </div>
     </div>
 
     {{-- Resumen (se recalcula en vivo) --}}
@@ -53,6 +60,7 @@
                 Escribe y usa <kbd class="rounded bg-slate-100 px-1">Tab</kbd> / <kbd class="rounded bg-slate-100 px-1">Enter</kbd> / <kbd class="rounded bg-slate-100 px-1">↑↓</kbd>.
                 <kbd class="rounded bg-slate-100 px-1">Enter</kbd> sobre un precio anterior lo confirma para esta fecha; borrarlo deshace lo capturado hoy.
                 En <strong class="text-slate-700">Cant.</strong> pon lo que necesitas (<code>2</code> o <code>610 g</code>). Si se vende a granel escribe el precio como <code>54/kg</code>.
+                Pega en una celda la dirección del artículo en esa tienda para consultar su precio en línea.
             </p>
             <p class="flex items-center gap-3 whitespace-nowrap">
                 <span class="flex items-center gap-1"><span class="size-3 rounded-full bg-emerald-600"></span> comprado aquí</span>
@@ -104,6 +112,8 @@
                                             :class="isBought(row, p.id) ? 'border-emerald-600 bg-emerald-600' : (row.cells[p.id] ? 'border-slate-300 bg-white hover:border-emerald-500' : 'invisible')"
                                             :title="isBought(row, p.id) ? 'Comprado aquí (clic para desmarcar)' : 'Marcar como comprado aquí'"
                                             @click="toggleBuy(row, p.id)"></button>
+                                    <a x-show="row.links[p.id]" :href="row.links[p.id]" target="_blank" rel="noopener" tabindex="-1"
+                                       class="shrink-0 text-xs text-slate-300 hover:text-emerald-600" title="Abrir el artículo en la tienda">↗</a>
                                     <input type="text" inputmode="decimal" placeholder="—" class="cell-input"
                                            :class="isStale(row, p.id) ? 'text-slate-400' : 'font-medium text-slate-900'"
                                            :data-cell="ri + '-' + (pi + 1)" :aria-label="'Precio en ' + p.name"

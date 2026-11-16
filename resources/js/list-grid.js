@@ -100,7 +100,9 @@ function guessPresentation(name) {
 }
 
 export default function listGrid(config) {
-    const rows = config.rows.map((row) => ({ ...row, cells: Array.isArray(row.cells) ? {} : row.cells }));
+    // PHP manda [] en lugar de {} cuando no hay celdas o enlaces
+    const asObject = (v) => (Array.isArray(v) || !v ? {} : v);
+    const rows = config.rows.map((row) => ({ ...row, cells: asObject(row.cells), links: asObject(row.links) }));
     const products = config.products.map((p) => ({ ...p, _s: norm([p.name, p.brand, p.category].join(' ')) }));
 
     const drafts = {};
@@ -130,6 +132,8 @@ export default function listGrid(config) {
         dropStyle: {},
         creating: null,
         busy: false,
+        fetching: false,
+        fetchStatus: '',
         money,
 
         // ---------- utilidades ----------
@@ -348,6 +352,12 @@ export default function listGrid(config) {
             const saved = row.cells[pid];
             delete this.errors[k];
 
+            // Se pegó la dirección del artículo en esa tienda: guardarla y consultar su precio
+            const pasted = (d.price ?? '').toString().trim();
+            if (/^https?:\/\//i.test(pasted)) {
+                return this.track(k, this.saveLink(row, pid, pasted));
+            }
+
             if ((d.price ?? '').toString().trim() === '') {
                 if (saved && saved.list_id === this.listId && saved.current) {
                     return this.track(k, this.removePrice(row, pid, saved));
@@ -430,6 +440,54 @@ export default function listGrid(config) {
                 this.flash(k);
             }));
         },
+        // ---------- precios en línea ----------
+        /** Respuesta de una consulta en línea: celdas, enlaces y compra al día; error por tienda si falló. */
+        applyFetched(row, res) {
+            row.cells = asObject(res.row.cells);
+            row.links = asObject(res.row.links);
+            row.price_id = res.row.price_id;
+            row.selected = res.row.selected;
+            for (const r of res.results) {
+                const k = this.key(row, r.provider_id);
+                this.syncCell(row, r.provider_id);
+                if (r.ok) {
+                    delete this.errors[k];
+                    this.flash(k);
+                } else {
+                    this.errors[k] = r.message;
+                }
+            }
+        },
+        async saveLink(row, pid, url) {
+            const res = await this.request('POST', `${this.urls.items}/${row.id}/links`, { provider_id: pid, url });
+            this.applyFetched(row, res);
+        },
+        /** Consulta, artículo por artículo, las tiendas donde tiene enlace. */
+        async fetchAll() {
+            const rows = this.rows.filter((r) => Object.keys(r.links).length);
+            if (!rows.length) {
+                this.fetchStatus = 'Ningún artículo tiene enlace: pega en una celda la dirección del artículo en esa tienda.';
+                return;
+            }
+            this.fetching = true;
+            let ok = 0;
+            let failed = 0;
+            for (const [i, row] of rows.entries()) {
+                this.fetchStatus = `Consultando ${i + 1} de ${rows.length}: ${row.product.name}…`;
+                try {
+                    const res = await this.request('POST', `${this.urls.items}/${row.id}/prices/fetch`);
+                    this.applyFetched(row, res);
+                    ok += res.results.filter((r) => r.ok).length;
+                    failed += res.results.filter((r) => !r.ok).length;
+                } catch {
+                    failed += Object.keys(row.links).length;
+                }
+            }
+            this.fetching = false;
+            this.fetchStatus = `${ok} ${ok === 1 ? 'precio actualizado' : 'precios actualizados'}`
+                + (failed ? ` · ${failed} sin respuesta (en rojo en su celda)` : '');
+        },
+
         async removeRow(row) {
             if (!confirm(`¿Quitar «${row.product.name}» de la lista?`)) return;
             await this.request('DELETE', `${this.urls.items}/${row.id}`);
@@ -598,7 +656,7 @@ export default function listGrid(config) {
                 if (res.product && !this.products.some((p) => p.id === res.product.id)) {
                     this.products.push({ ...res.product, _s: norm([res.product.name, res.product.brand, res.product.category].join(' ')) });
                 }
-                const row = { ...res.row, cells: Array.isArray(res.row.cells) ? {} : res.row.cells };
+                const row = { ...res.row, cells: asObject(res.row.cells), links: asObject(res.row.links) };
                 let index = this.rows.findIndex((r) => r.id === row.id);
                 if (index < 0) {
                     this.qty[row.id] = qtyText(row, row.quantity, this.units);

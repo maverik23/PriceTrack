@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Unit;
 use App\Models\Product;
 use App\Models\Provider;
+use App\Models\Setting;
 use App\Models\ShoppingList;
 use App\Services\BarcodeLookup;
 use App\Support\Barcode;
@@ -130,6 +131,8 @@ class ProductController extends Controller
                 : null,
             'series' => $series,
             'providers' => Provider::orderBy('name')->get(),
+            'links' => $product->links()->get()->keyBy('provider_id'),
+            'postalCode' => Setting::value(Setting::POSTAL_CODE),
         ]);
     }
 
