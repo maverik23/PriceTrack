@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Unit;
 use App\Models\Product;
+use App\Models\ProductLink;
 use App\Models\Provider;
 use App\Models\Setting;
 use App\Models\ShoppingList;
@@ -21,7 +22,7 @@ class ProductController extends Controller
     {
         // Buscar (o escanear) un código de barras lleva directo al artículo
         $barcode = Barcode::fromSearch($request->input('q'));
-        if ($barcode && $match = Product::firstWhere('barcode', $barcode)) {
+        if ($barcode && $match = Product::findByBarcode($barcode)) {
             return redirect()->route('products.show', $match);
         }
 
@@ -64,7 +65,7 @@ class ProductController extends Controller
         $request->merge(['barcode' => Barcode::normalize($request->input('barcode'))]);
         $code = $request->validate(['barcode' => ['required', Barcode::RULE]])['barcode'];
 
-        $product = Product::firstWhere('barcode', $code);
+        $product = Product::findByBarcode($code);
         $suggestion = null;
         $error = null;
 
@@ -132,6 +133,7 @@ class ProductController extends Controller
             'series' => $series,
             'providers' => Provider::orderBy('name')->get(),
             'links' => $product->links()->get()->keyBy('provider_id'),
+            'brands' => Product::distinctValues('brand')->merge(ProductLink::whereNotNull('brand')->distinct()->pluck('brand'))->unique()->sort()->values(),
             'postalCode' => Setting::value(Setting::POSTAL_CODE),
         ]);
     }

@@ -49,46 +49,62 @@
     </div>
 </div>
 
-{{-- Página del artículo en cada tienda: el botón consulta el precio de hoy --}}
+{{-- El artículo en cada tienda: su marca y código ahí, y la página para consultar el precio de hoy --}}
 <div class="card mb-6">
     <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>
-            <h2 class="card-title">Precios en línea</h2>
+            <h2 class="card-title">En cada tienda</h2>
             <p class="text-xs text-slate-500">
-                Pega la dirección del artículo en la página de cada tienda.
+                Cada tienda puede vender otra marca o presentación. Pega la dirección del artículo en su página y
+                «Obtener precios» trae el precio, la presentación, la marca y el código.
                 Código postal: <a class="link" href="{{ route('providers.index') }}">{{ $postalCode ?: 'sin definir' }}</a>.
-                Walmart, Sam's, Soriana y Amazon suelen bloquear la consulta automática.
             </p>
         </div>
         <form method="POST" action="{{ route('products.prices.fetch', $product) }}">
             @csrf
-            <button class="btn btn-primary btn-sm" @disabled($links->isEmpty())>Obtener precios</button>
+            <button class="btn btn-primary btn-sm" @disabled($links->whereNotNull('url')->isEmpty())>Obtener precios</button>
         </form>
     </div>
-    <form method="POST" action="{{ route('products.links.update', $product) }}" class="space-y-2">
+    <form method="POST" action="{{ route('products.links.update', $product) }}" class="space-y-3">
         @csrf @method('PUT')
+        <datalist id="store-brands">
+            @foreach ($brands as $brand)
+                <option value="{{ $brand }}">
+            @endforeach
+        </datalist>
+        <div class="hidden gap-3 text-xs font-medium text-slate-500 lg:grid lg:grid-cols-[8rem_10rem_11rem_1fr]">
+            <span>Tienda</span><span>Marca</span><span>Código de barras</span><span>Página del artículo</span>
+        </div>
         @foreach ($providers as $provider)
             @php($link = $links->get($provider->id))
-            <div class="grid grid-cols-1 gap-1 sm:grid-cols-[9rem_1fr] sm:items-start sm:gap-3">
-                <label class="pt-2 text-sm font-medium text-slate-700" for="link-{{ $provider->id }}">{{ $provider->name }}</label>
-                <div class="min-w-0">
+            @php($id = 'store-'.$provider->id)
+            <div class="grid grid-cols-1 gap-2 border-t border-slate-100 pt-3 sm:grid-cols-2 lg:grid-cols-[8rem_10rem_11rem_1fr] lg:items-start lg:gap-3 lg:border-0 lg:pt-0">
+                <div class="pt-2 text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-1">{{ $provider->name }}</div>
+                <input name="stores[{{ $provider->id }}][brand]" list="store-brands" class="input" aria-label="Marca en {{ $provider->name }}"
+                       value="{{ old('stores.'.$provider->id.'.brand', $link?->brand) }}" placeholder="Marca">
+                <div class="flex gap-1">
+                    <input id="{{ $id }}-barcode" name="stores[{{ $provider->id }}][barcode]" class="input font-mono" inputmode="numeric"
+                           aria-label="Código de barras en {{ $provider->name }}" value="{{ old('stores.'.$provider->id.'.barcode', $link?->barcode) }}" placeholder="Código">
+                    <x-scan-button for="{{ $id }}-barcode" tabindex="-1" />
+                </div>
+                <div class="min-w-0 sm:col-span-2 lg:col-span-1">
                     <div class="flex gap-2">
-                        <input id="link-{{ $provider->id }}" name="links[{{ $provider->id }}]" type="url" class="input"
-                               value="{{ old('links.'.$provider->id, $link?->url) }}" placeholder="https://…">
-                        @if ($link)
+                        <input name="stores[{{ $provider->id }}][url]" type="url" class="input" aria-label="Página del artículo en {{ $provider->name }}"
+                               value="{{ old('stores.'.$provider->id.'.url', $link?->url) }}" placeholder="https://…">
+                        @if ($link?->url)
                             <a href="{{ $link->url }}" target="_blank" rel="noopener" class="btn btn-ghost shrink-0" title="Abrir la página en la tienda">↗</a>
                         @endif
                     </div>
-                    @if ($link?->checked_at)
+                    @if ($link?->store_name || $link?->checked_at)
                         <p class="mt-0.5 text-xs {{ $link->error ? 'text-red-600' : 'text-slate-500' }}">
-                            {{ $link->error ?: 'Consultado '.$link->checked_at->diffForHumans() }}
+                            {{ $link->error ?: collect([$link->store_name, $link->sku ? 'código '.$link->sku : null, $link->checked_at ? 'consultado '.$link->checked_at->diffForHumans() : null])->filter()->join(' · ') }}
                         </p>
                     @endif
                 </div>
             </div>
         @endforeach
         <div class="flex justify-end">
-            <button class="btn btn-secondary btn-sm">Guardar enlaces</button>
+            <button class="btn btn-secondary btn-sm">Guardar</button>
         </div>
     </form>
 </div>

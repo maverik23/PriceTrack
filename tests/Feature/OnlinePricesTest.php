@@ -36,7 +36,7 @@ class OnlinePricesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.price_fetch.resolve_hosts' => false]);
+        config(['services.price_fetch.resolve_hosts' => false, 'services.price_fetch.browser_url' => null]);
         Http::preventStrayRequests();
         $this->chedraui = Provider::create(['name' => 'Chedraui']);
         $this->costco = Provider::create(['name' => 'Costco']);
@@ -47,9 +47,10 @@ class OnlinePricesTest extends TestCase
     {
         $product = fn (string $name, string $sku, string $unit, float $multiplier, ?string $content = null) => [[
             'productName' => $name,
+            'brand' => 'LALA',
             'Contenido del empaque' => $content ? [$content] : null,
             'items' => [[
-                'itemId' => $sku, 'measurementUnit' => $unit, 'unitMultiplier' => $multiplier,
+                'itemId' => $sku, 'ean' => '7501020547047', 'measurementUnit' => $unit, 'unitMultiplier' => $multiplier,
                 'sellers' => [['sellerId' => '1', 'commertialOffer' => ['Price' => $general, 'ListPrice' => 46.0, 'AvailableQuantity' => 99999]]],
             ]],
         ]];
@@ -168,7 +169,7 @@ class OnlinePricesTest extends TestCase
         Setting::put(Setting::POSTAL_CODE, '06600');
         $milk = Product::create(['name' => 'Leche', 'size' => 1, 'unit' => 'l']);
 
-        $this->put(route('products.links.update', $milk), ['links' => [$this->chedraui->id => self::MILK, $this->costco->id => self::COSTCO]])
+        $this->put(route('products.links.update', $milk), ['stores' => [$this->chedraui->id => ['url' => self::MILK], $this->costco->id => ['url' => self::COSTCO]]])
             ->assertSessionHasNoErrors();
         $this->assertSame(2, $milk->links()->count());
 
@@ -182,11 +183,11 @@ class OnlinePricesTest extends TestCase
         $this->assertNotNull(ProductLink::where('provider_id', $this->costco->id)->value('error'));
 
         // Quitar un enlace
-        $this->put(route('products.links.update', $milk), ['links' => [$this->chedraui->id => self::MILK, $this->costco->id => '']]);
+        $this->put(route('products.links.update', $milk), ['stores' => [$this->chedraui->id => ['url' => self::MILK], $this->costco->id => ['url' => '']]]);
         $this->assertSame(1, $milk->links()->count());
 
-        $this->put(route('products.links.update', $milk), ['links' => [$this->chedraui->id => 'http://inseguro.com/x']])
-            ->assertSessionHasErrors('links.'.$this->chedraui->id);
+        $this->put(route('products.links.update', $milk), ['stores' => [$this->chedraui->id => ['url' => 'http://inseguro.com/x']]])
+            ->assertSessionHasErrors('stores.'.$this->chedraui->id.'.url');
     }
 
     public function test_presentation_comes_from_the_store_data(): void
@@ -261,6 +262,93 @@ class OnlinePricesTest extends TestCase
 
         $this->postJson(route('lists.items.links.store', [$list, $item]), ['provider_id' => $this->costco->id, 'url' => 'no es un enlace'])
             ->assertUnprocessable()->assertJsonValidationErrors('url');
+    }
+
+    public function test_fetching_saves_the_brand_and_codes_of_each_store(): void
+    {
+        $this->fakeChedraui();
+        Http::fake([
+            'www.costco.com.mx/*' => Http::response(['code' => '581645', 'name' => 'Leche 6 x 1 L', 'price' => ['value' => 150.0],
+                'classifications' => [['features' => [['name' => 'Marca', 'featureValues' => [['value' => 'Kirkland Signature']]]]]]]),
+            'www.homedepot.com.mx/*' => Http::response('<script type="application/ld+json">'.json_encode([
+                '@type' => 'Product', 'name' => 'Agua Bonafont 1.5 L', 'brand' => ['@type' => 'Thing', 'name' => 'Bonafont'],
+                'gtin13' => '7501055900084', 'sku' => '245933', 'offers' => ['price' => 15]]).'</script>'),
+        ]);
+        Product::create(['name' => 'Queso', 'brand' => 'Lala', 'size' => 1, 'unit' => 'kg']);
+        $depot = Provider::create(['name' => 'Home Depot']);
+        $milk = Product::create(['name' => 'Leche', 'size' => 1, 'unit' => 'l']);
+        foreach ([[$this->chedraui, self::MILK], [$this->costco, self::COSTCO], [$depot, 'https://www.homedepot.com.mx/p/agua-245933']] as [$provider, $url]) {
+            $milk->links()->create(['provider_id' => $provider->id, 'url' => $url]);
+        }
+
+        $this->post(route('products.prices.fetch', $milk))->assertSessionHasNoErrors();
+
+        $stores = $milk->links()->orderBy('provider_id')->get()->keyBy('provider_id');
+        $this->assertSame(['Lala', '7501020547047', '3371188', 'Leche Entera Lala Fresca Plástico 1.8L'], // "LALA" → la marca ya existente
+            [$stores[$this->chedraui->id]->brand, $stores[$this->chedraui->id]->barcode, $stores[$this->chedraui->id]->sku, $stores[$this->chedraui->id]->store_name]);
+        $this->assertSame(['Kirkland Signature', null, '581645'], [$stores[$this->costco->id]->brand, $stores[$this->costco->id]->barcode, $stores[$this->costco->id]->sku]);
+        $this->assertSame(['Bonafont', '7501055900084', '245933'], [$stores[$depot->id]->brand, $stores[$depot->id]->barcode, $stores[$depot->id]->sku]);
+    }
+
+    public function test_each_store_can_have_its_own_brand_and_barcode_without_a_link(): void
+    {
+        $water = Product::create(['name' => 'Agua', 'size' => 1.5, 'unit' => 'l']);
+        $walmart = Provider::create(['name' => 'Walmart']);
+
+        $this->put(route('products.links.update', $water), ['stores' => [
+            $walmart->id => ['brand' => 'Bonafont', 'barcode' => ' 7501055 900084 ', 'url' => ''],
+            $this->costco->id => ['brand' => 'Kirkland', 'barcode' => '', 'url' => ''],
+            $this->chedraui->id => ['brand' => '', 'barcode' => '', 'url' => ''],
+        ]])->assertSessionHasNoErrors();
+
+        $this->assertSame(['Bonafont', '7501055900084', null], [$water->links()->firstWhere('provider_id', $walmart->id)->brand,
+            $water->links()->firstWhere('provider_id', $walmart->id)->barcode, $water->links()->firstWhere('provider_id', $walmart->id)->url]);
+        $this->assertSame(2, $water->links()->count(), 'Una tienda sin datos no se guarda');
+
+        // Escanear el código de la versión de Walmart encuentra el artículo
+        $this->get(route('products.index', ['q' => '7501055900084']))->assertRedirect(route('products.show', $water));
+        $this->getJson(route('products.lookup', ['barcode' => '7501055900084']))->assertJsonPath('product.id', $water->id);
+        $list = ShoppingList::create(['name' => 'Despensa', 'shopped_on' => today()]);
+        $this->postJson(route('lists.items.store', $list), ['name' => 'Agua', 'size' => 1, 'unit' => 'l', 'barcode' => '7501055900084'])
+            ->assertJsonPath('row.product.id', $water->id)
+            ->assertJsonPath('row.stores.'.$walmart->id.'.brand', 'Bonafont')
+            ->assertJsonPath('product.barcodes', ['7501055900084']);
+        $this->assertSame(1, Product::count(), 'No se duplicó el artículo');
+
+        $this->put(route('products.links.update', $water), ['stores' => [$walmart->id => ['barcode' => '12ab']]])
+            ->assertSessionHasErrors('stores.'.$walmart->id.'.barcode');
+    }
+
+    public function test_stores_that_block_programs_are_read_with_the_real_browser(): void
+    {
+        config(['services.price_fetch.browser_url' => 'http://browser:3000']);
+        $walmartPage = '<script type="application/ld+json">'.json_encode(['@type' => 'Product', 'name' => 'Leche Lala entera 1 l',
+            'brand' => ['@type' => 'Brand', 'name' => 'LALA'], 'gtin13' => '00750102051534', 'offers' => [['price' => 37]]]).'</script>';
+        Http::fake([
+            'browser:3000/html?url=https%3A%2F%2Fwww.walmart.com.mx*' => Http::response($walmartPage, 200, ['X-Final-Url' => 'https://www.walmart.com.mx/ip/leche/00750102051534']),
+            'browser:3000/html?url=https%3A%2F%2Fwww.sams.com.mx*' => Http::response('<title>Verifica tu identidad</title>', 200, ['X-Final-Url' => 'https://www.sams.com.mx/blocked?url=x']),
+            'browser:3000/html?url=https%3A%2F%2Ftienda.example.com*' => Http::response('<meta property="product:price:amount" content="99.50"><title>Arroz 1 kg</title>'),
+            'tienda.example.com/*' => Http::response('<div id="cf-error-details"></div>', 403),
+        ]);
+
+        // Walmart va directo al navegador (no se intenta antes sin él)
+        $found = $this->fetch('https://www.walmart.com.mx/ip/leche/00750102051534');
+        $this->assertSame([37.0, 'LALA', '00750102051534'], [$found['price'], $found['brand'], $found['barcode']]);
+        Http::assertNotSent(fn (Request $r) => str_starts_with($r->url(), 'https://www.walmart.com.mx'));
+
+        // Si aun así la tienda pide "Mantén presionado", se informa
+        $this->assertStringContainsString('aun con el navegador', $this->fetchError('https://www.sams.com.mx/ip/leche/1'));
+
+        // Cualquier otra tienda que bloquee se reintenta con el navegador
+        $this->assertSame(99.5, $this->fetch('https://tienda.example.com/arroz')['price']);
+    }
+
+    public function test_without_the_browser_blocked_stores_are_reported(): void
+    {
+        config(['services.price_fetch.browser_url' => null]);
+        Http::fake(['www.walmart.com.mx/*' => Http::response(['appId' => 'PXAFlYiz9n'], 412)]);
+
+        $this->assertSame('Bloqueado por la tienda (anti-bots).', $this->fetchError('https://www.walmart.com.mx/ip/leche/1'));
     }
 
     public function test_postal_code_is_a_global_setting(): void

@@ -24,7 +24,8 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
 - **Precios en línea.** Pega la dirección del artículo en la página de cada tienda (en su ficha o directo en la celda de la lista) y con **Obtener precios** se guardan los precios de hoy.
   - Funciona con **Chedraui** (con el precio de tu zona según el código postal que pongas en Proveedores), **Costco** y **Home Depot** (precio de su tienda por defecto).
   - También toma la **presentación** de la tienda (piezas, contenido y unidad: "8 pzas de 387 g", "1.8 L", "por kg"), de sus datos o del nombre del producto.
-  - **Walmart, Sam's, Soriana y Amazon** bloquean las consultas automáticas: la app lo marca y capturas el precio a mano.
+  - **Walmart, Sam's y Amazon** bloquean a los programas, así que se abren con un **navegador real** que corre en tu servidor (contenedor `browser`: Chromium con ventana en una pantalla virtual). Soriana puede seguir bloqueando; si una tienda no deja, la app lo marca y capturas el precio a mano.
+  - Cada tienda vende su propia versión del artículo: en la ficha ("En cada tienda") y en la tarjeta de la hoja ves la **marca**, el **código de barras** y el nombre que usa cada tienda. Al obtener precios se llenan solos; también puedes escribirlos o escanear el código.
 - **Historial de precios** por artículo y tienda, con gráfica del precio por unidad en el tiempo.
 - **Reportes:**
   - **Gasto promedio** semanal, mensual y anual, con desglose por mes, semana, año, tienda y categoría.
@@ -45,6 +46,8 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 Abre `http://<tu-servidor>:8090`. En el primer arranque se crean las tablas y las tiendas por defecto (Sam's Club, Costco, Walmart y Amazon).
 
+El stack trae tres contenedores: la app, MySQL y `browser` (Chromium para leer precios de las tiendas que bloquean a los programas; no publica puertos). La primera construcción de `browser` descarga Chromium y tarda unos minutos.
+
 Variables opcionales (en un `.env` junto al compose, o en Portainer):
 
 | Variable | Default | Para qué |
@@ -55,6 +58,7 @@ Variables opcionales (en un `.env` junto al compose, o en Portainer):
 | `DB_PASSWORD` | `pricetrack` | Contraseña de MySQL (cámbiala si el servidor es accesible desde fuera) |
 | `APP_KEY` | *(se genera sola)* | Si no la defines, se genera una vez y se guarda en el volumen |
 | `BARCODE_LOOKUP` | `true` | `false` para no consultar internet al buscar un código de barras |
+| `PRICE_FETCH_BROWSER_URL` | `http://browser:3000` | Navegador para Walmart, Sam's, Amazon; vacío para no usarlo |
 
 ### Portainer
 

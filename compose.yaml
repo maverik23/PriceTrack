@@ -48,6 +48,16 @@ services:
                 - '-p${DB_PASSWORD}'
             retries: 3
             timeout: 5s
+    # Navegador real para leer precios de tiendas que bloquean a los programas (docker/browser)
+    browser:
+        build:
+            context: ./docker/browser
+        image: pricetrack-browser
+        shm_size: 1gb
+        environment:
+            TZ: '${APP_TIMEZONE:-America/Mexico_City}'
+        networks:
+            - sail
 networks:
     sail:
         driver: bridge

@@ -88,6 +88,12 @@ function qtyText(row, q, units) {
 function normalizeBarcode(text) {
     let code = (text || '').toString().replace(/[\s-]+/g, '');
     if (!/^\d{6,14}$/.test(code)) return null;
+    // EAN mexicano sin dígito verificador ("00750102051534", "750102052606"): se completa
+    const significant = code.replace(/^0+/, '');
+    if (significant.length === 12 && significant.startsWith('750')) {
+        const sum = [...significant].reverse().reduce((s, d, i) => s + Number(d) * (i % 2 === 0 ? 3 : 1), 0);
+        return significant + ((10 - (sum % 10)) % 10);
+    }
     if (code.length === 12) code = '0' + code;
     else if (code.length === 14 && code[0] === '0') code = code.slice(1);
     return code;
@@ -102,7 +108,7 @@ function guessPresentation(name) {
 export default function listGrid(config) {
     // PHP manda [] en lugar de {} cuando no hay celdas o enlaces
     const asObject = (v) => (Array.isArray(v) || !v ? {} : v);
-    const rows = config.rows.map((row) => ({ ...row, cells: asObject(row.cells), links: asObject(row.links) }));
+    const rows = config.rows.map((row) => ({ ...row, cells: asObject(row.cells), links: asObject(row.links), stores: asObject(row.stores) }));
     const products = config.products.map((p) => ({ ...p, _s: norm([p.name, p.brand, p.category].join(' ')) }));
 
     const drafts = {};
@@ -445,6 +451,7 @@ export default function listGrid(config) {
         applyFetched(row, res) {
             row.cells = asObject(res.row.cells);
             row.links = asObject(res.row.links);
+            row.stores = asObject(res.row.stores);
             row.price_id = res.row.price_id;
             row.selected = res.row.selected;
             for (const r of res.results) {
@@ -531,7 +538,7 @@ export default function listGrid(config) {
             const code = normalizeBarcode(q);
             const inList = new Set(this.rows.map((r) => r.product.id));
             return this.products
-                .filter((p) => (code ? p.barcode === code : words.every((w) => p._s.includes(w))))
+                .filter((p) => (code ? (p.barcodes ?? [p.barcode]).includes(code) : words.every((w) => p._s.includes(w))))
                 .slice(0, 8)
                 .map((p) => ({ ...p, inList: inList.has(p.id) }));
         },
@@ -656,7 +663,7 @@ export default function listGrid(config) {
                 if (res.product && !this.products.some((p) => p.id === res.product.id)) {
                     this.products.push({ ...res.product, _s: norm([res.product.name, res.product.brand, res.product.category].join(' ')) });
                 }
-                const row = { ...res.row, cells: asObject(res.row.cells), links: asObject(res.row.links) };
+                const row = { ...res.row, cells: asObject(res.row.cells), links: asObject(res.row.links), stores: asObject(res.row.stores) };
                 let index = this.rows.findIndex((r) => r.id === row.id);
                 if (index < 0) {
                     this.qty[row.id] = qtyText(row, row.quantity, this.units);
