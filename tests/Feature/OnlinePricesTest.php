@@ -45,8 +45,9 @@ class OnlinePricesTest extends TestCase
     /** Catálogo VTEX + regiones + simulación del carrito, como responde chedraui.com.mx. */
     private function fakeChedraui(float $general = 46.0, int $regional = 4100): void
     {
-        $product = fn (string $name, string $sku, string $unit, float $multiplier) => [[
+        $product = fn (string $name, string $sku, string $unit, float $multiplier, ?string $content = null) => [[
             'productName' => $name,
+            'Contenido del empaque' => $content ? [$content] : null,
             'items' => [[
                 'itemId' => $sku, 'measurementUnit' => $unit, 'unitMultiplier' => $multiplier,
                 'sellers' => [['sellerId' => '1', 'commertialOffer' => ['Price' => $general, 'ListPrice' => 46.0, 'AvailableQuantity' => 99999]]],
@@ -54,7 +55,10 @@ class OnlinePricesTest extends TestCase
         ]];
 
         Http::fake([
-            'www.chedraui.com.mx/api/catalog_system/pub/products/search/leche-*' => Http::response($product('Leche Entera Lala Fresca Plástico 1.8L', '3371188', 'un', 1.0), 206),
+            'www.chedraui.com.mx/api/catalog_system/pub/products/search/leche-*' => Http::response($product('Leche Entera Lala Fresca Plástico 1.8L', '3371188', 'un', 1.0, '1 pieza con 1.8L'), 206),
+            // Así viene en Chedraui: el contenido sin unidad ("355 c/u"); la unidad está en el nombre
+            'www.chedraui.com.mx/api/catalog_system/pub/products/search/refresco-12-*' => Http::response($product('Refresco Coca-Cola Original 12 Latas de 355ml c/u', '3061478', 'un', 1.0, '12 piezas de 355 c/u'), 206),
+            'www.chedraui.com.mx/api/catalog_system/pub/products/search/refresco-*' => Http::response($product('Refresco Coca-Cola Original', '555', 'un', 1.0, '6 piezas de 355ml'), 206),
             'www.chedraui.com.mx/api/catalog_system/pub/products/search/platano-*' => Http::response($product('Plátano Chiapas por Kg', '3102828', 'kg', 0.2), 206),
             'www.chedraui.com.mx/api/checkout/pub/regions*' => Http::response([['id' => 'U1cjY2hl', 'sellers' => [['id' => 'chedrauimx0232', 'name' => 'Chedraui Insurgentes']]]]),
             'www.chedraui.com.mx/api/checkout/pub/orderForms/simulation*' => fn (Request $request) => Http::response(['items' => [[
@@ -185,12 +189,34 @@ class OnlinePricesTest extends TestCase
             ->assertSessionHasErrors('links.'.$this->chedraui->id);
     }
 
-    public function test_previous_presentation_in_that_store_is_kept(): void
+    public function test_presentation_comes_from_the_store_data(): void
     {
-        $this->fakeChedraui(general: 260.0);
+        $this->fakeChedraui(general: 89.0);
+        Http::fake(['www.costco.com.mx/*' => Http::response(['name' => 'La Lechera Leche Condensada 8 pzas de 375 g', 'price' => ['value' => 239.0],
+            'classifications' => [['features' => [['name' => 'Contenido Neto', 'featureValues' => [['value' => '8 pzas de 387 g']]]]]]])]);
+
+        // Chedraui: "Contenido del empaque"; Costco: característica "Contenido Neto" (manda sobre el nombre)
+        $this->assertSame(['pack_qty' => 6, 'size' => 355.0, 'unit' => 'ml', 'bulk' => false], $this->fetch('https://www.chedraui.com.mx/refresco-coca-cola-6-pack-555/p')['presentation']);
+        $this->assertSame(['pack_qty' => 8, 'size' => 387.0, 'unit' => 'g', 'bulk' => false], $this->fetch(self::COSTCO)['presentation']);
+
+        // Se guarda con esa presentación aunque antes se capturara otra en esa tienda
+        $soda = Product::create(['name' => 'Coca-Cola', 'size' => 355, 'unit' => 'ml']);
+        Price::create(['product_id' => $soda->id, 'provider_id' => $this->chedraui->id, 'price' => 18, 'size' => 355, 'unit' => 'ml', 'observed_on' => today()->subWeek()]);
+        $soda->links()->create(['provider_id' => $this->chedraui->id, 'url' => 'https://www.chedraui.com.mx/refresco-coca-cola-6-pack-555/p']);
+        $this->post(route('products.prices.fetch', $soda))->assertSessionHas('success', fn ($msg) => str_contains($msg, 'Chedraui: $89.00 · 6 × 355 ml'));
+
+        // Si el dato de la tienda no encaja (12 piezas para un artículo en ml), se usa el nombre
+        $soda->links()->update(['url' => 'https://www.chedraui.com.mx/refresco-12-latas-3061478/p']);
+        $this->post(route('products.prices.fetch', $soda))->assertSessionHas('success', fn ($msg) => str_contains($msg, '12 × 355 ml'));
+    }
+
+    public function test_previous_presentation_is_kept_when_the_store_does_not_say(): void
+    {
+        Http::fake(['tienda.example.com/*' => Http::response('<script type="application/ld+json">'.json_encode(['@type' => 'Product', 'name' => 'Leche Lala', 'offers' => ['price' => 260]]).'</script>')]);
+        $store = Provider::create(['name' => 'Tienda']);
         $milk = Product::create(['name' => 'Leche', 'size' => 1, 'unit' => 'l']);
-        Price::create(['product_id' => $milk->id, 'provider_id' => $this->chedraui->id, 'price' => 250, 'pack_qty' => 6, 'size' => 1, 'unit' => 'l', 'observed_on' => today()->subWeek()]);
-        $milk->links()->create(['provider_id' => $this->chedraui->id, 'url' => self::MILK]);
+        Price::create(['product_id' => $milk->id, 'provider_id' => $store->id, 'price' => 250, 'pack_qty' => 6, 'size' => 1, 'unit' => 'l', 'observed_on' => today()->subWeek()]);
+        $milk->links()->create(['provider_id' => $store->id, 'url' => 'https://tienda.example.com/leche']);
 
         $this->post(route('products.prices.fetch', $milk));
 
@@ -229,7 +255,7 @@ class OnlinePricesTest extends TestCase
         $this->postJson(route('lists.items.links.store', [$list, $item]), ['provider_id' => $this->costco->id, 'url' => self::COSTCO])
             ->assertOk()
             ->assertJsonPath('results.0.ok', true)
-            ->assertJsonPath('row.cells.'.$this->costco->id.'.presentation', '6 L');
+            ->assertJsonPath('row.cells.'.$this->costco->id.'.presentation', '6 × 1 L');
 
         $this->assertSame(self::COSTCO, $milk->links()->value('url'));
 

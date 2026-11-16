@@ -43,26 +43,26 @@ class PriceUpdater
     }
 
     /**
-     * Presentación del precio encontrado: la que dice la tienda (por kg); si no, la
-     * que ya se usaba en esa tienda; si no, la del nombre en la tienda ("… 1.8L");
-     * si no, la presentación habitual del artículo.
+     * Presentación del precio encontrado (piezas, contenido, unidad), en este orden:
+     * 1. la que da la tienda en sus datos (por kg, "Contenido del empaque", "Contenido Neto");
+     * 2. la del nombre del producto en la tienda ("… 8 pzas de 375 g", "… 1.8L");
+     * 3. la que ya se usaba en esa tienda;
+     * 4. la presentación habitual del artículo.
+     * Solo se toma si es de la misma dimensión que el artículo (volumen, peso o piezas).
      */
     private function presentation(Product $product, int $providerId, array $found): array
     {
-        $compatible = fn (string $unit) => Unit::from($unit)->isCompatibleWith($product->unit);
+        $compatible = fn (?array $p) => $p && Unit::from($p['unit'])->isCompatibleWith($product->unit);
 
-        if ($found['presentation'] && $compatible($found['presentation']['unit'])) {
-            return $found['presentation'];
+        foreach ([$found['presentation'], PriceFetcher::presentation($found['name'])] as $candidate) {
+            if ($compatible($candidate)) {
+                return $candidate;
+            }
         }
 
         $last = $product->prices()->where('provider_id', $providerId)->orderByDesc('observed_on')->orderByDesc('id')->first();
         if ($last) {
             return ['pack_qty' => $last->pack_qty, 'size' => $last->size, 'unit' => $last->unit->value, 'bulk' => $last->bulk];
-        }
-
-        $parsed = $found['name'] ? BarcodeLookup::parseQuantity($found['name']) : null;
-        if ($parsed && $compatible($parsed['unit'])) {
-            return ['pack_qty' => 1, 'size' => $parsed['size'], 'unit' => $parsed['unit'], 'bulk' => false];
         }
 
         return ['pack_qty' => 1, 'size' => $product->size, 'unit' => $product->unit->value, 'bulk' => false];
