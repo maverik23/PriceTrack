@@ -46,6 +46,9 @@ class BarcodeTest extends TestCase
         $this->assertSame('7501020515343', Barcode::normalize(' 750-1020 515343 '));
         $this->assertSame('0012345678905', Barcode::normalize('012345678905')); // UPC-A → EAN-13
         $this->assertSame('7501020515343', Barcode::normalize('07501020515343')); // GTIN-14
+        // EAN mexicano sin dígito verificador, como lo guardan Walmart y Chedraui
+        $this->assertSame('7501020515343', Barcode::normalize('00750102051534'));
+        $this->assertSame('7501020526066', Barcode::normalize('750102052606'));
         $this->assertNull(Barcode::normalize('  '));
         $this->assertNull(Barcode::fromSearch('Leche 345'));
         $this->assertSame('12345678', Barcode::fromSearch('1234 5678'));

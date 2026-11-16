@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductLink;
 use App\Models\Setting;
 use App\Models\ShoppingList;
+use App\Support\Barcode;
 use Illuminate\Support\Str;
 
 /**
@@ -32,7 +33,15 @@ class PriceUpdater
         }
 
         $price = Price::record($link->product, $link->provider_id, $list, ['price' => $found['price']] + $this->presentation($link->product, $link->provider_id, $found));
-        $link->update(['checked_at' => now(), 'error' => null]);
+
+        // Lo que la tienda dice de su versión del artículo: nombre, marca y códigos
+        $barcode = Barcode::fromSearch($found['barcode']);
+        $link->update(array_filter([
+            'store_name' => $found['name'] ? Str::limit($found['name'], 200, '') : null,
+            'brand' => $found['brand'] ? Product::canonicalValue('brand', Str::limit($found['brand'], 100, '')) : null,
+            'barcode' => $barcode && Barcode::isGtin($barcode) ? $barcode : null,
+            'sku' => $found['sku'] ? Str::limit($found['sku'], 40, '') : null,
+        ]) + ['checked_at' => now(), 'error' => null]);
 
         return [
             'provider_id' => $link->provider_id,

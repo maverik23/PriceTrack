@@ -28,10 +28,19 @@ class Product extends Model
         return $this->hasMany(Price::class);
     }
 
-    /** Página del artículo en cada tienda, para consultar su precio en línea. */
+    /** El artículo en cada tienda: marca, código y página para consultar su precio. */
     public function links(): HasMany
     {
         return $this->hasMany(ProductLink::class);
+    }
+
+    /** Artículo con ese código de barras, propio o de su versión en alguna tienda. */
+    public static function findByBarcode(string $barcode): ?self
+    {
+        return static::where('barcode', $barcode)
+            ->orWhereHas('links', fn ($q) => $q->where('barcode', $barcode))
+            ->orderByRaw('barcode = ? desc', [$barcode])
+            ->first();
     }
 
     public function listItems(): HasMany
@@ -63,8 +72,13 @@ class Product extends Model
         }
 
         $key = static fn (string $v) => Str::lower(Str::ascii($v));
+        $existing = static::distinctValues($column);
+        if ($column === 'brand') {
+            // También las marcas de la versión del artículo en cada tienda ("LALA" → "Lala")
+            $existing = $existing->merge(ProductLink::whereNotNull('brand')->where('brand', '!=', '')->distinct()->orderBy('brand')->pluck('brand'));
+        }
 
-        return static::distinctValues($column)->first(fn ($existing) => $key($existing) === $key($value)) ?? $value;
+        return $existing->first(fn ($candidate) => $key($candidate) === $key($value)) ?? $value;
     }
 
     public function sizeLabel(): string

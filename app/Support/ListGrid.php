@@ -26,7 +26,7 @@ class ListGrid
             ],
             'units' => Unit::meta(),
             'providers' => Provider::orderBy('name')->get(['id', 'name'])->toArray(),
-            'products' => Product::orderBy('name')->get()->map(fn (Product $p) => self::product($p))->values(),
+            'products' => Product::with('links')->orderBy('name')->get()->map(fn (Product $p) => self::product($p))->values(),
             'rows' => $list->items->map(fn (ShoppingListItem $item) => self::row($item, $list))->values(),
         ];
     }
@@ -38,6 +38,8 @@ class ListGrid
             'name' => $product->name,
             'brand' => $product->brand,
             'barcode' => $product->barcode,
+            // Sus códigos de barras: el propio y el de su versión en cada tienda
+            'barcodes' => collect([$product->barcode])->merge($product->links->pluck('barcode'))->filter()->unique()->values()->all(),
             'category' => $product->category,
             'size' => $product->size,
             'unit' => $product->unit->value,
@@ -60,8 +62,11 @@ class ListGrid
             'selected' => self::price($item->price, $list),
             'product' => self::product($item->product),
             'cells' => (object) $cells,
-            // Página del artículo en cada tienda (para consultar su precio en línea)
-            'links' => (object) $item->product->links->pluck('url', 'provider_id')->all(),
+            // Página del artículo en cada tienda (para consultar su precio en línea) y su versión ahí
+            'links' => (object) $item->product->links->whereNotNull('url')->pluck('url', 'provider_id')->all(),
+            'stores' => (object) $item->product->links->mapWithKeys(fn ($link) => [
+                $link->provider_id => ['brand' => $link->brand, 'name' => $link->store_name, 'barcode' => $link->barcode],
+            ])->all(),
         ];
     }
 

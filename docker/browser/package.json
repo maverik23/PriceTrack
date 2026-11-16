@@ -1,0 +1,9 @@
+{
+    "name": "pricetrack-browser",
+    "private": true,
+    "description": "Navegador real (Chromium con ventana en una pantalla virtual) para leer precios de tiendas que bloquean a los programas.",
+    "type": "module",
+    "dependencies": {
+        "playwright": "1.63.0"
+    }
+}

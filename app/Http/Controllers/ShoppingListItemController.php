@@ -39,7 +39,7 @@ class ShoppingListItemController extends Controller
             $product = Product::findOrFail($data['product_id']);
         } else {
             // Si el código ya es de un artículo (p. ej. creado en otra pestaña) se usa ese
-            $product = (empty($data['barcode']) ? null : Product::firstWhere('barcode', $data['barcode']))
+            $product = (empty($data['barcode']) ? null : Product::findByBarcode($data['barcode']))
                 ?? Product::create([
                     'name' => trim($data['name']),
                     'size' => $data['size'],
@@ -150,7 +150,7 @@ class ShoppingListItemController extends Controller
     public function fetchPrices(ShoppingList $list, ShoppingListItem $item, PriceUpdater $updater)
     {
         set_time_limit(180);
-        $results = $item->product->links()->with('product')->get()
+        $results = $item->product->links()->whereNotNull('url')->with('product')->get()
             ->map(fn (ProductLink $link) => $this->recordFetched($updater->update($link, $list), $item));
 
         return $this->fetchedResponse($list, $item, $results->all());

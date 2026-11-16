@@ -7,7 +7,8 @@ namespace App\Support;
  *
  * Se guardan solo con dígitos. Un UPC-A (12 dígitos) es el mismo artículo que
  * su EAN-13 con un 0 al inicio, así que se guarda como EAN-13 para que el
- * mismo producto coincida lo lea quien lo lea. resources/js/list-grid.js
+ * mismo producto coincida lo lea quien lo lea. Un código mexicano (750…) de 12
+ * dígitos es un EAN-13 sin su dígito verificador: se completa. resources/js/list-grid.js
  * replica normalize(): si cambias uno, cambia el otro.
  */
 final class Barcode
@@ -24,6 +25,12 @@ final class Barcode
         }
 
         if (ctype_digit($code)) {
+            // Tiendas mexicanas (Walmart, Sam's, Chedraui) guardan el EAN sin su dígito
+            // verificador y a veces con ceros delante: "00750102051534" → 7501020515343
+            $significant = ltrim($code, '0');
+            if (strlen($significant) === 12 && str_starts_with($significant, '750')) {
+                return $significant.self::checkDigit($significant);
+            }
             if (strlen($code) === 12) {
                 $code = '0'.$code;
             } elseif (strlen($code) === 14 && $code[0] === '0') {
@@ -32,6 +39,17 @@ final class Barcode
         }
 
         return $code;
+    }
+
+    /** Dígito verificador GS1 de los dígitos dados (EAN-13 sin su último dígito, etc.). */
+    public static function checkDigit(string $digits): int
+    {
+        $sum = 0;
+        foreach (str_split(strrev($digits)) as $i => $digit) {
+            $sum += (int) $digit * ($i % 2 === 0 ? 3 : 1);
+        }
+
+        return (10 - $sum % 10) % 10;
     }
 
     /** ¿Lo escrito (en un buscador, por ejemplo) es un código de barras? Devuelve el código normalizado. */

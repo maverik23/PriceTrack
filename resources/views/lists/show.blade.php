@@ -114,6 +114,9 @@
                                             @click="toggleBuy(row, p.id)"></button>
                                     <a x-show="row.links[p.id]" :href="row.links[p.id]" target="_blank" rel="noopener" tabindex="-1"
                                        class="shrink-0 text-xs text-slate-300 hover:text-emerald-600" title="Abrir el artículo en la tienda">↗</a>
+                                    {{-- Marca que vende esa tienda (cada una puede tener otra) --}}
+                                    <span x-show="row.stores[p.id]?.brand" class="max-w-[5.5rem] shrink-0 truncate text-[10px] text-slate-500"
+                                          :title="row.stores[p.id]?.name || row.stores[p.id]?.brand" x-text="row.stores[p.id]?.brand"></span>
                                     <input type="text" inputmode="decimal" placeholder="—" class="cell-input"
                                            :class="isStale(row, p.id) ? 'text-slate-400' : 'font-medium text-slate-900'"
                                            :data-cell="ri + '-' + (pi + 1)" :aria-label="'Precio en ' + p.name"

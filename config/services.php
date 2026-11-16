@@ -42,6 +42,10 @@ return [
         'timeout' => (int) env('PRICE_FETCH_TIMEOUT', 15),
         // Rechazar enlaces cuyo dominio apunte a la red interna
         'resolve_hosts' => true,
+        // Navegador real (contenedor "browser", docker/browser) para tiendas que bloquean a los programas
+        'browser_url' => env('PRICE_FETCH_BROWSER_URL'),
+        'browser_timeout' => (int) env('PRICE_FETCH_BROWSER_TIMEOUT', 90),
+        'browser_hosts' => ['walmart.com.mx', 'sams.com.mx', 'soriana.com', 'amazon.com.mx', 'bodegaaurrera.com.mx'],
     ],
 
     'slack' => [

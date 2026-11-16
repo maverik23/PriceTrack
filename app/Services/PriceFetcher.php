@@ -19,13 +19,18 @@ use Illuminate\Support\Str;
  *   metaetiquetas de precio) o el precio de Amazon. Home Depot da el precio de
  *   su tienda por defecto.
  *
- * Walmart y Sam's (PerimeterX), Soriana (Cloudflare) y Amazon suelen bloquear las
- * consultas automáticas; se informa como error para capturarlo a mano.
+ * Walmart y Sam's (PerimeterX), Soriana (Cloudflare) y Amazon bloquean las consultas
+ * de programas. Si está configurado el navegador de PriceTrack (contenedor "browser",
+ * docker/browser: Chromium real con ventana), esas páginas se abren con él; si no,
+ * se informa como bloqueo para capturar el precio a mano.
  */
 class PriceFetcher
 {
     /**
-     * @return array{price: float, name: ?string, presentation: ?array{pack_qty: int, size: float, unit: string, bulk: bool}, source: string}
+     * Precio y, cuando la tienda los da, nombre, presentación, marca, código de barras
+     * (EAN) y código propio de la tienda (sku).
+     *
+     * @return array{price: float, name: ?string, presentation: ?array{pack_qty: int, size: float, unit: string, bulk: bool}, brand: ?string, barcode: ?string, sku: ?string, source: string}
      *
      * @throws PriceFetchException
      */
@@ -37,7 +42,7 @@ class PriceFetcher
             str_ends_with($host, 'chedraui.com.mx') => $this->chedraui($url, $postalCode),
             str_ends_with($host, 'costco.com.mx') => $this->costco($url),
             default => $this->page($url),
-        };
+        } + ['brand' => null, 'barcode' => null, 'sku' => null];
 
         if (! ($result['price'] > 0)) {
             throw new PriceFetchException('La tienda no muestra precio (¿agotado?).');
@@ -78,6 +83,9 @@ class PriceFetcher
             'presentation' => $unit && $unit !== Unit::Item
                 ? ['pack_qty' => 1, 'size' => 1.0, 'unit' => $unit->value, 'bulk' => true]
                 : self::presentation($product['Contenido del empaque'][0] ?? null),
+            'brand' => $product['brand'] ?? null,
+            'barcode' => $item['ean'] ?? null,
+            'sku' => isset($item['itemId']) ? (string) $item['itemId'] : null,
             'source' => 'Chedraui',
         ];
     }
@@ -118,14 +126,16 @@ class PriceFetcher
             'fields' => 'code,name,price(value),classifications(features(name,featureValues))', 'lang' => 'es_MX', 'curr' => 'MXN',
         ]));
 
-        // Característica "Contenido Neto": "8 pzas de 387 g"
-        $content = collect($data['classifications'] ?? [])->flatMap(fn ($c) => $c['features'] ?? [])
-            ->firstWhere('name', 'Contenido Neto')['featureValues'][0]['value'] ?? null;
+        // Características: "Contenido Neto" ("8 pzas de 387 g") y "Marca". Costco no publica el EAN.
+        $features = collect($data['classifications'] ?? [])->flatMap(fn ($c) => $c['features'] ?? []);
+        $feature = fn (string $name) => $features->firstWhere('name', $name)['featureValues'][0]['value'] ?? null;
 
         return [
             'price' => round((float) ($data['price']['value'] ?? 0), 2),
             'name' => $data['name'] ?? null,
-            'presentation' => self::presentation($content),
+            'presentation' => self::presentation($feature('Contenido Neto')),
+            'brand' => $feature('Marca'),
+            'sku' => $data['code'] ?? $m[1],
             'source' => 'Costco',
         ];
     }
@@ -146,7 +156,7 @@ class PriceFetcher
 
     private function page(string $url): array
     {
-        $html = $this->get($url)->body();
+        $html = $this->html($url);
         $found = $this->jsonLd($html) ?? $this->metaPrice($html) ?? $this->amazonPrice($html);
 
         if (! $found) {
@@ -154,6 +164,41 @@ class PriceFetcher
         }
 
         return $found + ['presentation' => null, 'source' => (string) parse_url($url, PHP_URL_HOST)];
+    }
+
+    /** HTML de la página: directo, o con el navegador real si la tienda bloquea a los programas. */
+    private function html(string $url): string
+    {
+        $browser = config('services.price_fetch.browser_url');
+        if ($browser && Str::endsWith((string) parse_url($url, PHP_URL_HOST), config('services.price_fetch.browser_hosts'))) {
+            return $this->viaBrowser($url);
+        }
+
+        try {
+            return $this->get($url)->body();
+        } catch (StoreBlockedException $e) {
+            return $browser ? $this->viaBrowser($url) : throw $e;
+        }
+    }
+
+    /** Abre la página en el navegador de PriceTrack y devuelve el HTML ya cargado. */
+    private function viaBrowser(string $url): string
+    {
+        try {
+            $response = Http::timeout((int) config('services.price_fetch.browser_timeout'))
+                ->get(rtrim((string) config('services.price_fetch.browser_url'), '/').'/html', ['url' => $url]);
+        } catch (ConnectionException) {
+            throw new PriceFetchException('No responde el navegador de PriceTrack (contenedor «browser»).');
+        }
+
+        if (! $response->successful()) {
+            throw new PriceFetchException('El navegador no pudo abrir la página: '.Str::limit(trim($response->body()), 120));
+        }
+        if (str_contains(rawurldecode((string) $response->header('X-Final-Url')), '/blocked') || $this->blockedBody($response->body())) {
+            throw new StoreBlockedException('Bloqueado por la tienda aun con el navegador; intenta más tarde.');
+        }
+
+        return $response->body();
     }
 
     /** schema.org Product → offers.price (o lowPrice), en cualquier bloque JSON-LD. */
@@ -173,7 +218,16 @@ class PriceFetcher
                 $offer = array_is_list($offers) ? ($offers[0] ?? []) : $offers;
                 $price = $this->number($offer['price'] ?? $offer['lowPrice'] ?? null);
                 if ($price) {
-                    return ['price' => $price, 'name' => is_string($node['name'] ?? null) ? $node['name'] : $this->title($html)];
+                    $brand = $node['brand'] ?? null;
+                    $gtin = $node['gtin13'] ?? $node['gtin'] ?? $node['gtin12'] ?? $node['gtin14'] ?? $node['gtin8'] ?? null;
+
+                    return [
+                        'price' => $price,
+                        'name' => is_string($node['name'] ?? null) ? $node['name'] : $this->title($html),
+                        'brand' => is_array($brand) ? ($brand['name'] ?? null) : $brand,
+                        'barcode' => is_scalar($gtin) ? (string) $gtin : null,
+                        'sku' => is_scalar($node['sku'] ?? null) ? (string) $node['sku'] : null,
+                    ];
                 }
             }
         }
@@ -251,7 +305,7 @@ class PriceFetcher
         }
 
         if ($this->blocked($response)) {
-            throw new PriceFetchException('Bloqueado por la tienda (anti-bots).');
+            throw new StoreBlockedException('Bloqueado por la tienda (anti-bots).');
         }
         if ($response->status() === 404) {
             throw new PriceFetchException('La página ya no existe (404).');
@@ -269,8 +323,12 @@ class PriceFetcher
      */
     private function blocked(Response $response): bool
     {
-        return in_array($response->status(), [403, 412, 429, 503], true)
-            || Str::contains(substr($response->body(), 0, 30000), ['validateCaptcha', 'px-captcha', '"appId":"PX', 'cf-error-details']);
+        return in_array($response->status(), [403, 412, 429, 503], true) || $this->blockedBody($response->body());
+    }
+
+    private function blockedBody(string $html): bool
+    {
+        return Str::contains(substr($html, 0, 30000), ['validateCaptcha', 'px-captcha', '"appId":"PX', 'cf-error-details']);
     }
 
     private function json(Response $response): array

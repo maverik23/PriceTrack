@@ -9,6 +9,7 @@
 #   DB_PASSWORD       contraseña de MySQL (cámbiala si expones el servidor)
 #   APP_KEY           opcional: si no se define se genera una sola vez y se guarda en el volumen
 #   BARCODE_LOOKUP    false para no buscar en internet los datos de un código de barras (true)
+#   PRICE_FETCH_BROWSER_URL  navegador para tiendas que bloquean (http://browser:3000; vacío = no usarlo)
 
 name: pricetrack
 
@@ -41,6 +42,8 @@ services:
       SESSION_DRIVER: database
       CACHE_STORE: database
       QUEUE_CONNECTION: sync
+      # Navegador real para leer precios de Walmart, Sam's, Amazon… (servicio "browser")
+      PRICE_FETCH_BROWSER_URL: ${PRICE_FETCH_BROWSER_URL:-http://browser:3000}
     volumes:
       - storage:/app/storage
     depends_on:
@@ -63,6 +66,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+
+  # Chromium real (con ventana en una pantalla virtual) para las tiendas que bloquean
+  # a los programas. Sin puerto publicado: solo lo usa la app. Ver docker/browser.
+  browser:
+    build:
+      context: ./docker/browser
+    image: pricetrack-browser:latest
+    pull_policy: build
+    container_name: pricetrack-browser
+    restart: unless-stopped
+    shm_size: "1gb"
+    environment:
+      TZ: ${APP_TIMEZONE:-America/Mexico_City}
 
 volumes:
   storage:

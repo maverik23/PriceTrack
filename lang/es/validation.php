@@ -53,6 +53,8 @@ return [
         'today' => 'hoy',
         'postal_code' => 'código postal',
         'url' => 'enlace',
-        'links.*' => 'enlace',
+        'stores.*.url' => 'enlace',
+        'stores.*.brand' => 'marca',
+        'stores.*.barcode' => 'código de barras',
     ],
 ];
