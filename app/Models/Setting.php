@@ -11,6 +11,9 @@ class Setting extends Model
 {
     public const POSTAL_CODE = 'postal_code';
 
+    /** Vendedor de la tienda Chedraui elegida (chedrauimx0262); vacío = automática. */
+    public const CHEDRAUI_STORE = 'chedraui_store';
+
     protected $primaryKey = 'key';
 
     protected $keyType = 'string';

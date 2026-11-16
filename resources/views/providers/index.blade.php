@@ -68,8 +68,25 @@
         <div>
             <label class="label" for="postal_code">Para consultar precios en línea</label>
             <input id="postal_code" name="postal_code" value="{{ old('postal_code', $postalCode) }}" class="input" inputmode="numeric" maxlength="5" placeholder="Ej. 06600">
-            <p class="mt-1 text-xs text-slate-500">Chedraui cambia el precio por zona; Costco y Home Depot dan su precio en línea.</p>
+            <p class="mt-1 text-xs text-slate-500">Chedraui cambia el precio por tienda; Costco y Home Depot dan su precio en línea.</p>
         </div>
+        @if ($postalCode)
+            <div>
+                <label class="label" for="chedraui_store">Tu tienda Chedraui</label>
+                <select id="chedraui_store" name="chedraui_store" class="input">
+                    <option value="">Automática: la más cercana que lo tenga</option>
+                    @foreach ($chedrauiStores as $seller => $name)
+                        <option value="{{ $seller }}" @selected($chedrauiStore === $seller)>{{ $name }}</option>
+                    @endforeach
+                    @if ($chedrauiStore && ! isset($chedrauiStores[$chedrauiStore]))
+                        <option value="{{ $chedrauiStore }}" selected>{{ $chedrauiStore }}</option>
+                    @endif
+                </select>
+                @if (! $chedrauiStores)
+                    <p class="mt-1 text-xs text-amber-700">No se pudo leer la lista de tiendas de Chedraui para este código postal.</p>
+                @endif
+            </div>
+        @endif
         <button class="btn btn-secondary w-full">Guardar</button>
     </form>
     </div>

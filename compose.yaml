@@ -53,6 +53,8 @@ services:
         build:
             context: ./docker/browser
         image: pricetrack-browser
+        # xvfb-run no sirve como PID 1: se cuelga esperando a Xvfb y nunca arranca node
+        init: true
         shm_size: 1gb
         environment:
             TZ: '${APP_TIMEZONE:-America/Mexico_City}'

@@ -43,8 +43,18 @@ class OnlinePricesTest extends TestCase
     }
 
     /** Catálogo VTEX + regiones + simulación del carrito, como responde chedraui.com.mx. */
-    private function fakeChedraui(float $general = 46.0, int $regional = 4100): void
+    /**
+     * @param  array<string, array{0: ?int, 1: string}>  $stores  vendedor => [centavos, disponibilidad], de la más cercana a la más lejana
+     */
+    private function fakeChedraui(float $general = 46.0, int $regional = 4100, ?array $stores = null): void
     {
+        // Como en Cancún: la más cercana no envía a domicilio pero tiene el precio de tienda
+        $stores ??= [
+            'chedrauimx0112' => [$regional, 'cannotBeDelivered'],
+            'chedrauimx0255' => [$regional + 250, 'available'],
+        ];
+        $names = ['chedrauimx0112' => 'CHEDRAUI CANCÚN VILLAS DEL MAR', 'chedrauimx0255' => 'CHEDRAUI CANCÚN KABAH', 'chedrauimx0045' => 'CHEDRAUI CANCÚN PORTILLO'];
+
         $product = fn (string $name, string $sku, string $unit, float $multiplier, ?string $content = null) => [[
             'productName' => $name,
             'brand' => 'LALA',
@@ -61,12 +71,17 @@ class OnlinePricesTest extends TestCase
             'www.chedraui.com.mx/api/catalog_system/pub/products/search/refresco-12-*' => Http::response($product('Refresco Coca-Cola Original 12 Latas de 355ml c/u', '3061478', 'un', 1.0, '12 piezas de 355 c/u'), 206),
             'www.chedraui.com.mx/api/catalog_system/pub/products/search/refresco-*' => Http::response($product('Refresco Coca-Cola Original', '555', 'un', 1.0, '6 piezas de 355ml'), 206),
             'www.chedraui.com.mx/api/catalog_system/pub/products/search/platano-*' => Http::response($product('Plátano Chiapas por Kg', '3102828', 'kg', 0.2), 206),
-            'www.chedraui.com.mx/api/checkout/pub/regions*' => Http::response([['id' => 'U1cjY2hl', 'sellers' => [['id' => 'chedrauimx0232', 'name' => 'Chedraui Insurgentes']]]]),
-            'www.chedraui.com.mx/api/checkout/pub/orderForms/simulation*' => fn (Request $request) => Http::response(['items' => [[
-                'id' => $request['items'][0]['id'],
-                'unitMultiplier' => $request['items'][0]['id'] === '3102828' ? 0.2 : 1.0,
-                'sellingPrice' => $request['items'][0]['id'] === '3102828' ? 398 : $regional,
-            ]]]),
+            'www.chedraui.com.mx/api/checkout/pub/pickup-points*' => Http::response(['items' => collect(array_keys($stores))->values()->map(fn ($seller, $i) => [
+                'distance' => 3.1 + $i * 0.7, 'pickupPoint' => ['id' => $seller.'_PP'.substr($seller, -4), 'friendlyName' => $names[$seller] ?? $seller],
+            ])->all()]),
+            'www.chedraui.com.mx/api/checkout/pub/regions*' => Http::response([['id' => 'U1cjY2hl', 'sellers' => [['id' => 'chedrauimx0253', 'name' => 'CHEDRAUI SELECTO MERIDA NORTE']]]]),
+            // Una sola simulación con un renglón por tienda; el plátano se cobra por 0.2 kg
+            'www.chedraui.com.mx/api/checkout/pub/orderForms/simulation*' => fn (Request $request) => Http::response(['items' => collect($request['items'])->map(fn ($item, $i) => [
+                'id' => $item['id'], 'seller' => $item['seller'], 'requestIndex' => $i,
+                'unitMultiplier' => $item['id'] === '3102828' ? 0.2 : 1.0,
+                'sellingPrice' => $item['id'] === '3102828' ? 398 : ($stores[$item['seller']][0] ?? null),
+                'availability' => $stores[$item['seller']][1] ?? 'withoutStock',
+            ])->all()]),
         ]);
     }
 
@@ -75,27 +90,50 @@ class OnlinePricesTest extends TestCase
         return app(PriceFetcher::class)->fetch($url, $postalCode);
     }
 
-    private function fetchError(string $url): string
+    private function fetchError(string $url, ?string $postalCode = null): string
     {
         try {
-            $this->fetch($url);
+            $this->fetch($url, $postalCode);
         } catch (PriceFetchException $e) {
             return $e->getMessage();
         }
         $this->fail("Se esperaba un error al consultar {$url}");
     }
 
-    public function test_chedraui_uses_the_price_of_the_postal_code_zone(): void
+    public function test_chedraui_uses_the_price_of_the_nearest_store(): void
     {
-        $this->fakeChedraui(general: 46.0, regional: 4100);
+        $this->fakeChedraui(general: 29.5, regional: 4490);
 
-        $this->assertSame(46.0, $this->fetch(self::MILK)['price']);
+        // Sin código postal: precio general del catálogo (no es el de ninguna sucursal)
+        $this->assertSame(29.5, $this->fetch(self::MILK)['price']);
 
-        $found = $this->fetch(self::MILK, '06600');
-        $this->assertSame(41.0, $found['price']);
+        // Con código postal: la tienda más cercana, aunque no envíe a domicilio a ese CP
+        $found = $this->fetch(self::MILK, '77518');
+        $this->assertSame([44.9, 'CHEDRAUI CANCÚN VILLAS DEL MAR'], [$found['price'], $found['store']]);
         $this->assertSame('Leche Entera Lala Fresca Plástico 1.8L', $found['name']);
-        Http::assertSent(fn (Request $r) => str_contains($r->url(), 'simulation')
-            && $r['postalCode'] === '06600' && $r['items'][0]['seller'] === 'chedrauimx0232');
+        Http::assertSent(fn (Request $r) => str_contains($r->url(), 'simulation') && $r['postalCode'] === '77518'
+            && array_column($r['items'], 'seller') === ['chedrauimx0112', 'chedrauimx0255']);
+
+        // La tienda elegida manda
+        $this->assertSame([47.4, 'CHEDRAUI CANCÚN KABAH'], array_values(array_intersect_key(app(PriceFetcher::class)->fetch(self::MILK, '77518', 'chedrauimx0255'), ['price' => 0, 'store' => 0])));
+    }
+
+    public function test_chedraui_skips_stores_without_stock(): void
+    {
+        $this->fakeChedraui(general: 29.5, stores: [
+            'chedrauimx0112' => [null, 'withoutStock'],
+            'chedrauimx0045' => [4750, 'withoutStock'],
+            'chedrauimx0255' => [4490, 'cannotBeDelivered'],
+        ]);
+
+        $this->assertSame(44.9, $this->fetch(self::MILK, '77518')['price']);
+    }
+
+    public function test_chedraui_never_falls_back_to_the_general_price(): void
+    {
+        $this->fakeChedraui(general: 29.5, stores: ['chedrauimx0112' => [null, 'withoutStock']]);
+
+        $this->assertSame('Chedraui no tiene este artículo en tu zona (CP 77518).', $this->fetchError(self::MILK, '77518'));
     }
 
     public function test_chedraui_weighed_items_are_priced_per_kilo(): void
@@ -349,6 +387,25 @@ class OnlinePricesTest extends TestCase
         Http::fake(['www.walmart.com.mx/*' => Http::response(['appId' => 'PXAFlYiz9n'], 412)]);
 
         $this->assertSame('Bloqueado por la tienda (anti-bots).', $this->fetchError('https://www.walmart.com.mx/ip/leche/1'));
+    }
+
+    public function test_chedraui_store_is_chosen_from_the_stores_near_the_postal_code(): void
+    {
+        $this->fakeChedraui();
+        $this->put(route('settings.update'), ['postal_code' => '77518'])->assertSessionHasNoErrors();
+
+        $this->get(route('providers.index'))->assertOk()
+            ->assertSee('Tu tienda Chedraui')
+            ->assertSee('CHEDRAUI CANCÚN VILLAS DEL MAR · 3.1 km');
+
+        $this->put(route('settings.update'), ['postal_code' => '77518', 'chedraui_store' => 'chedrauimx0255']);
+        $this->assertSame('chedrauimx0255', Setting::value(Setting::CHEDRAUI_STORE));
+
+        // Otro código postal: otras tiendas, se vuelve a elegir
+        $this->put(route('settings.update'), ['postal_code' => '06600', 'chedraui_store' => 'chedrauimx0255']);
+        $this->assertNull(Setting::value(Setting::CHEDRAUI_STORE));
+
+        $this->put(route('settings.update'), ['postal_code' => '06600', 'chedraui_store' => 'walmart'])->assertSessionHasErrors('chedraui_store');
     }
 
     public function test_postal_code_is_a_global_setting(): void
