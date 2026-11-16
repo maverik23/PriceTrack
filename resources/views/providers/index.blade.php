@@ -46,7 +46,8 @@
         </table>
     </div>
 
-    <form method="POST" action="{{ route('providers.store') }}" class="card space-y-3 self-start">
+    <div class="space-y-6">
+    <form method="POST" action="{{ route('providers.store') }}" class="card space-y-3">
         @csrf
         <h2 class="card-title">Nuevo proveedor</h2>
         <div>
@@ -59,5 +60,18 @@
         </div>
         <button class="btn btn-primary w-full">Agregar</button>
     </form>
+
+    {{-- Para pedir a las tiendas en línea el precio de tu zona --}}
+    <form method="POST" action="{{ route('settings.update') }}" class="card space-y-3">
+        @csrf @method('PUT')
+        <h2 class="card-title">Código postal</h2>
+        <div>
+            <label class="label" for="postal_code">Para consultar precios en línea</label>
+            <input id="postal_code" name="postal_code" value="{{ old('postal_code', $postalCode) }}" class="input" inputmode="numeric" maxlength="5" placeholder="Ej. 06600">
+            <p class="mt-1 text-xs text-slate-500">Chedraui cambia el precio por zona; Costco y Home Depot dan su precio en línea.</p>
+        </div>
+        <button class="btn btn-secondary w-full">Guardar</button>
+    </form>
+    </div>
 </div>
 @endsection

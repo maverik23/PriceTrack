@@ -35,6 +35,15 @@ return [
         'timeout' => (int) env('BARCODE_LOOKUP_TIMEOUT', 6),
     ],
 
+    // Consultar el precio de un artículo en la página de la tienda (App\Services\PriceFetcher)
+    'price_fetch' => [
+        // Las tiendas solo responden a navegadores; se usa la firma de uno común
+        'user_agent' => env('PRICE_FETCH_USER_AGENT', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'),
+        'timeout' => (int) env('PRICE_FETCH_TIMEOUT', 15),
+        // Rechazar enlaces cuyo dominio apunte a la red interna
+        'resolve_hosts' => true,
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

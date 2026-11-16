@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Provider;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,10 @@ class ProviderController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('providers.index', compact('providers'));
+        return view('providers.index', [
+            'providers' => $providers,
+            'postalCode' => Setting::value(Setting::POSTAL_CODE),
+        ]);
     }
 
     public function store(Request $request)

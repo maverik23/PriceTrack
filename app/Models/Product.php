@@ -28,6 +28,12 @@ class Product extends Model
         return $this->hasMany(Price::class);
     }
 
+    /** Página del artículo en cada tienda, para consultar su precio en línea. */
+    public function links(): HasMany
+    {
+        return $this->hasMany(ProductLink::class);
+    }
+
     public function listItems(): HasMany
     {
         return $this->hasMany(ShoppingListItem::class);

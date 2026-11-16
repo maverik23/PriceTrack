@@ -34,6 +34,14 @@ class ShoppingListItem extends Model
         return $this->belongsTo(Price::class);
     }
 
+    /** Si ya estaba comprado en esa tienda, la compra pasa a su precio nuevo. */
+    public function followPrice(Price $price): void
+    {
+        if ($this->price && $this->price->provider_id === $price->provider_id && $this->price_id !== $price->id) {
+            $this->update(['price_id' => $price->id]);
+        }
+    }
+
     /** Lo que se necesita (o se compró) en unidad base: cantidad × presentación habitual. */
     public function needBaseQty(): float
     {

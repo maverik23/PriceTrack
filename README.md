@@ -21,6 +21,9 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
 - **Código de barras.** Escanéalo con la cámara del celular (o con un lector USB/Bluetooth) para buscar el artículo, abrirlo o agregarlo a la lista.
   - Si el código no está en tus artículos se buscan sus datos en internet ([Open Food Facts](https://world.openfoodfacts.org) y, si ahí no está, UPCitemdb) y se autocompleta nombre, marca, categoría y presentación.
   - La cámara en vivo necesita que entres por **HTTPS** (o desde `localhost`). Por `http://` en la red de tu casa puedes tomar una foto del código y se lee igual.
+- **Precios en línea.** Pega la dirección del artículo en la página de cada tienda (en su ficha o directo en la celda de la lista) y con **Obtener precios** se guardan los precios de hoy.
+  - Funciona con **Chedraui** (con el precio de tu zona según el código postal que pongas en Proveedores), **Costco** y **Home Depot** (precio de su tienda por defecto).
+  - **Walmart, Sam's, Soriana y Amazon** bloquean las consultas automáticas: la app lo marca y capturas el precio a mano.
 - **Historial de precios** por artículo y tienda, con gráfica del precio por unidad en el tiempo.
 - **Reportes:**
   - **Gasto promedio** semanal, mensual y anual, con desglose por mes, semana, año, tienda y categoría.

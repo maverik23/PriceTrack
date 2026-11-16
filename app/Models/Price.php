@@ -44,6 +44,26 @@ class Price extends Model
         });
     }
 
+    /**
+     * Registra el precio de una tienda con la fecha de la lista (o de hoy, fuera de
+     * listas). Si ese día ya se capturó desde la misma lista, corrige ese registro;
+     * si no, crea uno nuevo y el historial anterior se conserva.
+     *
+     * @param  array{price: float, pack_qty?: int, size: float, unit: Unit|string, bulk?: bool}  $data
+     */
+    public static function record(Product $product, int $providerId, ?ShoppingList $list, array $data): self
+    {
+        $price = static::firstOrNew([
+            'product_id' => $product->id,
+            'provider_id' => $providerId,
+            'shopping_list_id' => $list?->id,
+            'observed_on' => ($list?->priceDate() ?? today())->toDateString(),
+        ]);
+        $price->fill(['pack_qty' => 1, 'bulk' => false, ...$data])->save();
+
+        return $price;
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

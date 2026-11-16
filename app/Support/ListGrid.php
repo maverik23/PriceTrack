@@ -60,6 +60,8 @@ class ListGrid
             'selected' => self::price($item->price, $list),
             'product' => self::product($item->product),
             'cells' => (object) $cells,
+            // Página del artículo en cada tienda (para consultar su precio en línea)
+            'links' => (object) $item->product->links->pluck('url', 'provider_id')->all(),
         ];
     }
 

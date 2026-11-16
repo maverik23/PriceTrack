@@ -3,6 +3,7 @@
 return [
     'before_or_equal' => 'El campo :attribute debe ser una fecha anterior o igual a :date.',
     'date' => 'El campo :attribute no es una fecha válida.',
+    'digits' => 'El campo :attribute debe tener :digits dígitos.',
     'enum' => 'El valor de :attribute no es válido.',
     'exists' => 'El :attribute seleccionado no es válido.',
     'gt' => [
@@ -22,6 +23,7 @@ return [
     'required_without' => 'El campo :attribute es obligatorio.',
     'string' => 'El campo :attribute debe ser texto.',
     'unique' => 'Ya existe un registro con ese :attribute.',
+    'url' => 'El :attribute debe ser una dirección https:// válida.',
 
     'custom' => [
         'barcode' => [
@@ -49,5 +51,8 @@ return [
         'copy_from' => 'lista a copiar',
         'item_id' => 'artículo de la lista',
         'today' => 'hoy',
+        'postal_code' => 'código postal',
+        'url' => 'enlace',
+        'links.*' => 'enlace',
     ],
 ];
