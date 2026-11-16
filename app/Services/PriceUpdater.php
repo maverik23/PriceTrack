@@ -25,7 +25,7 @@ class PriceUpdater
     public function update(ProductLink $link, ?ShoppingList $list = null): array
     {
         try {
-            $found = $this->fetcher->fetch($link->url, Setting::value(Setting::POSTAL_CODE));
+            $found = $this->fetcher->fetch($link->url, Setting::value(Setting::POSTAL_CODE), Setting::value(Setting::CHEDRAUI_STORE));
         } catch (PriceFetchException $e) {
             $link->update(['checked_at' => now(), 'error' => Str::limit($e->getMessage(), 250)]);
 
@@ -47,7 +47,8 @@ class PriceUpdater
             'provider_id' => $link->provider_id,
             'ok' => true,
             'price' => $price,
-            'message' => money($price->price).' · '.$price->presentationLabel(),
+            // De qué sucursal salió (Chedraui cambia el precio por tienda)
+            'message' => collect([money($price->price), $price->presentationLabel(), $found['store']])->filter()->join(' · '),
         ];
     }
 

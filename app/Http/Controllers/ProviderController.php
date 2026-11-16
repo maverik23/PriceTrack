@@ -4,21 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Models\Provider;
 use App\Models\Setting;
+use App\Services\PriceFetcher;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ProviderController extends Controller
 {
-    public function index()
+    public function index(PriceFetcher $fetcher)
     {
         $providers = Provider::withCount('prices')
             ->withMax('prices', 'observed_on')
             ->orderBy('name')
             ->get();
 
+        $postalCode = Setting::value(Setting::POSTAL_CODE);
+
         return view('providers.index', [
             'providers' => $providers,
-            'postalCode' => Setting::value(Setting::POSTAL_CODE),
+            'postalCode' => $postalCode,
+            // Tiendas Chedraui cerca del código postal (de la más cercana a la más lejana)
+            'chedrauiStores' => $postalCode ? $fetcher->chedrauiStores($postalCode) : [],
+            'chedrauiStore' => Setting::value(Setting::CHEDRAUI_STORE),
         ]);
     }
 

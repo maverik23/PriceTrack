@@ -6,6 +6,7 @@ use App\Enums\Unit;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -30,19 +31,19 @@ class PriceFetcher
      * Precio y, cuando la tienda los da, nombre, presentación, marca, código de barras
      * (EAN) y código propio de la tienda (sku).
      *
-     * @return array{price: float, name: ?string, presentation: ?array{pack_qty: int, size: float, unit: string, bulk: bool}, brand: ?string, barcode: ?string, sku: ?string, source: string}
+     * @return array{price: float, name: ?string, presentation: ?array{pack_qty: int, size: float, unit: string, bulk: bool}, brand: ?string, barcode: ?string, sku: ?string, store: ?string, source: string}
      *
      * @throws PriceFetchException
      */
-    public function fetch(string $url, ?string $postalCode = null): array
+    public function fetch(string $url, ?string $postalCode = null, ?string $chedrauiStore = null): array
     {
         $host = $this->guard($url);
 
         $result = match (true) {
-            str_ends_with($host, 'chedraui.com.mx') => $this->chedraui($url, $postalCode),
+            str_ends_with($host, 'chedraui.com.mx') => $this->chedraui($url, $postalCode, $chedrauiStore),
             str_ends_with($host, 'costco.com.mx') => $this->costco($url),
             default => $this->page($url),
-        } + ['brand' => null, 'barcode' => null, 'sku' => null];
+        } + ['brand' => null, 'barcode' => null, 'sku' => null, 'store' => null];
 
         if (! ($result['price'] > 0)) {
             throw new PriceFetchException('La tienda no muestra precio (¿agotado?).');
@@ -53,7 +54,7 @@ class PriceFetcher
 
     // ---------- Chedraui (VTEX) ----------
 
-    private function chedraui(string $url, ?string $postalCode): array
+    private function chedraui(string $url, ?string $postalCode, ?string $store): array
     {
         // https://www.chedraui.com.mx/leche-entera-lala-...-3371188/p
         if (! preg_match('#/([^/]+)/p/?$#', (string) parse_url($url, PHP_URL_PATH), $m)) {
@@ -68,10 +69,11 @@ class PriceFetcher
             throw new PriceFetchException('Chedraui ya no tiene ese producto.');
         }
 
-        $price = (float) $offer['Price'];
-        if ($postalCode) {
-            $price = $this->chedrauiRegionalPrice($base, (string) $item['itemId'], $postalCode) ?? $price;
-        }
+        // El catálogo da un precio general que no es el de ninguna sucursal: con código
+        // postal se usa el de tu tienda (la elegida o la más cercana que lo tenga)
+        [$price, $seller] = $postalCode
+            ? $this->chedrauiStorePrice($base, (string) $item['itemId'], $postalCode, $store)
+            : [(float) $offer['Price'], null];
 
         // Fruta, verdura, carne…: se venden por kg y el precio es por 1 kg. Lo demás trae
         // "Contenido del empaque": "1 pieza con 1.8L", "6 piezas de 355 ml"
@@ -86,31 +88,80 @@ class PriceFetcher
             'brand' => $product['brand'] ?? null,
             'barcode' => $item['ean'] ?? null,
             'sku' => isset($item['itemId']) ? (string) $item['itemId'] : null,
+            'store' => $seller ? Str::before($this->chedrauiStores((string) $postalCode)[$seller] ?? $seller, ' · ') : null,
             'source' => 'Chedraui',
         ];
     }
 
-    /** Precio en la zona del código postal: simulación del carrito con la tienda que surte esa región. */
-    private function chedrauiRegionalPrice(string $base, string $skuId, string $postalCode): ?float
+    /**
+     * Precio en tu tienda Chedraui (cada sucursal tiene el suyo): simulación del carrito,
+     * en una sola petición, en la tienda elegida o, en automático, en las tiendas cercanas
+     * a tu código postal de la más cercana a la más lejana. Gana la primera que tenga
+     * existencia ("cannotBeDelivered" solo dice que no envía a domicilio a tu CP).
+     *
+     * @return array{0: float, 1: string} precio por unidad de venta y vendedor (tienda)
+     */
+    private function chedrauiStorePrice(string $base, string $skuId, string $postalCode, ?string $store): array
     {
         try {
-            $regions = $this->json($this->get("{$base}/api/checkout/pub/regions", ['country' => 'MEX', 'postalCode' => $postalCode]));
+            $sellers = $store ? [$store] : (array_keys($this->chedrauiStores($postalCode)) ?: array_column(
+                $this->json($this->get("{$base}/api/checkout/pub/regions", ['country' => 'MEX', 'postalCode' => $postalCode]))[0]['sellers'] ?? [],
+                'id',
+            ));
             $simulation = $this->json($this->client()->asJson()->post("{$base}/api/checkout/pub/orderForms/simulation?sc=1", [
-                'items' => [['id' => $skuId, 'quantity' => 1, 'seller' => $regions[0]['sellers'][0]['id'] ?? '1']],
+                'items' => array_map(fn (string $seller) => ['id' => $skuId, 'quantity' => 1, 'seller' => $seller], $sellers ?: ['1']),
                 'country' => 'MEX',
                 'postalCode' => $postalCode,
             ]));
-        } catch (PriceFetchException|ConnectionException) {
-            return null; // sin región: se queda el precio general
+        } catch (ConnectionException) {
+            throw new PriceFetchException('No se pudo consultar el precio de tu zona en Chedraui.');
         }
 
-        $item = $simulation['items'][0] ?? null;
-        if (! $item || empty($item['sellingPrice'])) {
-            return null;
+        $best = collect($simulation['items'] ?? [])
+            ->filter(fn (array $item) => ! empty($item['sellingPrice']))
+            ->sortBy(fn (array $item) => [($item['availability'] ?? '') === 'withoutStock' ? 1 : 0, $item['requestIndex'] ?? 0])
+            ->first();
+
+        if (! $best) {
+            throw new PriceFetchException($store
+                ? 'Tu tienda Chedraui no tiene este artículo.'
+                : "Chedraui no tiene este artículo en tu zona (CP {$postalCode}).");
         }
 
-        // En centavos y por "paso" de venta: 1 × 0.2 kg de plátano → se lleva a precio por kg
-        return $item['sellingPrice'] / 100 / ((float) ($item['unitMultiplier'] ?? 1) ?: 1);
+        // En centavos y por "paso" de venta: 1 × 0.1 kg de ejote → se lleva a precio por kg
+        return [$best['sellingPrice'] / 100 / ((float) ($best['unitMultiplier'] ?? 1) ?: 1), (string) $best['seller']];
+    }
+
+    /**
+     * Tiendas Chedraui cerca de un código postal, para elegir la tuya.
+     *
+     * @return array<string, string> vendedor (chedrauimx0262) => "CHEDRAUI SELECTO … · 5 km"
+     */
+    public function chedrauiStores(string $postalCode): array
+    {
+        $key = "chedraui-stores:{$postalCode}";
+        if (is_array($cached = Cache::get($key))) {
+            return $cached;
+        }
+
+        try {
+            $data = $this->json($this->get('https://www.chedraui.com.mx/api/checkout/pub/pickup-points', ['postalCode' => $postalCode, 'countryCode' => 'MEX']));
+        } catch (PriceFetchException) {
+            return [];
+        }
+
+        $stores = collect($data['items'] ?? [])
+            ->mapWithKeys(fn (array $item) => [
+                Str::before((string) ($item['pickupPoint']['id'] ?? ''), '_') => trim((string) ($item['pickupPoint']['friendlyName'] ?? '')).' · '.round((float) ($item['distance'] ?? 0), 1).' km',
+            ])
+            ->filter(fn (string $name, string $seller) => str_starts_with($seller, 'chedrauimx'))
+            ->all();
+
+        if ($stores) {
+            Cache::put($key, $stores, now()->addDay());
+        }
+
+        return $stores;
     }
 
     // ---------- Costco (SAP Commerce) ----------
