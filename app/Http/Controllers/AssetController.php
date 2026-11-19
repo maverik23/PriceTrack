@@ -7,6 +7,7 @@ use App\Models\Task;
 use App\Services\AssetReport;
 use App\Support\AssetData;
 use App\Support\AttachmentForm;
+use App\Support\Paginate;
 use Illuminate\Http\Request;
 
 class AssetController extends Controller
@@ -17,8 +18,15 @@ class AssetController extends Controller
         $assets = Asset::with(['valuations', 'maintenanceLogs', 'meterReadings', 'maintenancePlans.logs', 'maintenancePlans.asset', 'attachments'])
             ->when(in_array($status, array_keys(Asset::STATUSES), true), fn ($q) => $q->where('status', $status))
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->string('category')))
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $term = '%'.$request->string('q')->trim().'%';
+                $query->where(fn ($q) => $q->where('name', 'like', $term)
+                    ->orWhere('category', 'like', $term)->orWhere('brand', 'like', $term)->orWhere('model', 'like', $term)
+                    ->orWhere('serial_number', 'like', $term)->orWhere('location', 'like', $term));
+            })
             ->orderBy('name')
-            ->get();
+            ->paginate(Paginate::perPage($request))
+            ->withQueryString();
 
         return view('assets.index', [
             'assets' => $assets,

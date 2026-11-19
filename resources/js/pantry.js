@@ -8,6 +8,17 @@
  */
 const norm = (s) => (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
+const PER_PAGE = [10, 20, 50, 100];
+
+function savedPerPage() {
+    try {
+        const saved = Number(localStorage.getItem('pantry:perPage'));
+        return PER_PAGE.includes(saved) ? saved : 20;
+    } catch {
+        return 20;
+    }
+}
+
 const money = (v) => '$' + Number(v).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 async function save(row, body, url = row.action) {
@@ -104,6 +115,24 @@ export function pantryList(config) {
         q: '',
         show: 'all',
         category: '',
+        // Paginación en el navegador (como Paginate::OPTIONS); cuántos por página se recuerda
+        perPageOptions: PER_PAGE,
+        perPage: savedPerPage(),
+        page: 1,
+
+        init() {
+            this.$watch('q', () => (this.page = 1));
+            this.$watch('show', () => (this.page = 1));
+            this.$watch('category', () => (this.page = 1));
+            this.$watch('perPage', (value) => {
+                this.page = 1;
+                try {
+                    localStorage.setItem('pantry:perPage', String(value));
+                } catch {
+                    // Sin almacenamiento: solo dura en esta visita
+                }
+            });
+        },
 
         get filtered() {
             const q = norm(this.q);
@@ -113,13 +142,36 @@ export function pantryList(config) {
                     || (this.show === 'stocked' && r.pantry === 'stocked')
                     || (this.show === 'out' && r.pantry === 'out')));
         },
-        /** Agrupado por categoría, en orden alfabético ("Sin categoría" al final). */
+        /** Lo filtrado en el orden en que se muestra: por categoría ("Sin categoría" al final) y nombre. */
+        get sorted() {
+            const cat = (r) => r.category || '';
+            return [...this.filtered].sort((a, b) => (cat(a) === '') - (cat(b) === '')
+                || cat(a).localeCompare(cat(b), 'es')
+                || a.name.localeCompare(b.name, 'es'));
+        },
+        get pages() {
+            return Math.max(1, Math.ceil(this.filtered.length / this.perPage));
+        },
+        get currentPage() {
+            return Math.min(this.page, this.pages);
+        },
+        get pageRows() {
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.sorted.slice(start, start + this.perPage);
+        },
+        goTo(page) {
+            this.page = Math.min(Math.max(1, page), this.pages);
+            document.getElementById('pantry-groups')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+        /** La página agrupada por categoría. */
         get groups() {
-            const groups = {};
-            for (const r of this.filtered) (groups[r.category || ''] ??= []).push(r);
-            return Object.keys(groups)
-                .sort((a, b) => (a === '') - (b === '') || a.localeCompare(b, 'es'))
-                .map((name) => ({ name: name || 'Sin categoría', rows: groups[name] }));
+            const groups = [];
+            for (const r of this.pageRows) {
+                const name = r.category || 'Sin categoría';
+                if (groups.at(-1)?.name !== name) groups.push({ name, rows: [] });
+                groups.at(-1).rows.push(r);
+            }
+            return groups;
         },
         count(state) {
             return this.rows.filter((r) => r.pantry === state).length;

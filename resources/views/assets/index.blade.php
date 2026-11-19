@@ -36,9 +36,13 @@
 </div>
 
 <form method="GET" id="assets-filter" class="mb-4 flex flex-wrap items-center gap-2" data-live-filter data-live-links>
+    <div class="relative w-full sm:max-w-xs">
+        <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+        <input type="search" name="q" value="{{ request('q') }}" autocomplete="off" class="input pl-9" placeholder="Buscar por nombre, marca, modelo, lugar…" aria-label="Buscar bien">
+    </div>
     <div id="assets-status" data-live-part class="flex flex-wrap gap-1 text-sm">
         @foreach (\App\Models\Asset::STATUSES + ['all' => 'Todos'] as $value => $label)
-            <a href="{{ route('assets.index', array_filter(['status' => $value, 'category' => request('category')])) }}"
+            <a href="{{ route('assets.index', array_filter(['status' => $value, 'category' => request('category'), 'q' => request('q')])) }}"
                class="rounded-md px-3 py-1.5 {{ $status === $value ? 'bg-emerald-50 font-semibold text-emerald-700' : 'text-slate-600 hover:bg-slate-100' }}">{{ $label }}</a>
         @endforeach
     </div>
@@ -51,6 +55,11 @@
             @endforeach
         </select>
     @endif
+    <span id="assets-clear" data-live-part>
+        @if (request()->anyFilled(['q', 'category']))
+            <a href="{{ route('assets.index', ['status' => $status]) }}" class="btn btn-ghost">Limpiar</a>
+        @endif
+    </span>
 </form>
 <div id="assets-results" data-live-results>
 
@@ -106,11 +115,16 @@
             </tr>
         @empty
             <tr><td colspan="5" class="py-10 text-center text-slate-500">
+                @if (request()->anyFilled(['q', 'category']))
+                    Ningún bien coincide con la búsqueda.
+                @else
                 No hay bienes aquí. <a class="link" href="{{ route('assets.create') }}">Agrega uno</a>: el auto, la casa, el refrigerador…
+                @endif
             </td></tr>
         @endforelse
         </tbody>
     </table>
 </div>
+<div class="mt-4">{{ $assets->links() }}</div>
 </div>
 @endsection

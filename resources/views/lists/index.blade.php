@@ -10,10 +10,23 @@
     <a href="{{ route('lists.create') }}" class="btn btn-primary">+ Nueva lista</a>
 </div>
 
+<form method="GET" id="lists-filter" class="mb-4 flex flex-wrap items-center gap-2" data-live-filter>
+    <div class="relative w-full sm:max-w-xs">
+        <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+        <input type="search" name="q" value="{{ request('q') }}" autocomplete="off" class="input pl-9" placeholder="Buscar lista…" aria-label="Buscar lista">
+    </div>
+    {{-- Siempre presente para que buscar conserve la pestaña --}}
+    <input type="hidden" name="status" value="{{ $status === 'pending' ? '' : $status }}">
+    <span id="lists-clear" data-live-part>
+        @if (request()->filled('q'))
+            <a href="{{ route('lists.index', $status === 'pending' ? [] : ['status' => $status]) }}" class="btn btn-ghost">Limpiar</a>
+        @endif
+    </span>
+</form>
 <div id="lists-results" data-live-results>
 <nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtrar listas">
     @foreach (['pending' => 'Pendientes', 'done' => 'Compradas', 'all' => 'Todas'] as $key => $label)
-        <a href="{{ route('lists.index', $key === 'pending' ? [] : ['status' => $key]) }}" class="chip {{ $status === $key ? 'is-active' : '' }}" @if ($status === $key) aria-current="page" @endif>
+        <a href="{{ route('lists.index', array_filter(['status' => $key === 'pending' ? null : $key, 'q' => request('q')])) }}" class="chip {{ $status === $key ? 'is-active' : '' }}" @if ($status === $key) aria-current="page" @endif>
             {{ $label }} <span class="opacity-70">{{ $counts[$key] }}</span>
         </a>
     @endforeach
@@ -55,7 +68,9 @@
             </tr>
         @empty
             <tr><td colspan="7" class="py-10 text-center text-slate-500">
-                @if ($status === 'pending' && $counts['all'])
+                @if (request()->filled('q'))
+                    Ninguna lista coincide con «{{ request('q') }}».
+                @elseif ($status === 'pending' && $counts['all'])
                     No hay listas pendientes. <a class="link" href="{{ route('lists.create') }}">Crea una nueva</a> o <a class="link" href="{{ route('lists.index', ['status' => 'done']) }}">mira las compradas</a>.
                 @elseif ($status === 'done')
                     Aún no hay listas compradas.

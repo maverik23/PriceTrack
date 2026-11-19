@@ -10,7 +10,20 @@
 </div>
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-    <div class="card lg:col-span-2 overflow-x-auto p-0">
+    <div class="min-w-0 space-y-4 lg:col-span-2">
+    <form method="GET" id="providers-filter" class="flex flex-wrap items-center gap-2" data-live-filter>
+        <div class="relative w-full sm:max-w-xs">
+            <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+            <input type="search" name="q" value="{{ request('q') }}" autocomplete="off" class="input pl-9" placeholder="Buscar proveedor…" aria-label="Buscar proveedor">
+        </div>
+        <span id="providers-clear" data-live-part>
+            @if (request()->filled('q'))
+                <a href="{{ route('providers.index') }}" class="btn btn-ghost">Limpiar</a>
+            @endif
+        </span>
+    </form>
+    <div id="providers-results" data-live-results class="space-y-4">
+    <div class="card overflow-x-auto p-0">
         <table class="table">
             <thead>
             <tr>
@@ -49,10 +62,19 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="py-8 text-center text-slate-500">Aún no hay proveedores. Agrega el primero →</td></tr>
+                <tr><td colspan="6" class="py-8 text-center text-slate-500">
+                    @if (request()->filled('q'))
+                        Ningún proveedor coincide con «{{ request('q') }}».
+                    @else
+                        Aún no hay proveedores. Agrega el primero →
+                    @endif
+                </td></tr>
             @endforelse
             </tbody>
         </table>
+    </div>
+    {{ $providers->links() }}
+    </div>
     </div>
 
     <div class="space-y-6">

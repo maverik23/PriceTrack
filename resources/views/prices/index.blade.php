@@ -10,7 +10,11 @@
     <a href="{{ route('prices.create') }}" class="btn btn-primary">+ Capturar precio</a>
 </div>
 
-<form method="GET" id="prices-filter" class="card mb-4 grid grid-cols-1 gap-3 sm:grid-cols-5 sm:items-end" data-live-filter data-live-links>
+<form method="GET" id="prices-filter" class="card mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:items-end lg:grid-cols-6" data-live-filter data-live-links>
+    <div>
+        <label class="label" for="f-q">Buscar</label>
+        <input id="f-q" type="search" name="q" value="{{ request('q') }}" autocomplete="off" class="input" placeholder="Artículo, marca o nota…">
+    </div>
     <div>
         <label class="label" for="f-product">Artículo</label>
         <select id="f-product" name="product_id" class="input">

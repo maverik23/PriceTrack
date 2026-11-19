@@ -68,7 +68,7 @@
             Aún no hay artículos. <a class="link" href="{{ route('products.create') }}">Crea el primero</a> y márcalo aquí cuando lo tengas en casa.
         </div>
     @else
-        <div class="space-y-5">
+        <div id="pantry-groups" class="scroll-mt-20 space-y-5">
             <template x-for="group in groups" :key="group.name">
                 <section class="card p-0">
                     <h2 class="card-title border-b border-slate-100 px-4 py-3" x-text="group.name"></h2>
@@ -105,6 +105,25 @@
             <p x-show="!filtered.length" class="card py-10 text-center text-sm text-slate-500">
                 Nada coincide. <button type="button" class="link" @click="q = ''; show = 'all'; category = ''">Ver todo</button>
             </p>
+
+            {{-- Paginación en el navegador (mismo aspecto que vendor/pagination/tailwind) --}}
+            <nav x-show="filtered.length > perPageOptions[0]" x-cloak aria-label="Paginación" class="flex flex-wrap items-center justify-between gap-3 text-sm">
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <p class="text-slate-500" x-text="`${(currentPage - 1) * perPage + 1}–${(currentPage - 1) * perPage + pageRows.length} de ${filtered.length}`"></p>
+                    <div class="flex items-center gap-1" role="group" aria-label="Renglones por página">
+                        <span class="text-xs text-slate-500">Por página</span>
+                        <template x-for="option in perPageOptions" :key="option">
+                            <button type="button" class="btn btn-sm min-w-8" :class="option === perPage ? 'bg-brand text-on-brand' : 'btn-ghost'"
+                                    :aria-pressed="option === perPage" @click="perPage = option" x-text="option"></button>
+                        </template>
+                    </div>
+                </div>
+                <div x-show="pages > 1" class="flex flex-wrap items-center gap-1">
+                    <button type="button" class="btn btn-secondary btn-sm" :class="currentPage === 1 && 'opacity-40'" :disabled="currentPage === 1" @click="goTo(currentPage - 1)">← Anterior</button>
+                    <span class="px-2 text-slate-500" x-text="`Página ${currentPage} de ${pages}`"></span>
+                    <button type="button" class="btn btn-secondary btn-sm" :class="currentPage === pages && 'opacity-40'" :disabled="currentPage === pages" @click="goTo(currentPage + 1)">Siguiente →</button>
+                </div>
+            </nav>
         </div>
     @endif
 </div>

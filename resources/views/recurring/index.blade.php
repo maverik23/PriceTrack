@@ -19,16 +19,32 @@
             <button class="btn btn-primary">Agregar</button>
         </form>
 
+        <form method="GET" id="recurring-filter" class="flex flex-wrap items-center gap-2" data-live-filter>
+            <div class="relative w-full sm:max-w-xs">
+                <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                <input type="search" name="q" value="{{ request('q') }}" autocomplete="off" class="input pl-9" placeholder="Buscar pago o categoría…" aria-label="Buscar pago">
+            </div>
+            <span id="recurring-clear" data-live-part>
+                @if (request()->filled('q'))
+                    <a href="{{ route('recurring.index') }}" class="btn btn-ghost">Limpiar</a>
+                @endif
+            </span>
+        </form>
+
+        <div id="recurring-results" data-live-results class="space-y-6">
         <section class="card p-0">
             <h2 class="card-title border-b border-slate-100 px-4 py-3">Próximos pagos</h2>
             <ul class="divide-y divide-slate-100">
                 @forelse ($items as $item)
                     @include('recurring._row')
                 @empty
-                    <li class="px-4 py-8 text-center text-sm text-slate-500">Sin pagos recurrentes todavía.</li>
+                    <li class="px-4 py-8 text-center text-sm text-slate-500">
+                        {{ request()->filled('q') ? 'Ningún pago coincide con «'.request('q').'».' : 'Sin pagos recurrentes todavía.' }}
+                    </li>
                 @endforelse
             </ul>
         </section>
+        {{ $items->links() }}
 
         @if ($inactive->isNotEmpty())
             <details class="card p-0">
@@ -40,6 +56,7 @@
                 </ul>
             </details>
         @endif
+        </div>
     </div>
 
     <div class="min-w-0 space-y-6">

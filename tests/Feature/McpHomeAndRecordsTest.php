@@ -127,4 +127,33 @@ class McpHomeAndRecordsTest extends TestCase
 
         PriceTrackServer::tool(GetFinanceRecords::class, [])->assertHasErrors();
     }
+
+    public function test_a_new_maintenance_plan_can_start_from_the_last_time_it_was_done(): void
+    {
+        Carbon::setTestNow('2026-11-19 10:00');
+        $car = Asset::create(['name' => 'Auto', 'status' => 'active', 'valuation_method' => 'none', 'purchased_on' => '2020-01-10', 'meter_unit' => 'km']);
+
+        // Sin la última vez se cuenta desde la compra: nace vencido
+        PriceTrackServer::tool(SaveMaintenancePlan::class, ['asset_id' => $car->id, 'name' => 'Rotar llantas', 'every' => 6, 'every_unit' => 'month'])->assertOk();
+        $this->assertSame('overdue', MaintenancePlan::where('name', 'Rotar llantas')->firstOrFail()->status());
+
+        PriceTrackServer::tool(SaveMaintenancePlan::class, [
+            'asset_id' => $car->id, 'name' => 'Cambio de aceite', 'every' => 6, 'every_unit' => 'month', 'every_meter' => 10000,
+            'last_done_on' => '2026-09-01', 'last_meter' => 40000,
+        ])->assertOk()->assertSee('2026-09-01');
+
+        $plan = MaintenancePlan::where('name', 'Cambio de aceite')->firstOrFail();
+        $this->assertSame('2027-03-01', $plan->nextDueOn()->toDateString());
+        $this->assertSame(50000.0, (float) $plan->nextMeter());
+        $this->assertSame('ok', $plan->status());
+        $this->assertSame('2027-03-01', Task::findOrFail($plan->task_id)->due_on->toDateString(), 'la tarea se mueve a la siguiente fecha');
+
+        // En uno existente también; la misma fecha no duplica el servicio
+        PriceTrackServer::tool(SaveMaintenancePlan::class, ['id' => $plan->id, 'last_done_on' => '2026-09-01', 'last_meter' => 41000])->assertOk();
+        $this->assertSame(1, $plan->logs()->count());
+        $this->assertSame(41000.0, (float) $plan->logs()->first()->meter_reading);
+
+        PriceTrackServer::tool(SaveMaintenancePlan::class, ['id' => $plan->id, 'last_done_on' => '2026-12-01'])->assertHasErrors();
+        PriceTrackServer::tool(SaveMaintenancePlan::class, ['id' => $plan->id, 'last_meter' => 5])->assertHasErrors();
+    }
 }

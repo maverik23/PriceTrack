@@ -5,20 +5,26 @@ namespace App\Http\Controllers;
 use App\Models\Debt;
 use App\Models\Payment;
 use App\Models\RecurringPayment;
+use App\Support\Paginate;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class RecurringPaymentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $items = RecurringPayment::with(['debt', 'payments'])->orderBy('next_due_on')->get();
         $active = $items->where('active', true);
+        $search = Str::of($request->query('q'))->trim()->ascii()->lower()->toString();
+        $matches = fn (RecurringPayment $r) => $search === ''
+            || Str::of(implode(' ', [$r->name, $r->category, $r->notes, $r->debt?->name]))->ascii()->lower()->contains($search);
 
         return view('recurring.index', [
-            'items' => $active->values(),
-            'inactive' => $items->where('active', false)->values(),
+            // Los totales cuentan todos los activos; la búsqueda y las páginas son solo de la lista
+            'items' => Paginate::collection($active->filter($matches)->values(), $request),
+            'inactive' => $items->where('active', false)->filter($matches)->values(),
             'monthly' => round($active->sum(fn (RecurringPayment $r) => $r->monthlyAmount()), 2),
             'byCategory' => $active->groupBy(fn ($r) => $r->category ?? 'Sin categoría')
                 ->map(fn ($group) => round($group->sum(fn ($r) => $r->monthlyAmount()), 2))->sortDesc(),

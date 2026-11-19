@@ -16,6 +16,7 @@ use App\Services\SubrecipeConverter;
 use App\Support\AttachmentForm;
 use App\Support\Barcode;
 use App\Support\ListGrid;
+use App\Support\Paginate;
 use App\Support\ProductData;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -37,7 +38,8 @@ class ProductController extends Controller
             })
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->string('category')))
             ->orderBy('name')
-            ->get();
+            ->paginate(Paginate::perPage($request))
+            ->withQueryString();
 
         return view('products.index', [
             'products' => $products,

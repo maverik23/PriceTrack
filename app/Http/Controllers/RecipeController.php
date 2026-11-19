@@ -12,6 +12,7 @@ use App\Models\ShoppingList;
 use App\Models\Tag;
 use App\Services\MenuShopper;
 use App\Support\AttachmentForm;
+use App\Support\Paginate;
 use App\Support\RecipeData;
 use Illuminate\Http\Request;
 
@@ -35,7 +36,7 @@ class RecipeController extends Controller
         }
 
         return view('recipes.index', [
-            'recipes' => $recipes,
+            'recipes' => Paginate::collection($recipes, $request),
             'checks' => $checks,
             'pantry' => $pantry,
             'readyCount' => $checks->filter(fn ($c) => $c && $c['ready'])->count(),

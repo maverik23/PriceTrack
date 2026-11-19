@@ -4,17 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Provider;
 use App\Models\Setting;
+use App\Support\Paginate;
 use App\Support\ProviderData;
 use Illuminate\Http\Request;
 
 class ProviderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $providers = Provider::withCount('prices')
             ->withMax('prices', 'observed_on')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $term = '%'.$request->string('q')->trim().'%';
+                $query->where(fn ($q) => $q->where('name', 'like', $term)
+                    ->orWhere('notes', 'like', $term)->orWhere('branch_name', 'like', $term));
+            })
             ->orderBy('name')
-            ->get();
+            ->paginate(Paginate::perPage($request))
+            ->withQueryString();
 
         return view('providers.index', [
             'providers' => $providers,

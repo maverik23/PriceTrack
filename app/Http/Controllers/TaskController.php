@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\TaskList;
+use App\Support\Paginate;
 use App\Support\TaskCalendar;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -22,32 +23,44 @@ class TaskController extends Controller
             : null;
         $general = $request->query('list') === 'none';
 
+        $search = $request->string('q')->trim()->toString();
         $scope = fn ($query) => $query
             ->when($list, fn ($q) => $q->where('task_list_id', $list->id))
-            ->when($general, fn ($q) => $q->whereNull('task_list_id'));
+            ->when($general, fn ($q) => $q->whereNull('task_list_id'))
+            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->where('title', 'like', "%{$search}%")->orWhere('notes', 'like', "%{$search}%")));
 
         $view = $request->query('view') === 'list' ? 'list' : 'calendar';
         $month = rescue(fn () => preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month'))
             ? CarbonImmutable::createFromFormat('!Y-m', $request->query('month'))
             : null, null, false) ?? CarbonImmutable::today();
 
+        // En la lista se pagina en el orden de los grupos (vencidas, hoy, próximas, sin fecha)
         $pending = Task::with('list', 'taskable')->pending()->tap($scope)
             ->orderByRaw('due_on is null')->orderBy('due_on')->orderByDesc('priority')->orderBy('id')
-            ->get();
+            ->paginate(Paginate::perPage($request))
+            ->withQueryString();
         $today = today();
+        $totals = Task::pending()->tap($scope)->toBase()
+            ->selectRaw("case when due_on is null then 'undated' when due_on < ? then 'overdue' when due_on < ? then 'today' else 'upcoming' end as status_group, count(*) as total",
+                [$today->toDateString(), $today->copy()->addDay()->toDateString()])
+            ->groupBy('status_group')
+            ->pluck('total', 'status_group');
+        $tasks = $pending->getCollection();
 
         return view('tasks.index', [
             'view' => $view,
             'calendar' => $view === 'calendar' ? TaskCalendar::month($month, $scope) : null,
             'list' => $list,
             'general' => $general,
-            'groups' => [
-                'overdue' => ['Vencidas', $pending->filter(fn (Task $t) => $t->status($today) === 'overdue')],
-                'today' => ['Hoy', $pending->filter(fn (Task $t) => $t->status($today) === 'today')],
-                'upcoming' => ['Próximas', $pending->filter(fn (Task $t) => $t->status($today) === 'upcoming')],
-                'undated' => ['Sin fecha', $pending->filter(fn (Task $t) => $t->status($today) === 'undated')
-                    ->sortByDesc('priority')],
-            ],
+            'pending' => $pending,
+            'search' => $search,
+            'groups' => collect([
+                'overdue' => 'Vencidas', 'today' => 'Hoy', 'upcoming' => 'Próximas', 'undated' => 'Sin fecha',
+            ])->map(fn (string $title, string $key) => [
+                $title,
+                $tasks->filter(fn (Task $t) => $t->status($today) === $key)->values(),
+                (int) ($totals[$key] ?? 0),
+            ])->all(),
             'done' => Task::with('list')->completed()->tap($scope)
                 ->where('completed_at', '>=', now()->subDays(7))
                 ->orderByDesc('completed_at')->get(),

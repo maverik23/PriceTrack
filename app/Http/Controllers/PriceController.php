@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductLink;
 use App\Models\Provider;
 use App\Models\ShoppingListItem;
+use App\Support\Paginate;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -17,13 +18,18 @@ class PriceController extends Controller
     public function index(Request $request)
     {
         $prices = Price::with(['product', 'provider', 'shoppingList'])
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $term = '%'.$request->string('q')->trim().'%';
+                $query->where(fn ($q) => $q->where('notes', 'like', $term)
+                    ->orWhereHas('product', fn ($p) => $p->where('name', 'like', $term)->orWhere('brand', 'like', $term)));
+            })
             ->when($request->filled('product_id'), fn ($q) => $q->where('product_id', $request->integer('product_id')))
             ->when($request->filled('provider_id'), fn ($q) => $q->where('provider_id', $request->integer('provider_id')))
             ->when($request->filled('from'), fn ($q) => $q->whereDate('observed_on', '>=', $request->date('from')))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('observed_on', '<=', $request->date('to')))
             ->orderByDesc('observed_on')
             ->orderByDesc('id')
-            ->paginate(50)
+            ->paginate(Paginate::perPage($request, 50))
             ->withQueryString();
 
         return view('prices.index', [

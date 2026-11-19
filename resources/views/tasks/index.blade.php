@@ -7,10 +7,10 @@
     $showList = ! $list && ! $general;
     $empty = collect($groups)->every(fn ($group) => $group[1]->isEmpty());
     // Lista elegida (para el calendario y sus enlaces) y vista/mes (para los enlaces de las listas)
-    $baseQuery = $current === '' ? [] : ['list' => $current];
-    $keep = array_filter(['view' => $view === 'list' ? 'list' : null, 'month' => $view === 'calendar' ? request('month') : null]);
+    $baseQuery = array_filter(['list' => $current, 'q' => $search]);
+    $keep = array_filter(['view' => $view === 'list' ? 'list' : null, 'month' => $view === 'calendar' ? request('month') : null, 'q' => $search]);
 @endphp
-<div id="tasks-results" data-live-results>
+<div id="tasks-head" data-live-results>
 <div class="mb-6">
     <h1 class="text-3xl font-bold text-slate-900">{{ $list?->name ?? ($general ? 'General' : 'Tareas') }}</h1>
     <p class="text-sm text-slate-500">Las repetitivas crean la siguiente al completarlas, contando desde ese día.</p>
@@ -33,6 +33,25 @@
         <a href="{{ route('tasks.index', $keep + ['list' => $option->id]) }}" class="badge px-3 py-1 {{ $current === (string) $option->id ? 'badge-cheap' : 'badge-muted' }}">{{ $option->name }} · {{ $option->tasks_count }}</a>
     @endforeach
 </nav>
+</div>
+
+{{-- Buscar en las tareas (calendario y lista); los ocultos conservan la lista, la vista y el mes --}}
+<form method="GET" id="tasks-filter" class="mb-4 flex flex-wrap items-center gap-2" data-live-filter>
+    <div class="relative w-full sm:max-w-xs">
+        <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+        <input type="search" name="q" value="{{ $search }}" autocomplete="off" class="input pl-9" placeholder="Buscar tarea…" aria-label="Buscar tarea">
+    </div>
+    <input type="hidden" name="list" value="{{ $current }}">
+    <input type="hidden" name="view" value="{{ $view === 'list' ? 'list' : '' }}">
+    <input type="hidden" name="month" value="{{ $view === 'calendar' ? request('month') : '' }}">
+    <span id="tasks-clear" data-live-part>
+        @if ($search !== '')
+            <a href="{{ route('tasks.index', array_filter(['list' => $current, 'view' => $keep['view'] ?? null, 'month' => $keep['month'] ?? null])) }}" class="btn btn-ghost">Limpiar</a>
+        @endif
+    </span>
+</form>
+
+<div id="tasks-results" data-live-results>
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
 
@@ -85,14 +104,20 @@
             @include('tasks._calendar')
         @else
         @if ($empty)
-            <div class="card py-10 text-center text-sm text-slate-500">No hay tareas pendientes{{ $list || $general ? ' en esta lista' : '' }}. 🎉</div>
+            <div class="card py-10 text-center text-sm text-slate-500">
+                @if ($search !== '')
+                    Ninguna tarea pendiente coincide con «{{ $search }}».
+                @else
+                    No hay tareas pendientes{{ $list || $general ? ' en esta lista' : '' }}. 🎉
+                @endif
+            </div>
         @endif
 
-        @foreach ($groups as $key => [$title, $tasks])
+        @foreach ($groups as $key => [$title, $tasks, $groupTotal])
             @continue($tasks->isEmpty())
             <section class="card p-0" aria-labelledby="group-{{ $key }}">
                 <h2 id="group-{{ $key }}" class="card-title flex items-center gap-2 border-b border-slate-100 px-4 py-3 {{ $key === 'overdue' ? 'text-red-700' : '' }}">
-                    {{ $title }} <span class="badge {{ $key === 'overdue' ? 'badge-up' : 'badge-muted' }}">{{ $tasks->count() }}</span>
+                    {{ $title }} <span class="badge {{ $key === 'overdue' ? 'badge-up' : 'badge-muted' }}">{{ $groupTotal }}</span>
                 </h2>
                 <ul class="divide-y divide-slate-100">
                     @foreach ($tasks as $task)
@@ -101,6 +126,7 @@
                 </ul>
             </section>
         @endforeach
+        {{ $pending->links() }}
 
         @if ($done->isNotEmpty())
             <details class="card p-0">

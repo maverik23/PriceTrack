@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ShoppingList;
 use App\Support\ListGrid;
+use App\Support\Paginate;
 use Illuminate\Http\Request;
 
 class ShoppingListController extends Controller
@@ -16,9 +17,13 @@ class ShoppingListController extends Controller
         $lists = ShoppingList::with(['items.price.provider', 'items.product.prices', 'tickets'])
             ->when($status === 'pending', fn ($q) => $q->pending())
             ->when($status === 'done', fn ($q) => $q->done())
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $term = '%'.$request->string('q')->trim().'%';
+                $query->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('notes', 'like', $term));
+            })
             ->orderByDesc('shopped_on')
             ->orderByDesc('id')
-            ->paginate(20)
+            ->paginate(Paginate::perPage($request))
             ->withQueryString();
 
         return view('lists.index', [

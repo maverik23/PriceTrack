@@ -133,6 +133,7 @@
             </a>
         @endforeach
     </div>
+    <div class="mt-4">{{ $recipes->links() }}</div>
 @endif
 </div>
 @endsection
