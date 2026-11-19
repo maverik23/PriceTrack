@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Asset;
+use App\Models\InvestmentAccount;
 use App\Models\MealPlanEntry;
 use App\Models\Price;
 use App\Models\Product;
@@ -132,7 +133,45 @@ class DemoDataSeeder extends Seeder
             $this->seedKitchen($products->keyBy('name'));
             $this->seedTasks();
             $this->seedAssets();
+            $this->seedInvestments();
         });
+    }
+
+    /** Cuentas de inversión con aportaciones mensuales y valores capturados cada mes o cada trimestre. */
+    private function seedInvestments(): void
+    {
+        if (InvestmentAccount::exists()) {
+            return;
+        }
+        $today = CarbonImmutable::today();
+        $start = $today->subMonths(30)->startOfMonth();
+
+        // nombre, institución, tipo, moneda, aportación mensual, rendimiento anual, cada cuántos meses se captura el valor
+        $accounts = [
+            ['CETES', 'Cetesdirecto', 'cetes', 'MXN', 3000, 0.105, 1],
+            ['Afore', 'Afore XXI Banorte', 'retirement', 'MXN', 1500, 0.08, 3],
+            ['ETF S&P 500', 'GBM', 'stocks', 'USD', 100, 0.14, 1],
+        ];
+        foreach ($accounts as [$name, $institution, $type, $currency, $monthly, $rate, $every]) {
+            $account = InvestmentAccount::create(['name' => $name, 'institution' => $institution, 'type' => $type, 'currency' => $currency]);
+            $balance = 0;
+            for ($month = $start; $month->lte($today); $month = $month->addMonth()) {
+                $fx = $currency === 'USD' ? round(17.5 + 2.5 * sin($month->month / 2) + $start->diffInMonths($month) * 0.03, 4) : 1;
+                $balance = $balance * (1 + $rate / 12) * ($type === 'stocks' ? 1 + mt_rand(-40, 40) / 1000 : 1) + $monthly;
+                $account->transactions()->create(['occurred_on' => $month->addDays(2)->min($today), 'kind' => 'deposit', 'amount' => $monthly, 'exchange_rate' => $fx]);
+                if ($start->diffInMonths($month) % $every === 0 && $month->addDays(27)->lte($today)) {
+                    $account->valuations()->create(['valued_on' => $month->addDays(27), 'value' => round($balance, 2), 'exchange_rate' => $fx]);
+                }
+            }
+            if ($type === 'cetes') {
+                $account->transactions()->create(['occurred_on' => $today->subMonths(4), 'kind' => 'withdrawal', 'amount' => 8000, 'notes' => 'Vacaciones']);
+            }
+        }
+
+        // Cerrada: un pagaré que ya se cobró
+        $pagare = InvestmentAccount::create(['name' => 'Pagaré 1 año', 'institution' => 'Nu', 'type' => 'savings', 'closed_on' => $today->subMonths(6)]);
+        $pagare->transactions()->create(['occurred_on' => $today->subMonths(18), 'kind' => 'deposit', 'amount' => 20000]);
+        $pagare->transactions()->create(['occurred_on' => $today->subMonths(6), 'kind' => 'withdrawal', 'amount' => 22100]);
     }
 
     /** Bienes con distintos métodos de valor, medidor, planes de mantenimiento y servicios. */

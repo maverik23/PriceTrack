@@ -146,17 +146,36 @@ apretaba en móvil. Verificado con Playwright: método de valor y estado muestra
 combobox de categoría, valor por línea recta, plan vencido, completar el recordatorio desde
 Tareas registra el servicio, vender quita los recordatorios; sin desbordes en móvil.
 
-## Fase 4. Finanzas: inversiones y patrimonio
+## Fase 4. Finanzas: inversiones y patrimonio ✅ terminada
 
-- `investment_accounts` (nombre, institución, tipo: CETES, fondo, acciones, cripto, ahorro,
-  retiro…; moneda) → `investment_transactions` (fecha, aportación / retiro / dividendo o
-  interés / comisión, monto) y `investment_valuations` (fecha, valor), todo manual.
-- Si la cuenta no es en pesos, guardar el tipo de cambio que el usuario capture; reportar en MXN.
-- Rendimiento: ganancia = valor actual − aportado neto; rendimiento anualizado ponderado por
-  dinero (XIRR) con los flujos. Probar el cálculo con casos conocidos.
-- **Patrimonio neto**: inversiones + valor de los bienes (fase 3), con su gráfica en el
-  tiempo. Dejar previsto, pero preguntar antes de construir, si también se quieren deudas
-  (hipoteca, crédito del auto).
+- Migración `2026_11_19_000004_create_investments_tables.php`: `investment_accounts`
+  (nombre, institución, tipo, moneda, notas, `closed_on`), `investment_transactions`
+  (aportación / retiro / dividendo o interés / comisión, monto, tipo de cambio) e
+  `investment_valuations` (fecha, valor, tipo de cambio).
+- Modelos `InvestmentAccount` (valor en una fecha, aportado neto, ganancia, rendimiento
+  simple y anual), `InvestmentTransaction`, `InvestmentValuation`. `App\Support\Xirr`.
+- `InvestmentController` (CRUD), `InvestmentRecordController` (movimientos y valores),
+  `NetWorthController` con `App\Services\FinanceReport`. Vistas `investments/*` y
+  `finance/net-worth`. Sección **Finanzas** en el menú (Inversiones, Patrimonio).
+- Cuentas demo (CETES, Afore trimestral, ETF en dólares, pagaré cerrado).
+  `tests/Feature/InvestmentsTest.php` (6 tests; XIRR probado con el ejemplo de Excel, 37.34 %,
+  y casos de 10 %, pérdida y 0 %).
+
+Decisiones tomadas (las más simples):
+
+- Dividendos, intereses y comisiones son **informativos**: se asume que se quedan en la cuenta
+  y ya están en el valor capturado. Si se cobran fuera, se registra también un retiro.
+- Sin capturas de valor, una cuenta vale lo aportado; entre capturas no se estima nada.
+- El rendimiento se mide a la fecha de la **última captura** (no a hoy) para no inventar días
+  sin rendimiento; el resumen de todas las cuentas usa hoy.
+- La moneda no se puede cambiar si la cuenta ya tiene registros.
+- **Deudas**: no se construyeron (sigue pendiente de decidir). El patrimonio dice "Sin deudas";
+  si se agregan, `FinanceReport::netWorthOn()` es donde se restarían.
+
+Verificado con Playwright: cuenta en dólares (pide tipo de cambio y conserva lo escrito,
+valor y ganancia en pesos), patrimonio con gráfica, sin desbordes en móvil. Al revisarla se
+subió el formulario de movimientos arriba de la lista (quedaba al final de 30 renglones) y las
+cuentas cerradas muestran su fecha de cierre.
 
 ## Fase 5. Inicio como resumen
 

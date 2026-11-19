@@ -3,8 +3,11 @@
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetRecordController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InvestmentController;
+use App\Http\Controllers\InvestmentRecordController;
 use App\Http\Controllers\MaintenancePlanController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\NetWorthController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductLinkController;
@@ -66,6 +69,16 @@ Route::scopeBindings()->prefix('assets/{asset}')->name('assets.')->group(functio
     Route::resource('plans', MaintenancePlanController::class)->only(['store', 'edit', 'update', 'destroy'])
         ->parameters(['plans' => 'maintenancePlan']);
 });
+
+// Finanzas: inversiones y patrimonio
+Route::resource('investments', InvestmentController::class);
+Route::scopeBindings()->prefix('investments/{investment}')->name('investments.')->controller(InvestmentRecordController::class)->group(function () {
+    Route::post('transactions', 'storeTransaction')->name('transactions.store');
+    Route::delete('transactions/{transaction}', 'destroyTransaction')->name('transactions.destroy');
+    Route::post('valuations', 'storeValuation')->name('valuations.store');
+    Route::delete('valuations/{valuation}', 'destroyValuation')->name('valuations.destroy');
+});
+Route::get('net-worth', NetWorthController::class)->name('net-worth');
 
 Route::prefix('reports')->name('reports.')->controller(ReportController::class)->group(function () {
     Route::get('inflation', 'inflation')->name('inflation');

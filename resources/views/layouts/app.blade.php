@@ -32,6 +32,10 @@
             null,
             ['reports.assets', 'Reporte de bienes', 'reports.assets'],
         ]],
+        ['Finanzas', [
+            ['investments.index', 'Inversiones', 'investments.*'],
+            ['net-worth', 'Patrimonio', 'net-worth'],
+        ]],
     ];
     $isActive = fn (array $links) => collect($links)->filter()->contains(fn ($link) => request()->routeIs($link[2]));
     $linkClass = fn (string $pattern) => request()->routeIs($pattern)
