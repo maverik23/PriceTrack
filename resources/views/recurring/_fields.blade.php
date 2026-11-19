@@ -12,6 +12,12 @@
         <input id="rp-amount" name="amount" type="number" step="0.01" min="0.01" value="{{ old('amount', num($payment->amount)) }}" class="input" required placeholder="$">
     </div>
     <div class="sm:col-span-2">
+        <label class="label" for="rp-meter">Lectura en <span class="font-normal text-slate-400">opcional</span></label>
+        <input id="rp-meter" name="meter_unit" value="{{ old('meter_unit', $payment->meter_unit) }}" class="input" maxlength="12" list="rp-meter-units" placeholder="m³, kWh…"
+               title="Si el recibo trae lectura de medidor (agua, luz, gas), su unidad: con ella se calcula el consumo y el precio por unidad">
+        <datalist id="rp-meter-units"><option value="m³"><option value="kWh"><option value="L"><option value="GB"></datalist>
+    </div>
+    <div class="sm:col-span-2">
         <span class="label">Cada</span>
         <div class="flex gap-2">
             <input name="every" type="number" min="1" max="999" value="{{ old('every', $payment->every) }}" class="input w-20" required aria-label="Cada cuánto">

@@ -5,7 +5,7 @@
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
         <h1 class="text-3xl font-bold text-slate-900">Pagos recurrentes</h1>
-        <p class="text-sm text-slate-500">Luz, internet, suscripciones, mensualidades. Al marcar "Pagado" la fecha pasa al siguiente periodo.</p>
+        <p class="text-sm text-slate-500">Luz, agua, internet, suscripciones, mensualidades. Registra cada recibo con lo que pagaste (y su lectura si lleva medidor); el siguiente recibo queda pendiente con ese monto de referencia.</p>
     </div>
     <a href="{{ route('debts.index') }}" class="btn btn-secondary">Deudas</a>
 </div>

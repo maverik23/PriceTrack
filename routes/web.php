@@ -129,6 +129,7 @@ Route::post('income-sources/{incomeSource}/receive', [IncomeController::class, '
 Route::resource('recurring', RecurringPaymentController::class)->except(['create', 'show'])
     ->parameters(['recurring' => 'recurringPayment']);
 Route::post('recurring/{recurringPayment}/pay', [RecurringPaymentController::class, 'pay'])->name('recurring.pay');
+Route::put('paid/{payment}', [RecurringPaymentController::class, 'updatePayment'])->name('paid.update');
 Route::delete('paid/{payment}', [RecurringPaymentController::class, 'destroyPayment'])->name('paid.destroy');
 Route::get('net-worth', NetWorthController::class)->name('net-worth');
 

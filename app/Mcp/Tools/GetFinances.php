@@ -23,7 +23,7 @@ class GetFinances extends Tool
         $accounts = $finance->accounts();
         $debts = $finance->debts();
         $investments = $finance->investmentSummary($accounts);
-        $recurring = RecurringPayment::with('debt')->orderByDesc('active')->orderBy('next_due_on')->get();
+        $recurring = RecurringPayment::with(['debt', 'payments'])->orderByDesc('active')->orderBy('next_due_on')->get();
 
         return $this->json([
             'net_worth' => $finance->netWorthOn($today, $accounts, null, $debts),
@@ -70,6 +70,17 @@ class GetFinances extends Tool
                     'next_due_on' => $p->next_due_on->toDateString(),
                     'status' => $p->status(),
                     'debt' => $p->debt?->name,
+                    'meter_unit' => $p->meter_unit,
+                    // El último recibo pagado, con lectura, consumo y precio por unidad si lleva medidor
+                    'last_payment' => ($last = $p->history()[0] ?? null) ? [
+                        'payment_id' => $last['payment']->id,
+                        'paid_on' => $last['payment']->paid_on->toDateString(),
+                        'due_on' => $last['payment']->due_on?->toDateString(),
+                        'amount' => $last['payment']->amount,
+                        'reading' => $last['payment']->reading,
+                        'consumption' => $last['consumption'],
+                        'unit_price' => $last['unit_price'],
+                    ] : null,
                 ])->all(),
             ],
         ]);

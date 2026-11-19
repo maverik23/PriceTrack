@@ -37,6 +37,7 @@ use App\Mcp\Tools\SetMenuNote;
 use App\Mcp\Tools\SetStoreBranch;
 use App\Mcp\Tools\UpdateListItem;
 use App\Mcp\Tools\UpdatePantry;
+use App\Mcp\Tools\UpdatePayment;
 use App\Mcp\Tools\UpdateRecipe;
 use App\Mcp\Tools\UpdateTask;
 use App\Mcp\Tools\UseRecipeAsIngredient;
@@ -114,5 +115,6 @@ class PriceTrackServer extends Server
         RecordIncome::class,
         GetFinances::class,
         MarkPaymentPaid::class,
+        UpdatePayment::class,
     ];
 }
