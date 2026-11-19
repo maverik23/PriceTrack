@@ -51,6 +51,7 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
   - **Deudas** (hipoteca, auto, tarjeta…): saldo con el interés de su tasa y tus pagos, capturas del estado de cuenta, cuánto pagas al mes y **cuántos meses te faltan**.
   - **Pagos recurrentes** (luz, internet, suscripciones, mensualidades): cuánto pagas al mes por categoría y los pagos de la semana en el inicio. "Pagado" registra el pago y pasa al siguiente periodo **en la misma fecha** (el día 15 sigue siendo el 15 aunque pagues el 19); si es la mensualidad de una deuda, baja su saldo.
   - **Patrimonio neto** = inversiones + valor de tus bienes − deudas, con su gráfica de 24 meses y el cambio en el mes y en el año.
+- **Fotos y documentos** en los bienes (fotos, factura, póliza, garantía, manual) y en las recetas (la primera foto es la portada). Las fotos grandes se reducen en el navegador antes de subirlas; todo se guarda en tu servidor, fuera de lo público.
 - **Marcas y categorías con autocompletar**, sin duplicados ("lacteos" se une con "Lácteos").
 - Interfaz en español (México), responsiva para usarla en el celular dentro de la tienda.
 
@@ -87,7 +88,7 @@ Variables opcionales (en un `.env` junto al compose, o en Portainer):
 3. (Opcional) agrega las variables de la tabla en *Environment variables*.
 4. **Deploy the stack**. Portainer construye la imagen y levanta la app y la base de datos.
 
-Para actualizar: en el stack, **Pull and redeploy**. Tus datos viven en los volúmenes `storage` y `db`.
+Para actualizar: en el stack, **Pull and redeploy**. Tus datos viven en los volúmenes `db` (la base de datos) y `storage` (las fotos y documentos que subes, en `storage/app/private/attachments`): respalda los dos.
 
 ## Desarrollo (Laravel Sail)
 
@@ -141,6 +142,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 - `app/Models/Asset.php`, `app/Models/MaintenancePlan.php`, `app/Services/AssetReport.php`: valor, mantenimiento y reporte de bienes.
 - `app/Models/InvestmentAccount.php`, `app/Support/Xirr.php`, `app/Services/FinanceReport.php`: inversiones, rendimiento y patrimonio.
 - `app/Models/Debt.php`, `app/Models/RecurringPayment.php`: deudas y pagos recurrentes.
+- `app/Models/Attachment.php` + `resources/js/attachment-upload.js`: fotos y documentos.
 - `Dockerfile`, `docker-compose.prod.yml`, `docker/`: imagen y stack de producción.
 
 PriceTrack no está afiliado a ninguna de las tiendas mencionadas; los nombres se usan solo como ejemplo.

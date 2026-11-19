@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetRecordController;
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\InvestmentController;
@@ -53,6 +54,13 @@ Route::get('menu', [MenuController::class, 'index'])->name('menu.index');
 Route::post('menu', [MenuController::class, 'store'])->name('menu.store');
 Route::post('menu/shop', [MenuController::class, 'shop'])->name('menu.shop');
 Route::delete('menu/{entry}', [MenuController::class, 'destroy'])->name('menu.destroy');
+
+// Fotos y documentos (bienes y recetas)
+Route::post('assets/{asset}/attachments', [AttachmentController::class, 'storeForAsset'])->name('assets.attachments.store');
+Route::post('recipes/{recipe}/attachments', [AttachmentController::class, 'storeForRecipe'])->name('recipes.attachments.store');
+Route::get('attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');
+Route::patch('attachments/{attachment}', [AttachmentController::class, 'update'])->name('attachments.update');
+Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
 
 // Hogar: tareas
 Route::resource('tasks', TaskController::class)->only(['index', 'store', 'edit', 'update', 'destroy']);

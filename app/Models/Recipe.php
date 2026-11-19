@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAttachments;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,6 +12,8 @@ use Illuminate\Support\Str;
 #[Fillable(['name', 'category', 'servings', 'minutes', 'instructions', 'source_url', 'notes'])]
 class Recipe extends Model
 {
+    use HasAttachments;
+
     protected function casts(): array
     {
         return [

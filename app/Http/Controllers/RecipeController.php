@@ -17,7 +17,7 @@ class RecipeController extends Controller
 {
     public function index(Request $request)
     {
-        $recipes = Recipe::with('ingredients.product.prices')
+        $recipes = Recipe::with('ingredients.product.prices', 'attachments')
             ->when($request->filled('q'), fn ($q) => $q->where('name', 'like', '%'.$request->string('q')->trim().'%'))
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->string('category')))
             ->orderBy('name')
@@ -49,7 +49,7 @@ class RecipeController extends Controller
 
     public function show(Request $request, Recipe $recipe)
     {
-        $recipe->load('ingredients.product.prices.provider');
+        $recipe->load('ingredients.product.prices.provider', 'attachments');
         $servings = min(999, max(1, $request->integer('servings') ?: $recipe->servings));
 
         return view('recipes.show', [

@@ -221,13 +221,23 @@ sueltos se registran en la deuda. Al revisarla: la lista de pagos de una hipotec
 muestran los últimos 12 y el resto en un desplegable; una deuda en 0 sin fecha de liquidación
 dice "Pagada".
 
-### Fase 7. Fotos y documentos
+### Fase 7. Fotos y documentos ✅ terminada
 
 - `attachments` polimórfico (bienes y recetas): fotos (jpg, png, webp, heic) y documentos (pdf…),
   guardados en `storage/app/private/attachments` (el volumen de producción) y servidos por un
   controlador, sin enlace público. Las fotos grandes se reducen en el navegador antes de subirlas
   (el servidor no tiene GD). Límite de subida a 20 MB en `docker/php.ini`.
 - Bienes: fotos, facturas, pólizas, manuales. Recetas: su foto (la primera es la portada).
+
+Hecho: migración `2026_11_20_000002_create_attachments_table.php`, modelo `Attachment`, trait
+`HasAttachments`, `AttachmentController` (subir a un bien o receta, ver, descargar, título,
+borrar), panel `attachments/_panel`, portada en la ficha y miniaturas en los listados de bienes
+y recetas, `docker/php.ini` con 20 MB por archivo. `tests/Feature/AttachmentsTest.php` (3 tests).
+Verificado en el navegador: una foto de 4000×3000 llegó reducida a 2000 px con su miniatura de
+480 px, el PDF tal cual. Al revisarla, la etiqueta "Portada" se encimaba con el botón de borrar.
+
+Decisiones: sin miniaturas en el servidor (no hay GD); HEIC que el navegador no puede leer se
+guarda tal cual y se ofrece para descargar; las recetas también aceptan documentos.
 
 ### Fase 8. Cocina: unidades de cocina y macros
 

@@ -37,8 +37,15 @@
             @php($uncosted = $recipe->uncostedCount())
             <tr>
                 <td>
-                    <a href="{{ route('recipes.show', $recipe) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $recipe->name }}</a>
-                    <div class="text-xs text-slate-500">{{ $recipe->ingredients->count() }} ingredientes</div>
+                    <div class="flex items-center gap-3">
+                        @if ($cover = $recipe->coverPhoto())
+                            <img src="{{ $cover->url(true) }}" alt="" loading="lazy" class="size-12 shrink-0 rounded-md object-cover ring-1 ring-slate-200">
+                        @endif
+                        <div class="min-w-0">
+                            <a href="{{ route('recipes.show', $recipe) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $recipe->name }}</a>
+                            <div class="text-xs text-slate-500">{{ $recipe->ingredients->count() }} ingredientes</div>
+                        </div>
+                    </div>
                 </td>
                 <td>@if ($recipe->category)<span class="badge badge-muted">{{ $recipe->category }}</span>@endif</td>
                 <td class="text-right tabular-nums">{{ $recipe->servings }}</td>

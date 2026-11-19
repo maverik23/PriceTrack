@@ -23,6 +23,11 @@
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
     <div class="space-y-6 lg:col-span-2">
+        @if ($cover = $recipe->coverPhoto())
+            <a href="{{ $cover->url() }}" target="_blank" rel="noopener" class="block overflow-hidden rounded-xl ring-1 ring-slate-200">
+                <img src="{{ $cover->url() }}" alt="{{ $recipe->name }}" class="max-h-96 w-full object-cover">
+            </a>
+        @endif
         <div class="card overflow-x-auto p-0">
             <div class="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 pb-3">
                 <h2 class="card-title">Ingredientes</h2>
@@ -136,6 +141,8 @@
             </div>
             <button class="btn btn-primary w-full">Agregar ingredientes</button>
         </form>
+
+        @include('attachments._panel', ['owner' => $recipe, 'action' => route('recipes.attachments.store', $recipe), 'title' => 'Fotos', 'hint' => 'La primera es la portada de la receta.'])
     </div>
 </div>
 @endsection

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAttachments;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,6 +19,8 @@ use Illuminate\Support\Str;
 ])]
 class Asset extends Model
 {
+    use HasAttachments;
+
     public const STATUSES = ['active' => 'En uso', 'sold' => 'Vendido', 'retired' => 'Dado de baja'];
 
     public const METHODS = [

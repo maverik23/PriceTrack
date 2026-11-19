@@ -13,7 +13,7 @@ class AssetController extends Controller
     public function index(Request $request, AssetReport $report)
     {
         $status = $request->query('status', 'active');
-        $assets = Asset::with(['valuations', 'maintenanceLogs', 'meterReadings', 'maintenancePlans.logs', 'maintenancePlans.asset'])
+        $assets = Asset::with(['valuations', 'maintenanceLogs', 'meterReadings', 'maintenancePlans.logs', 'maintenancePlans.asset', 'attachments'])
             ->when(in_array($status, array_keys(Asset::STATUSES), true), fn ($q) => $q->where('status', $status))
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->string('category')))
             ->orderBy('name')
@@ -41,7 +41,7 @@ class AssetController extends Controller
 
     public function show(Asset $asset)
     {
-        $asset->load(['valuations', 'meterReadings', 'maintenanceLogs.plan', 'maintenancePlans.logs', 'maintenancePlans.asset']);
+        $asset->load(['valuations', 'meterReadings', 'maintenanceLogs.plan', 'maintenancePlans.logs', 'maintenancePlans.asset', 'attachments']);
 
         return view('assets.show', [
             'asset' => $asset,

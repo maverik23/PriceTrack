@@ -66,8 +66,15 @@
             @endphp
             <tr>
                 <td>
-                    <a href="{{ route('assets.show', $asset) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $asset->name }}</a>
-                    <div class="text-xs text-slate-500">{{ collect([$asset->category, $asset->location, $asset->isActive() ? null : $asset->statusLabel()])->filter()->join(' · ') }}</div>
+                    <div class="flex items-center gap-3">
+                        @if ($cover = $asset->coverPhoto())
+                            <img src="{{ $cover->url(true) }}" alt="" loading="lazy" class="size-10 shrink-0 rounded-md object-cover ring-1 ring-slate-200">
+                        @endif
+                        <div class="min-w-0">
+                            <a href="{{ route('assets.show', $asset) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $asset->name }}</a>
+                            <div class="text-xs text-slate-500">{{ collect([$asset->category, $asset->location, $asset->isActive() ? null : $asset->statusLabel()])->filter()->join(' · ') }}</div>
+                        </div>
+                    </div>
                 </td>
                 <td class="text-right whitespace-nowrap tabular-nums">{{ $asset->isActive() ? money($asset->currentValue()) : '—' }}</td>
                 <td class="text-right whitespace-nowrap tabular-nums">
