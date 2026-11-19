@@ -12,6 +12,7 @@ class MealPlanEntry extends Model
     public const MEALS = [
         'breakfast' => 'Desayuno',
         'lunch' => 'Comida',
+        'snack' => 'Merienda',
         'dinner' => 'Cena',
         'other' => 'Otro',
     ];
@@ -22,6 +23,12 @@ class MealPlanEntry extends Model
             'planned_on' => 'date',
             'servings' => 'integer',
         ];
+    }
+
+    /** Relaciones para costear lo planeado (receta con sus sub-recetas). */
+    public static function tree(): array
+    {
+        return array_map(fn (string $relation) => 'recipe.'.$relation, Recipe::TREE);
     }
 
     public function recipe(): BelongsTo

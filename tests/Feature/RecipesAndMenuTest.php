@@ -65,7 +65,7 @@ class RecipesAndMenuTest extends TestCase
 
         $recipe = Recipe::firstOrFail();
         $this->assertCount(2, $recipe->ingredients);
-        $this->assertSame(['Uno', 'Dos'], $recipe->steps());
+        $this->assertSame(['Uno', 'Dos'], $recipe->steps->pluck('body')->all());
         $this->assertEqualsWithDelta(10.0, $recipe->cost(), 0.001);
         $this->assertEqualsWithDelta(20.0, $recipe->cost(8), 0.001);
         $this->assertEqualsWithDelta(2.5, $recipe->costPerServing(), 0.001);
@@ -220,7 +220,7 @@ class RecipesAndMenuTest extends TestCase
     {
         $this->post(route('menu.store'), ['planned_on' => today()->toDateString(), 'meal' => 'lunch'])
             ->assertSessionHasErrors(['recipe_id', 'title']);
-        $this->post(route('menu.store'), ['planned_on' => today()->toDateString(), 'meal' => 'snack', 'title' => 'X'])
+        $this->post(route('menu.store'), ['planned_on' => today()->toDateString(), 'meal' => 'brunch', 'title' => 'X'])
             ->assertSessionHasErrors('meal');
         $this->post(route('menu.shop'), ['week' => today()->toDateString()])->assertSessionHasErrors('list_id');
         $this->assertSame(0, MealPlanEntry::count());

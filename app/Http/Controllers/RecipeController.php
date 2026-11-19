@@ -6,25 +6,30 @@ use App\Enums\IngredientUnit;
 use App\Models\MealPlanEntry;
 use App\Models\Product;
 use App\Models\Recipe;
+use App\Models\RecipeIngredient;
+use App\Models\RecipeStep;
 use App\Models\ShoppingList;
+use App\Models\Tag;
 use App\Services\MenuShopper;
 use App\Support\RecipeData;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class RecipeController extends Controller
 {
     public function index(Request $request)
     {
-        $recipes = Recipe::with('ingredients.product.prices', 'attachments')
+        $recipes = Recipe::withTree()->with(['attachments', 'tags'])
             ->when($request->filled('q'), fn ($q) => $q->where('name', 'like', '%'.$request->string('q')->trim().'%'))
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->string('category')))
+            ->when($request->filled('tag'), fn ($q) => $q->whereHas('tags', fn ($t) => $t->where('name', $request->string('tag'))))
+            ->when($request->filled('rating'), fn ($q) => $q->where('rating', '>=', $request->integer('rating')))
             ->orderBy('name')
             ->get();
 
         return view('recipes.index', [
             'recipes' => $recipes,
             'categories' => Recipe::categories(),
+            'tags' => Tag::has('recipes')->orderBy('name')->pluck('name'),
         ]);
     }
 
@@ -35,53 +40,57 @@ class RecipeController extends Controller
 
     public function store(Request $request)
     {
-        $recipe = DB::transaction(function () use ($request) {
-            [$data, $ingredients] = $this->validated($request);
-            $recipe = Recipe::create($data);
-            $recipe->ingredients()->createMany($ingredients);
-
-            return $recipe;
-        });
+        $recipe = RecipeData::save(new Recipe, RecipeData::validate($request->all()));
 
         return redirect()->route('recipes.show', $recipe)->with('success', 'Receta guardada.');
     }
 
     public function show(Request $request, Recipe $recipe)
     {
-        $recipe->load('ingredients.product.prices.provider', 'attachments');
+        $recipe->loadShoppingTree()->load(['ingredients.product.prices.provider', 'steps', 'tags', 'attachments', 'usedAsIngredient.recipe']);
         $servings = min(999, max(1, $request->integer('servings') ?: $recipe->servings));
 
         return view('recipes.show', [
             'recipe' => $recipe,
             'servings' => $servings,
             'factor' => $recipe->factor($servings),
-            'lists' => $this->recentLists(),
             'meals' => MealPlanEntry::MEALS,
         ]);
     }
 
     public function edit(Recipe $recipe)
     {
-        return view('recipes.edit', $this->formData($recipe->load('ingredients')));
+        return view('recipes.edit', $this->formData($recipe->load(['ingredients', 'steps', 'tags'])));
     }
 
     public function update(Request $request, Recipe $recipe)
     {
-        DB::transaction(function () use ($request, $recipe) {
-            [$data, $ingredients] = $this->validated($request);
-            $recipe->update($data);
-            $recipe->ingredients()->delete();
-            $recipe->ingredients()->createMany($ingredients);
-        });
+        RecipeData::save($recipe, RecipeData::validate($request->all(), $recipe));
 
         return redirect()->route('recipes.show', $recipe)->with('success', 'Receta actualizada.');
     }
 
     public function destroy(Recipe $recipe)
     {
+        $usedIn = $recipe->usedAsIngredient()->with('recipe')->get()->pluck('recipe.name')->filter()->unique();
         $recipe->delete();
 
-        return redirect()->route('recipes.index')->with('success', 'Receta eliminada.');
+        return redirect()->route('recipes.index')->with('success', 'Receta eliminada.'.($usedIn->isNotEmpty()
+            ? ' Quedó como texto libre en: '.$usedIn->join(', ').'.'
+            : ''));
+    }
+
+    /** Calificación de 1 a 5 desde el encabezado (0 la quita). */
+    public function rate(Request $request, Recipe $recipe)
+    {
+        $data = $request->validate(['rating' => ['required', 'integer', 'min:0', 'max:5']], [], ['rating' => 'calificación']);
+        $recipe->update(['rating' => $data['rating'] ?: null]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['rating' => $recipe->rating]);
+        }
+
+        return back()->with('success', $recipe->rating ? "Calificada con {$recipe->rating} de 5." : 'Calificación quitada.');
     }
 
     /** Revisión antes de mandar a una lista: qué falta y qué ya está en la despensa. */
@@ -138,10 +147,30 @@ class RecipeController extends Controller
     private function formData(Recipe $recipe): array
     {
         $products = Product::orderBy('name')->get();
+        // Recetas que se pueden usar como ingrediente: no ella misma ni las que ya la usan
+        $blocked = $recipe->exists ? RecipeIngredient::where('subrecipe_id', $recipe->id)->pluck('recipe_id')->all() : [];
+        $subrecipes = Recipe::when($recipe->exists, fn ($q) => $q->where('id', '!=', $recipe->id))->orderBy('name')->get()
+            ->reject(fn (Recipe $r) => $recipe->exists && (in_array($r->id, $blocked, true) || in_array($recipe->id, Recipe::descendantIds($r->id), true)));
+
+        $old = old('ingredients');
+        $ingredients = $old !== null ? $old : $recipe->ingredients->map(fn (RecipeIngredient $i) => [
+            'product_id' => $i->product_id,
+            'subrecipe_id' => $i->subrecipe_id,
+            'name' => $i->product_id || $i->subrecipe_id ? '' : $i->name,
+            'quantity' => num($i->quantity),
+            'unit' => $i->unit?->value,
+            'note' => $i->note,
+            'section' => $i->section,
+        ])->all();
+        $steps = old('steps', $recipe->steps->map(fn (RecipeStep $s) => [
+            'stage' => $s->stage, 'body' => $s->body, 'minutes' => $s->minutes,
+        ])->all());
 
         return [
             'recipe' => $recipe,
             'categories' => Recipe::categories(),
+            'tagOptions' => Tag::names(),
+            'tags' => old('tags', $recipe->tags->pluck('name')->all()),
             'form' => [
                 'products' => $products->map(fn (Product $p) => [
                     'id' => $p->id,
@@ -151,29 +180,29 @@ class RecipeController extends Controller
                     'piece' => $p->piece_weight,
                     'cup' => $p->cup_grams,
                 ])->all(),
+                'recipes' => $subrecipes->map(fn (Recipe $r) => [
+                    'id' => $r->id,
+                    'name' => $r->name,
+                    'servings' => $r->servings,
+                    'yield' => $r->yieldDimension(),
+                    'yieldLabel' => $r->yieldLabel(),
+                ])->values()->all(),
                 'units' => IngredientUnit::meta(),
-                'ingredients' => collect(old('ingredients', $recipe->ingredients->map(fn ($i) => [
-                    'product_id' => $i->product_id,
-                    'name' => $i->product_id ? '' : $i->name,
-                    'quantity' => num($i->quantity),
-                    'unit' => $i->unit?->value,
-                    'note' => $i->note,
-                ])->all()))->map(fn ($row) => [
+                'ingredients' => collect($ingredients)->map(fn ($row) => [
                     'product_id' => (string) ($row['product_id'] ?? ''),
+                    'subrecipe_id' => (string) ($row['subrecipe_id'] ?? ''),
                     'name' => (string) ($row['name'] ?? ''),
                     'quantity' => (string) ($row['quantity'] ?? ''),
                     'unit' => (string) ($row['unit'] ?? ''),
                     'note' => (string) ($row['note'] ?? ''),
+                    'section' => (string) ($row['section'] ?? ''),
+                ])->values()->all(),
+                'steps' => collect($steps)->map(fn ($row) => [
+                    'stage' => (string) ($row['stage'] ?? ''),
+                    'body' => (string) ($row['body'] ?? ''),
+                    'minutes' => (string) ($row['minutes'] ?? ''),
                 ])->values()->all(),
             ],
         ];
-    }
-
-    /**
-     * @return array{0: array<string, mixed>, 1: array<int, array<string, mixed>>} receta e ingredientes
-     */
-    private function validated(Request $request): array
-    {
-        return RecipeData::validate($request->all());
     }
 }

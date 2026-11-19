@@ -14,11 +14,13 @@
         <h1 class="text-3xl font-bold text-slate-900">{{ $recipe->name }}</h1>
         <p class="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
             @if ($recipe->category)<span class="badge badge-muted">{{ $recipe->category }}</span>@endif
+            @foreach ($recipe->tags as $tag)<a href="{{ route('recipes.index', ['tag' => $tag->name]) }}" class="badge badge-cheap">{{ $tag->name }}</a>@endforeach
             <span>Rinde {{ $recipe->servings }} {{ $recipe->servings === 1 ? 'porción' : 'porciones' }}@if ($portion) de unos {{ number_format($portion) }} g en crudo @endif</span>
             @if ($recipe->minutes)<span>· {{ $recipe->minutes }} min</span>@endif
+            @if ($recipe->usedAsIngredient->isNotEmpty())<span>· Se usa en {{ $recipe->usedAsIngredient->pluck('recipe.name')->unique()->join(', ') }}</span>@endif
             @if ($recipe->source_url)<span>· <a href="{{ $recipe->source_url }}" target="_blank" rel="noopener" class="link">Receta original</a></span>@endif
         </p>
-        @if ($recipe->notes)<p class="mt-1 text-sm text-slate-600">{{ $recipe->notes }}</p>@endif
+        @if ($recipe->notes)<p class="mt-1 text-sm whitespace-pre-line text-slate-600">{{ $recipe->notes }}</p>@endif
     </div>
     <a href="{{ route('recipes.edit', $recipe) }}" class="btn btn-secondary">Editar</a>
 </div>
@@ -45,22 +47,26 @@
             <table class="table">
                 <thead><tr><th class="text-right">Cantidad</th><th>Ingrediente</th><th class="text-right">Costo</th></tr></thead>
                 <tbody>
-                @forelse ($recipe->ingredients as $ingredient)
+                @forelse ($recipe->ingredientSections() as $group)
+                    @if ($group['section'])<tr><td colspan="3" class="bg-slate-50 text-xs font-semibold tracking-wide text-slate-600 uppercase">{{ $group['section'] }}</td></tr>@endif
+                @foreach ($group['ingredients'] as $ingredient)
                     @php($price = $ingredient->product?->cheapestPrice())
                     <tr>
                         <td class="text-right whitespace-nowrap tabular-nums">{{ $ingredient->quantityLabel($factor) }}</td>
                         <td>
                             @if ($ingredient->product)
                                 <a href="{{ route('products.show', $ingredient->product) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $ingredient->product->name }}</a>
+                            @elseif ($ingredient->subrecipe)
+                                <a href="{{ route('recipes.show', $ingredient->subrecipe) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $ingredient->subrecipe->name }}</a> <span class="badge badge-muted">receta</span>
                             @else
                                 <span class="font-medium text-slate-900">{{ $ingredient->name }}</span>
                             @endif
                             @if ($ingredient->note)<span class="text-slate-500">, {{ $ingredient->note }}</span>@endif
                         </td>
                         <td class="text-right whitespace-nowrap tabular-nums">
-                            @if ($ingredient->cost($factor) !== null)
-                                {{ money($ingredient->cost($factor)) }}
-                                <div class="text-xs text-slate-500">{{ $price->provider->name }} · {{ money($price->comparePrice()) }}{{ $price->compareLabel() }}</div>
+                            @if ($ingredient->cost($factor, [$recipe->id]) !== null)
+                                {{ money($ingredient->cost($factor, [$recipe->id])) }}
+                                @if ($price)<div class="text-xs text-slate-500">{{ $price->provider->name }} · {{ money($price->comparePrice()) }}{{ $price->compareLabel() }}</div>@endif
                             @elseif ($ingredient->product)
                                 <span class="text-xs text-amber-700">Sin precio</span>
                             @else
@@ -68,6 +74,7 @@
                             @endif
                         </td>
                     </tr>
+                @endforeach
                 @empty
                     <tr><td colspan="3" class="py-8 text-center text-slate-500">Esta receta no tiene ingredientes. <a class="link" href="{{ route('recipes.edit', $recipe) }}">Agrégalos</a>.</td></tr>
                 @endforelse
@@ -77,15 +84,16 @@
 
         <div class="card">
             <h2 class="card-title">Preparación</h2>
-            @if ($recipe->steps())
-                <ol class="mt-3 list-outside list-decimal space-y-2 pl-5 text-sm text-slate-700">
-                    @foreach ($recipe->steps() as $step)
-                        <li>{{ $step }}</li>
+            @forelse ($recipe->stepStages() as $group)
+                @if ($group['stage'])<h3 class="mt-4 text-sm font-semibold text-slate-900">{{ $group['stage'] }}</h3>@endif
+                <ol class="mt-2 list-outside list-decimal space-y-2 pl-5 text-sm text-slate-700">
+                    @foreach ($group['steps'] as $step)
+                        <li>{{ $step->body }}@if ($step->minutes) <span class="text-xs text-slate-500">({{ $step->minutes }} min)</span>@endif</li>
                     @endforeach
                 </ol>
-            @else
+            @empty
                 <p class="mt-2 text-sm text-slate-500">Sin pasos escritos.</p>
-            @endif
+            @endforelse
         </div>
     </div>
 

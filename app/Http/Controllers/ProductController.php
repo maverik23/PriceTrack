@@ -6,9 +6,11 @@ use App\Enums\Unit;
 use App\Models\Product;
 use App\Models\ProductLink;
 use App\Models\Provider;
+use App\Models\Recipe;
 use App\Models\Setting;
 use App\Models\ShoppingList;
 use App\Services\BarcodeLookup;
+use App\Services\SubrecipeConverter;
 use App\Support\Barcode;
 use App\Support\ListGrid;
 use Illuminate\Http\Request;
@@ -106,6 +108,23 @@ class ProductController extends Controller
         return redirect()->route('products.show', $product)->with('success', 'Artículo creado. Ahora agrega sus precios.');
     }
 
+    /** Cambia este artículo (algo casero) por su receta en todas las recetas que lo usan. */
+    public function useRecipe(Request $request, Product $product, SubrecipeConverter $converter)
+    {
+        $data = $request->validate(['recipe_id' => ['required', 'exists:recipes,id']], [], ['recipe_id' => 'receta']);
+        $recipe = Recipe::findOrFail($data['recipe_id']);
+        $result = $converter->convert($product, $recipe);
+
+        $message = $result['converted']
+            ? "«{$recipe->name}» reemplaza a «{$product->name}» en: ".implode(', ', $result['converted']).'.'
+            : 'No se cambió ninguna receta.';
+        if ($result['skipped']) {
+            $message .= ' Sin cambiar: '.implode('; ', $result['skipped']).'.';
+        }
+
+        return back()->with('success', $message);
+    }
+
     public function show(Product $product)
     {
         $product->load(['prices' => fn ($q) => $q->orderByDesc('observed_on')->orderByDesc('id'), 'prices.provider']);
@@ -135,6 +154,9 @@ class ProductController extends Controller
             'links' => $product->links()->get()->keyBy('provider_id'),
             'brands' => Product::distinctValues('brand')->merge(ProductLink::whereNotNull('brand')->distinct()->pluck('brand'))->unique()->sort()->values(),
             'postalCode' => Setting::value(Setting::POSTAL_CODE),
+            // Recetas que lo usan (para cambiarlo por su receta si es algo casero)
+            'usedIn' => Recipe::whereHas('ingredients', fn ($q) => $q->where('product_id', $product->id))->orderBy('name')->get(['id', 'name']),
+            'recipes' => Recipe::orderBy('name')->get(['id', 'name']),
         ]);
     }
 

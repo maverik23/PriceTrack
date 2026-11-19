@@ -82,11 +82,36 @@
         @foreach ($days as $day)
             @php($isToday = $day['date']->isToday())
             <div class="card p-0 {{ $isToday ? 'ring-2 ring-emerald-400' : '' }}">
-                <div class="flex items-center gap-2 border-b border-slate-100 px-4 py-2">
+                @php($dateKey = $day['date']->toDateString())
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-slate-100 px-4 py-2"
+                     x-data="{ body: {{ Js::from($notes->get($dateKey)?->body ?? '') }}, draft: '', editing: false, saving: false, error: '',
+                               edit() { this.draft = this.body; this.editing = true; this.$nextTick(() => document.getElementById('note-{{ $dateKey }}')?.focus()) },
+                               async save() {
+                                   if (!this.editing || this.saving) return;
+                                   if (this.draft.trim() === this.body) { this.editing = false; return }
+                                   this.saving = true; this.error = '';
+                                   try {
+                                       const res = await fetch('{{ route('menu.note', $dateKey) }}', { method: 'PUT', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ body: this.draft }) });
+                                       const data = await res.json();
+                                       if (!res.ok) throw new Error(data.message || 'No se pudo guardar');
+                                       this.body = data.body ?? ''; this.editing = false;
+                                   } catch (e) { this.error = e.message } finally { this.saving = false }
+                               } }">
                     <h2 class="card-title">{{ ucfirst($day['date']->translatedFormat('l d')) }}</h2>
                     @if ($isToday)<span class="badge badge-cheap">Hoy</span>@endif
+                    {{-- Nota del día: "Mealprep: cocer arroz y pollo" --}}
+                    <button type="button" x-show="!editing && body" @click="edit()" class="flex min-w-0 items-center gap-1.5 rounded-lg bg-amber-50 px-2 py-0.5 text-left text-sm text-amber-900 ring-1 ring-amber-200 hover:ring-amber-400" title="Editar la nota del día">
+                        <x-icon name="sticky-note" class="size-3.5 text-amber-600" /><span x-text="body"></span>
+                    </button>
+                    <button type="button" x-show="!editing && !body" @click="edit()" class="btn btn-ghost btn-sm ml-auto text-slate-500">+ Nota del día</button>
+                    <form x-show="editing" x-cloak class="flex w-full items-center gap-2 sm:ml-auto sm:w-auto sm:flex-1" @submit.prevent="save()">
+                        <input :id="'note-{{ $dateKey }}'" type="text" x-model="draft" maxlength="500" class="input py-1.5" placeholder="Ej. Mealprep: cocer arroz y pollo para la semana"
+                               aria-label="Nota del {{ $day['date']->translatedFormat('l d') }}" @keydown.escape.prevent="editing = false" @blur="save()">
+                        <button class="btn btn-primary btn-sm" :disabled="saving" @mousedown.prevent><span x-text="saving ? 'Guardando…' : 'Guardar'"></span></button>
+                    </form>
+                    <p x-show="error" class="w-full text-xs text-red-600" x-text="error"></p>
                 </div>
-                <div class="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-4 sm:divide-x sm:divide-y-0">
+                <div class="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-5 sm:divide-x sm:divide-y-0">
                     @foreach ($day['meals'] as $meal => $mealEntries)
                         {{-- En móvil las comidas vacías no ocupan lugar: se agregan con los botones de abajo --}}
                         <div class="min-w-0 px-4 py-3 {{ $mealEntries->isEmpty() ? 'hidden sm:block' : '' }}">

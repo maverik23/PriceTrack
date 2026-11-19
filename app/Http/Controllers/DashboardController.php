@@ -33,7 +33,7 @@ class DashboardController extends Controller
             ->take(4)->get();
 
         // Cocina: lo de hoy y el costo de la semana
-        $week = MealPlanEntry::with('recipe.ingredients.product.prices')
+        $week = MealPlanEntry::with(MealPlanEntry::tree())
             ->where('planned_on', '>=', $today->startOfWeek(CarbonInterface::MONDAY)->toDateString())
             ->where('planned_on', '<', $today->startOfWeek(CarbonInterface::MONDAY)->addWeek()->toDateString())
             ->get();

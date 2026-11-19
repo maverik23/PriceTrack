@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Asset;
 use App\Models\Debt;
 use App\Models\InvestmentAccount;
+use App\Models\MealDayNote;
 use App\Models\MealPlanEntry;
 use App\Models\Price;
 use App\Models\Product;
@@ -14,6 +15,7 @@ use App\Models\RecurringPayment;
 use App\Models\ShoppingList;
 use App\Models\Task;
 use App\Models\TaskList;
+use App\Support\RecipeData;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -350,35 +352,39 @@ class DemoDataSeeder extends Seeder
                 ['Tortilla de maíz', 8, 'item', 'calientes'],
                 ['Jitomate, cebolla y chile serrano', null, null, 'picados'],
             ]],
-            ['Molletes', 'Desayunos', 4, 20, "Parte el pan a la mitad.\nUnta frijoles y cubre con queso.\nHornea hasta que gratine.", [
+            ['Molletes', 'Desayunos', 4, 20, "# Frijoles\nMachaca los frijoles de la olla y fríelos hasta que espesen (8 min)\n# Montaje\nParte el pan a la mitad.\nUnta frijoles y cubre con queso.\nHornea hasta que gratine (10 min)\nNota — Con pico de gallo quedan mejor.", [
                 ['Pan blanco grande', 8, 'item', 'rebanadas'],
-                ['Frijol negro 900 g', 1, 'cup', 'refritos'],
+                ['@Frijoles de la olla', 300, 'g', 'refritos'],
                 ['Queso panela 400 g', 1.5, 'cup', 'rallado'],
             ]],
         ];
 
         $created = [];
+        $extra = [
+            'Arroz rojo' => ['rating' => 5, 'tags' => ['Mealprep', 'Rápidas']],
+            'Frijoles de la olla' => ['rating' => 4, 'tags' => ['Mealprep'], 'yield_qty' => 1500, 'yield_unit' => 'g'],
+            'Huevos a la mexicana' => ['rating' => 4, 'tags' => ['Rápidas']],
+            'Molletes' => ['rating' => 3, 'tags' => []],
+        ];
         foreach ($recipes as [$name, $category, $servings, $minutes, $instructions, $ingredients]) {
-            $recipe = Recipe::firstOrCreate(['name' => $name], [
-                'category' => $category, 'servings' => $servings, 'minutes' => $minutes, 'instructions' => $instructions,
-            ]);
-            if (! $recipe->wasRecentlyCreated) {
-                $created[$name] = $recipe;
+            if ($existing = Recipe::where('name', $name)->first()) {
+                $created[$name] = $existing;
 
                 continue;
             }
-            foreach ($ingredients as $position => [$ingredient, $quantity, $unit, $note]) {
-                $product = $products->get($ingredient);
-                $recipe->ingredients()->create([
-                    'product_id' => $product?->id,
-                    'name' => $ingredient,
-                    'quantity' => $quantity,
-                    'unit' => $unit,
-                    'note' => $note,
-                    'position' => $position,
-                ]);
-            }
-            $created[$name] = $recipe;
+            $created[$name] = RecipeData::save(new Recipe, RecipeData::validate([
+                'name' => $name, 'category' => $category, 'servings' => $servings, 'minutes' => $minutes,
+                'instructions' => $instructions, ...$extra[$name],
+                'ingredients' => array_map(fn ($row) => [
+                    // "@Receta" = sub-receta (ya creada antes en la lista)
+                    'product_id' => $products->get($row[0])?->id,
+                    'subrecipe_id' => str_starts_with($row[0], '@') ? $created[substr($row[0], 1)]->id : null,
+                    'name' => ltrim($row[0], '@'),
+                    'quantity' => $row[1],
+                    'unit' => $row[2],
+                    'note' => $row[3],
+                ], $ingredients),
+            ]));
         }
 
         // Menú de la semana en curso
@@ -388,8 +394,9 @@ class DemoDataSeeder extends Seeder
             [1, 'breakfast', 'Huevos a la mexicana', null], [1, 'lunch', 'Frijoles de la olla', null],
             [2, 'lunch', null, 'Sobras'], [3, 'breakfast', 'Molletes', null],
             [4, 'lunch', 'Arroz rojo', null], [5, 'lunch', null, 'Comer fuera'],
-            [6, 'breakfast', 'Huevos a la mexicana', 4],
+            [6, 'breakfast', 'Huevos a la mexicana', 4], [2, 'snack', null, 'Fruta picada'],
         ];
+        MealDayNote::put($monday->toDateString(), 'Mealprep: cocer los frijoles y el arroz para la semana');
         foreach ($plan as [$day, $meal, $recipe, $extra]) {
             MealPlanEntry::firstOrCreate(
                 ['planned_on' => $monday->addDays($day)->toDateString(), 'meal' => $meal],

@@ -31,9 +31,12 @@ use App\Mcp\Tools\RecordPrice;
 use App\Mcp\Tools\RemoveListItem;
 use App\Mcp\Tools\RemoveMeal;
 use App\Mcp\Tools\SearchProducts;
+use App\Mcp\Tools\SetMenuNote;
 use App\Mcp\Tools\UpdateListItem;
 use App\Mcp\Tools\UpdatePantry;
+use App\Mcp\Tools\UpdateRecipe;
 use App\Mcp\Tools\UpdateTask;
+use App\Mcp\Tools\UseRecipeAsIngredient;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -53,6 +56,7 @@ use Laravel\Mcp\Server\Attributes\Version;
     - Listas: `quantity` es lo que se necesita, en presentaciones habituales. Lo que cuesta en una tienda son los paquetes completos que cubren esa cantidad (o lo justo si es a granel): la tienda más barata por unidad no siempre es donde sale más barato llevarse lo que se necesita (`cost_for_need`).
     - El gasto solo cuenta los artículos marcados como comprados en una tienda, en la fecha de su lista.
     - Despensa: lo que está en casa (`pantry.status = stocked`) no se manda a la lista desde recetas o menú; si dice cuánto queda, solo se manda lo que falta. Revisa con `add-ingredients-to-list` y `preview: true` antes de mandar.
+    - Recetas: un ingrediente puede ser otra receta (sub-receta) en lugar de un artículo "Casero"; los pasos van por etapas y los ingredientes por secciones. Corrige con `update-recipe` (lee antes con `get-recipe`).
     - Busca antes de crear (artículos, recetas) para no duplicar, y confirma con la persona antes de borrar algo.
     MARKDOWN)]
 class PriceTrackServer extends Server
@@ -83,8 +87,11 @@ class PriceTrackServer extends Server
         ListRecipes::class,
         GetRecipe::class,
         CreateRecipe::class,
+        UpdateRecipe::class,
+        UseRecipeAsIngredient::class,
         GetMenu::class,
         PlanMeal::class,
+        SetMenuNote::class,
         RemoveMeal::class,
         AddIngredientsToList::class,
         GetPantry::class,

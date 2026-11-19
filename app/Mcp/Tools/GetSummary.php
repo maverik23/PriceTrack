@@ -40,7 +40,7 @@ class GetSummary extends Tool
                     ->orderByDesc('shopped_on')->orderByDesc('id')->take(4)->get()
                     ->map(fn (ShoppingList $l) => Present::shoppingList($l))->all(),
             ],
-            'meals_today' => MealPlanEntry::with('recipe.ingredients.product.prices')->whereDate('planned_on', $today)->orderBy('id')->get()
+            'meals_today' => MealPlanEntry::with(MealPlanEntry::tree())->whereDate('planned_on', $today)->orderBy('id')->get()
                 ->map(fn (MealPlanEntry $e) => GetMenu::entry($e))->all(),
             'tasks_due' => Task::with('list')->dueBy($today)->orderBy('due_on')->orderByDesc('priority')->get()
                 ->map(fn (Task $t) => Present::task($t))->all(),

@@ -123,6 +123,31 @@
     </form>
 </div>
 
+@if ($usedIn->isNotEmpty())
+    {{-- Algo casero registrado como artículo (crema, pan): mejor como sub-receta --}}
+    <details class="card mb-6" @if ($product->category === 'Casero' || $product->prices->isEmpty()) open @endif>
+        <summary class="cursor-pointer text-sm text-slate-600">
+            Se usa en {{ $usedIn->count() }} {{ $usedIn->count() === 1 ? 'receta' : 'recetas' }}:
+            @foreach ($usedIn as $used)<a class="link" href="{{ route('recipes.show', $used) }}">{{ $used->name }}</a>@if (! $loop->last), @endif @endforeach
+        </summary>
+        <form method="POST" action="{{ route('products.subrecipe', $product) }}" class="mt-3 flex flex-wrap items-end gap-2"
+              x-data="{ sending: false }" @submit="sending = true">
+            @csrf
+            <div class="min-w-56 flex-1">
+                <label class="label" for="subrecipe-recipe">¿Lo preparas en casa? Cámbialo por su receta en todas</label>
+                <select id="subrecipe-recipe" name="recipe_id" class="input" required>
+                    <option value="">Elegir receta…</option>
+                    @foreach ($recipes as $option)
+                        <option value="{{ $option->id }}">{{ $option->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button class="btn btn-secondary" :disabled="sending"><span x-text="sending ? 'Cambiando…' : 'Usar la receta'">Usar la receta</span></button>
+            <p class="w-full text-xs text-slate-500">Así su costo, macros y lo que hay que comprar salen de la receta y deja de ir a la lista como artículo. La cantidad se conserva si la receta dice cuánto rinde (g o ml); las piezas pasan a porciones.</p>
+        </form>
+    </details>
+@endif
+
 <div class="card mb-6">
     <h2 class="card-title mb-3">Agregar precio</h2>
     @include('prices._quick', ['product' => $product, 'providers' => $providers])

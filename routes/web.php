@@ -50,14 +50,17 @@ Route::scopeBindings()->group(function () {
 
 // Cocina: recetas y menú semanal
 Route::resource('recipes', RecipeController::class);
+Route::post('recipes/{recipe}/rating', [RecipeController::class, 'rate'])->name('recipes.rate');
 Route::get('recipes/{recipe}/shop', [RecipeController::class, 'shopReview'])->name('recipes.shop.review');
 Route::post('recipes/{recipe}/shop', [RecipeController::class, 'shop'])->name('recipes.shop');
 Route::get('pantry', [PantryController::class, 'index'])->name('pantry.index');
+Route::post('products/{product}/subrecipe', [ProductController::class, 'useRecipe'])->name('products.subrecipe');
 Route::post('products/{product}/pantry', [PantryController::class, 'update'])->name('products.pantry');
 Route::get('menu', [MenuController::class, 'index'])->name('menu.index');
 Route::post('menu', [MenuController::class, 'store'])->name('menu.store');
 Route::get('menu/shop', [MenuController::class, 'shopReview'])->name('menu.shop.review');
 Route::post('menu/shop', [MenuController::class, 'shop'])->name('menu.shop');
+Route::put('menu/notes/{date}', [MenuController::class, 'note'])->name('menu.note')->where('date', '\d{4}-\d{2}-\d{2}');
 Route::delete('menu/{entry}', [MenuController::class, 'destroy'])->name('menu.destroy');
 
 // Fotos y documentos (bienes y recetas)

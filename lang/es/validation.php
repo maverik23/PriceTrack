@@ -1,6 +1,36 @@
 <?php
 
 return [
+    'accepted' => 'Debes aceptar :attribute.',
+    'after' => 'El campo :attribute debe ser una fecha posterior a :date.',
+    'after_or_equal' => 'El campo :attribute debe ser una fecha posterior o igual a :date.',
+    'array' => 'El campo :attribute no es válido.',
+    'before' => 'El campo :attribute debe ser una fecha anterior a :date.',
+    'boolean' => 'El campo :attribute debe ser sí o no.',
+    'decimal' => 'El campo :attribute debe tener :decimal decimales.',
+    'different' => 'El campo :attribute debe ser distinto de :other.',
+    'distinct' => 'El campo :attribute tiene un valor repetido.',
+    'email' => 'El campo :attribute debe ser un correo válido.',
+    'file' => 'El campo :attribute debe ser un archivo.',
+    'gte' => [
+        'numeric' => 'El campo :attribute debe ser mayor o igual que :value.',
+    ],
+    'image' => 'El campo :attribute debe ser una imagen.',
+    'in' => 'El valor de :attribute no es válido.',
+    'lt' => [
+        'numeric' => 'El campo :attribute debe ser menor que :value.',
+    ],
+    'lte' => [
+        'numeric' => 'El campo :attribute debe ser menor o igual que :value.',
+    ],
+    'mimes' => 'El campo :attribute debe ser un archivo de tipo: :values.',
+    'prohibits' => 'El campo :attribute no se puede usar junto con :other.',
+    'required_if' => 'El campo :attribute es obligatorio.',
+    'required_with' => 'El campo :attribute es obligatorio si indicas :values.',
+    'size' => [
+        'numeric' => 'El campo :attribute debe ser :size.',
+        'string' => 'El campo :attribute debe tener :size caracteres.',
+    ],
     'before_or_equal' => 'El campo :attribute debe ser una fecha anterior o igual a :date.',
     'date' => 'El campo :attribute no es una fecha válida.',
     'digits' => 'El campo :attribute debe tener :digits dígitos.',
@@ -11,11 +41,15 @@ return [
     ],
     'integer' => 'El campo :attribute debe ser un número entero.',
     'max' => [
+        'array' => 'El campo :attribute no debe tener más de :max elementos.',
+        'file' => 'El archivo :attribute no debe pesar más de :max KB.',
         'numeric' => 'El campo :attribute no debe ser mayor que :max.',
         'string' => 'El campo :attribute no debe tener más de :max caracteres.',
     ],
     'min' => [
+        'array' => 'El campo :attribute debe tener al menos :min elementos.',
         'numeric' => 'El campo :attribute debe ser al menos :min.',
+        'string' => 'El campo :attribute debe tener al menos :min caracteres.',
     ],
     'numeric' => 'El campo :attribute debe ser un número.',
     'regex' => 'El formato de :attribute no es válido.',

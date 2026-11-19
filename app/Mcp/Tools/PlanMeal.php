@@ -10,7 +10,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Agrega una comida al menú: una receta guardada (`recipe_id`, con porciones opcionales) o texto libre (`title`: "Sobras", "Comer fuera").')]
+#[Description('Agrega una comida al menú: una receta guardada (`recipe_id`, con porciones opcionales) o texto libre (`title`: "Sobras", "Comer fuera"). Para una nota del día ("Mealprep: cocer arroz y pollo") usa set-menu-note.')]
 class PlanMeal extends Tool
 {
     public function handle(Request $request): Response
@@ -33,14 +33,14 @@ class PlanMeal extends Tool
 
         $entry = MealPlanEntry::create($data);
 
-        return $this->json(['planned' => GetMenu::entry($entry->load('recipe.ingredients.product.prices'))]);
+        return $this->json(['planned' => GetMenu::entry($entry->load(MealPlanEntry::tree()))]);
     }
 
     public function schema(JsonSchema $schema): array
     {
         return [
             'planned_on' => $schema->string()->description('Día, AAAA-MM-DD.')->required(),
-            'meal' => $schema->string()->enum(array_keys(MealPlanEntry::MEALS))->description('breakfast (desayuno), lunch (comida), dinner (cena) u other.')->required(),
+            'meal' => $schema->string()->enum(array_keys(MealPlanEntry::MEALS))->description('breakfast (desayuno), lunch (comida), snack (merienda), dinner (cena) u other.')->required(),
             'recipe_id' => $schema->integer()->description('Id de la receta.'),
             'title' => $schema->string()->description('Qué se come, si no es una receta guardada.'),
             'servings' => $schema->integer()->description('Porciones (por defecto las de la receta).'),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MealDayNote;
 use App\Models\MealPlanEntry;
 use App\Models\Recipe;
 use App\Models\ShoppingList;
@@ -30,7 +31,12 @@ class MenuController extends Controller
             ];
         });
 
+        $notes = MealDayNote::where('planned_on', '>=', $start->toDateString())
+            ->where('planned_on', '<', $start->addWeek()->toDateString())
+            ->get()->keyBy(fn (MealDayNote $n) => $n->planned_on->toDateString());
+
         return view('menu.index', [
+            'notes' => $notes,
             'start' => $start,
             'end' => $start->addDays(6),
             'days' => $days,
@@ -65,6 +71,20 @@ class MenuController extends Controller
 
         return redirect()->route('menu.index', ['week' => $this->weekStart($entry->planned_on)->toDateString()])
             ->with('success', 'Agregado al menú.');
+    }
+
+    /** Nota del día ("Mealprep: cocer arroz y pollo"); vacía la borra. */
+    public function note(Request $request, string $date)
+    {
+        $data = $request->validate(['body' => ['nullable', 'string', 'max:500']], [], ['body' => 'nota']);
+        $note = MealDayNote::put($date, $data['body'] ?? null);
+
+        if ($request->expectsJson()) {
+            return response()->json(['body' => $note?->body]);
+        }
+
+        return redirect()->route('menu.index', ['week' => $this->weekStart($date)->toDateString()])
+            ->with('success', $note ? 'Nota del día guardada.' : 'Nota del día borrada.');
     }
 
     public function destroy(MealPlanEntry $entry)
@@ -147,7 +167,7 @@ class MenuController extends Controller
 
     private function weekEntries(CarbonImmutable $start)
     {
-        return MealPlanEntry::with('recipe.ingredients.product.prices')
+        return MealPlanEntry::with(MealPlanEntry::tree())
             // Rango semiabierto: con fecha y hora guardadas, whereBetween dejaría fuera el domingo
             ->where('planned_on', '>=', $start->toDateString())
             ->where('planned_on', '<', $start->addWeek()->toDateString())

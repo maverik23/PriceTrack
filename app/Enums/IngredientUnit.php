@@ -18,6 +18,8 @@ enum IngredientUnit: string
     case Cup = 'cup';
     case Tbsp = 'tbsp';
     case Tsp = 'tsp';
+    // Porciones de una sub-receta (no aplica a artículos)
+    case Serving = 'serving';
 
     /** Mililitros de una taza (la medida de cocina estándar en México). */
     public const CUP_ML = 240;
@@ -33,21 +35,29 @@ enum IngredientUnit: string
             self::Cup => 'taza',
             self::Tbsp => 'cda',
             self::Tsp => 'cdita',
+            self::Serving => 'porción',
         };
     }
 
-    /** "2 tazas", "1 cda". */
+    /** "2 tazas", "1 cda", "3 porciones". resources/js/recipe-show.js (quantityLabel) lo replica. */
     public function labelFor(float $quantity): string
     {
-        return $this === self::Cup && abs($quantity - 1) > 0.0001 ? 'tazas' : $this->label();
+        $plural = abs($quantity - 1) > 0.0001;
+
+        return match (true) {
+            $this === self::Cup && $plural => 'tazas',
+            $this === self::Serving && $plural => 'porciones',
+            default => $this->label(),
+        };
     }
 
-    /** volume | mass | count */
+    /** volume | mass | count | serving */
     public function dimension(): string
     {
         return match ($this) {
             self::G, self::Kg => 'mass',
             self::Item => 'count',
+            self::Serving => 'serving',
             default => 'volume',
         };
     }
@@ -74,7 +84,7 @@ enum IngredientUnit: string
     {
         $meta = [];
         foreach (self::cases() as $case) {
-            $meta[$case->value] = ['label' => $case->label(), 'dimension' => $case->dimension(), 'base' => $case->toBase()];
+            $meta[$case->value] = ['label' => $case->label(), 'plural' => $case->labelFor(2), 'dimension' => $case->dimension(), 'base' => $case->toBase()];
         }
 
         return $meta;

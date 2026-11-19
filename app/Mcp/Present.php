@@ -132,7 +132,7 @@ class Present
     }
 
     /**
-     * Resumen de una receta. Necesita `ingredients.product.prices` cargado.
+     * Resumen de una receta. Necesita las relaciones de Recipe::TREE (y `tags`) cargadas.
      *
      * @return array<string, mixed>
      */
@@ -143,7 +143,10 @@ class Present
             'name' => $recipe->name,
             'category' => $recipe->category,
             'servings' => $recipe->servings,
+            'yield' => $recipe->yieldLabel(),
             'minutes' => $recipe->minutes,
+            'rating' => $recipe->rating,
+            'tags' => $recipe->relationLoaded('tags') ? $recipe->tags->pluck('name')->all() : null,
             'cost' => $recipe->cost(),
             'cost_per_serving' => $recipe->costPerServing(),
         ];
