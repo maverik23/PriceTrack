@@ -106,4 +106,39 @@ class TasksTest extends TestCase
         $this->assertNull($task->fresh()->task_list_id);
         $this->get(route('tasks.index', ['list' => 999]))->assertOk();
     }
+
+    public function test_a_pending_task_is_moved_to_another_day_by_dragging_it(): void
+    {
+        Carbon::setTestNow('2026-11-19 10:00');
+        $task = Task::create(['title' => 'Pagar el agua', 'due_on' => '2026-11-10', 'priority' => 2]);
+
+        $this->patchJson(route('tasks.move', $task), ['due_on' => '2026-11-24'])->assertOk()
+            ->assertJson(['ok' => true, 'due_on' => '2026-11-24', 'from' => '2026-11-10']);
+        $this->assertSame('2026-11-24', $task->fresh()->due_on->toDateString());
+
+        $this->patchJson(route('tasks.move', $task), ['due_on' => 'mañana'])->assertUnprocessable();
+        $this->patch(route('tasks.move', $task), ['due_on' => '2026-11-25'])->assertRedirect()->assertSessionHas('success');
+
+        $task->fresh()->complete();
+        $this->patchJson(route('tasks.move', $task), ['due_on' => '2026-11-30'])->assertUnprocessable();
+        $this->assertSame('2026-11-25', $task->fresh()->due_on->toDateString(), 'una hecha no se mueve');
+    }
+
+    public function test_the_calendar_shows_overdue_tasks_in_a_side_panel_ready_to_drag(): void
+    {
+        Carbon::setTestNow('2026-11-19 10:00');
+        $late = Task::create(['title' => 'Revisar la caldera', 'due_on' => '2026-11-02', 'priority' => 2]);
+        Task::create(['title' => 'Comprar focos', 'due_on' => '2026-11-25', 'priority' => 2]);
+
+        $this->get(route('tasks.index'))->assertOk()
+            ->assertSee('overdue-title', false)->assertSee('Revisar la caldera')->assertSee('hace 17 días')
+            ->assertSee('data-drop-day="2026-11-24"', false)
+            ->assertSee(e($late->dragPayload()), false);
+
+        // ?day= deja elegido ese día después de mover
+        $this->get(route('tasks.index', ['day' => '2026-11-25']))->assertSee("selected: '2026-11-25'", false);
+
+        // En la vista de lista ya salen arriba: sin panel
+        $this->get(route('tasks.index', ['view' => 'list']))->assertDontSee('overdue-title', false);
+    }
 }

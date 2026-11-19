@@ -1,6 +1,7 @@
-{{-- Un renglón de tarea con su botón de hecha. $task, $showList --}}
+{{-- Un renglón de tarea con su botón de hecha. $task, $showList; $draggable = se puede arrastrar al calendario --}}
 @php($status = $task->status())
-<li class="flex items-start gap-3 px-4 py-3">
+<li class="flex items-start gap-3 px-4 py-3"
+    @if (($draggable ?? false) && ! $task->isDone()) draggable="true" data-task-drag="{{ $task->dragPayload() }}" title="Arrastra al calendario para cambiar la fecha" @endif>
     <form method="POST" action="{{ route('tasks.toggle', $task) }}" class="pt-0.5">
         @csrf
         <button class="grid size-5 place-items-center rounded-full ring-2 {{ $task->isDone() ? 'bg-brand text-on-brand ring-brand' : 'ring-slate-300 hover:ring-emerald-500' }}"

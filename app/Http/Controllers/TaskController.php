@@ -12,6 +12,9 @@ use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
+    /** Cuántas vencidas muestra el panel lateral. */
+    public const OVERDUE_WIDGET = 8;
+
     /**
      * Calendario del mes (por defecto; ?month=AAAA-MM) o lista (?view=list): pendientes por grupo
      * (vencidas, hoy, próximas, sin fecha) y lo completado en la última semana.
@@ -53,6 +56,11 @@ class TaskController extends Controller
             'list' => $list,
             'general' => $general,
             'pending' => $pending,
+            // Panel lateral: las vencidas más viejas primero (se arrastran al calendario para moverlas)
+            'overdue' => Task::with('list', 'taskable')->pending()->tap($scope)
+                ->whereNotNull('due_on')->where('due_on', '<', $today->toDateString())
+                ->orderBy('due_on')->orderByDesc('priority')->limit(self::OVERDUE_WIDGET)->get(),
+            'overdueTotal' => (int) ($totals['overdue'] ?? 0),
             'search' => $search,
             'groups' => collect([
                 'overdue' => 'Vencidas', 'today' => 'Hoy', 'upcoming' => 'Próximas', 'undated' => 'Sin fecha',
@@ -97,6 +105,26 @@ class TaskController extends Controller
     }
 
     /** Marca o desmarca como hecha (con un clic). Las repetitivas crean la siguiente. */
+    /**
+     * Cambia la fecha de una tarea pendiente (arrastrar y soltar en el calendario).
+     * Responde JSON al navegador; sin JSON, regresa a la pantalla.
+     */
+    public function move(Request $request, Task $task)
+    {
+        abort_if($task->isDone(), 422, 'Una tarea hecha no se mueve: reábrela primero.');
+        $data = $request->validate(['due_on' => ['required', 'date']], [], ['due_on' => 'fecha']);
+
+        $from = $task->due_on?->toDateString();
+        $task->update(['due_on' => $data['due_on']]);
+        $label = ucfirst($task->due_on->translatedFormat('D d \d\e F'));
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'id' => $task->id, 'due_on' => $task->due_on->toDateString(), 'from' => $from, 'label' => $label]);
+        }
+
+        return back()->with('success', "«{$task->title}» pasó al {$label}.");
+    }
+
     public function toggle(Task $task)
     {
         if ($task->isDone()) {

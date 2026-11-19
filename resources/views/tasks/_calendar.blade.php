@@ -7,7 +7,9 @@
 @php
     $c = $calendar;
     $month = $c['month'];
-    $selectedDefault = $c['days']->firstWhere('isToday', true)['key'] ?? $month->toDateString();
+    // ?day= (después de mover una tarea) deja elegido ese día si está en la cuadrícula
+    $selectedDefault = $c['days']->firstWhere('key', request('day'))['key']
+        ?? $c['days']->firstWhere('isToday', true)['key'] ?? $month->toDateString();
     $pct = $c['completion'] === null ? null : (int) round($c['completion'] * 100);
 @endphp
 <div x-data="{ selected: {{ Js::from($selectedDefault) }} }" class="space-y-4">
@@ -58,11 +60,14 @@
             @foreach ($c['days'] as $day)
                 @php
                     $n = $day['counts'];
-                    $items = $day['tasks']->map(fn ($t) => ['title' => $t->title, 'status' => $t->status()])
-                        ->concat(collect($day['projected'])->map(fn ($p) => ['title' => $p['task']->title, 'status' => 'projected']));
+                    $items = $day['tasks']->map(fn ($t) => ['title' => $t->title, 'status' => $t->status(), 'drag' => $t->isDone() ? null : $t->dragPayload()])
+                        ->concat(collect($day['projected'])->map(fn ($p) => ['title' => $p['task']->title, 'status' => 'projected', 'drag' => null]));
                 @endphp
-                <button type="button" @click="selected = '{{ $day['key'] }}'"
-                        class="group relative flex min-h-16 flex-col gap-1 border-r border-b border-slate-100 p-1 text-left transition hover:bg-slate-50 sm:min-h-28 sm:p-1.5 {{ $loop->iteration % 7 === 0 ? 'border-r-0' : '' }} {{ $day['inMonth'] ? '' : 'bg-slate-50/60' }}"
+                {{-- Un día: se toca para ver sus tareas y se le sueltan tareas para cambiarles la fecha --}}
+                <div role="button" tabindex="0" @click="selected = '{{ $day['key'] }}'"
+                        @keydown.enter.prevent="selected = '{{ $day['key'] }}'" @keydown.space.prevent="selected = '{{ $day['key'] }}'"
+                        data-drop-day="{{ $day['key'] }}"
+                        class="group relative flex cursor-pointer min-h-16 flex-col gap-1 border-r border-b border-slate-100 p-1 text-left transition hover:bg-slate-50 sm:min-h-28 sm:p-1.5 {{ $loop->iteration % 7 === 0 ? 'border-r-0' : '' }} {{ $day['inMonth'] ? '' : 'bg-slate-50/60' }}"
                         :class="selected === '{{ $day['key'] }}' && 'bg-emerald-50/60 ring-2 ring-inset ring-emerald-500'"
                         :aria-pressed="selected === '{{ $day['key'] }}'"
                         aria-label="{{ ucfirst($day['date']->translatedFormat('l d \d\e F')) }}: {{ $n['total'] }} {{ $n['total'] === 1 ? 'tarea' : 'tareas' }}{{ $n['done'] ? ', '.$n['done'].' hechas' : '' }}{{ $n['overdue'] ? ', '.$n['overdue'].' vencidas' : '' }}">
@@ -77,7 +82,8 @@
                     {{-- Títulos (en pantallas medianas en adelante) --}}
                     <ul class="hidden min-w-0 space-y-0.5 sm:block">
                         @foreach ($items->take(3) as $item)
-                            <li class="flex min-w-0 items-center gap-1 text-[11px] leading-tight">
+                            <li class="flex min-w-0 items-center gap-1 rounded text-[11px] leading-tight"
+                                @if ($item['drag']) draggable="true" data-task-drag="{{ $item['drag'] }}" title="Arrastra a otro día para cambiar la fecha" @endif>
                                 <span class="size-1.5 shrink-0 rounded-full {{ match ($item['status']) {
                                     'done' => 'bg-emerald-500', 'overdue' => 'bg-red-500', 'projected' => 'border border-slate-400', default => 'bg-slate-400' } }}"></span>
                                 <span class="truncate {{ match ($item['status']) {
@@ -95,7 +101,7 @@
                         @for ($i = 0; $i < min($n['overdue'], 3); $i++)<span class="size-1.5 rounded-full bg-red-500"></span>@endfor
                         @if (count($day['projected']))<span class="size-1.5 rounded-full border border-slate-400"></span>@endif
                     </div>
-                </button>
+                </div>
             @endforeach
         </div>
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-xs text-slate-500">
@@ -103,6 +109,7 @@
             <span class="flex items-center gap-1"><span class="size-2 rounded-full bg-slate-400"></span> pendiente</span>
             <span class="flex items-center gap-1"><span class="size-2 rounded-full bg-red-500"></span> vencida</span>
             <span class="flex items-center gap-1"><span class="size-2 rounded-full border border-slate-400"></span> repetición futura</span>
+            <span class="max-sm:hidden">· Arrastra una tarea a otro día para cambiar su fecha</span>
             @if ($c['projectedCount'])<span>· {{ $c['projectedCount'] }} {{ $c['projectedCount'] === 1 ? 'repetición proyectada' : 'repeticiones proyectadas' }} este mes</span>@endif
             @if ($c['overdueBefore'])
                 <a class="link" href="{{ route('tasks.index', $baseQuery + ['view' => 'list']) }}">· {{ $c['overdueBefore'] }} vencidas de meses anteriores</a>
@@ -129,7 +136,7 @@
             @if ($day['tasks']->isNotEmpty())
                 <ul class="divide-y divide-slate-100">
                     @foreach ($day['tasks'] as $task)
-                        @include('tasks._row')
+                        @include('tasks._row', ['draggable' => true])
                     @endforeach
                 </ul>
             @endif

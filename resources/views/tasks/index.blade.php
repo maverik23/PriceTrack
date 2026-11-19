@@ -51,6 +51,9 @@
     </span>
 </form>
 
+{{-- Aviso al mover una tarea arrastrándola (resources/js/task-calendar.js) --}}
+<div id="task-move-status" class="flash flash-success mb-4" role="status" hidden></div>
+
 <div id="tasks-results" data-live-results>
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
@@ -141,6 +144,40 @@
         @endif
     </div>
     <aside class="space-y-4">
+        {{-- Vencidas (de la lista elegida): se marcan aquí o se arrastran a un día del calendario --}}
+        @if ($view === 'calendar' && $overdue->isNotEmpty())
+            <section class="card p-0" aria-labelledby="overdue-title">
+                <h2 id="overdue-title" class="card-title flex items-center gap-2 px-4 pt-4 pb-2 text-red-700">
+                    <x-icon name="timer" class="size-4" /> Vencidas <span class="badge badge-up">{{ $overdueTotal }}</span>
+                </h2>
+                <ul class="divide-y divide-slate-100 border-t border-slate-100">
+                    @foreach ($overdue as $task)
+                        @php($late = (int) $task->due_on->diffInDays(today()))
+                        <li class="flex items-start gap-2.5 px-4 py-2.5 text-sm" draggable="true" data-task-drag="{{ $task->dragPayload() }}"
+                            title="Arrastra a un día del calendario para cambiar la fecha">
+                            <form method="POST" action="{{ route('tasks.toggle', $task) }}" class="pt-0.5">
+                                @csrf
+                                <button class="grid size-4.5 place-items-center rounded-full ring-2 ring-slate-300 hover:ring-emerald-500"
+                                        title="Marcar como hecha" aria-label="Marcar como hecha: {{ $task->title }}"></button>
+                            </form>
+                            <div class="min-w-0 flex-1">
+                                <a href="{{ route('tasks.edit', $task) }}" class="block truncate font-medium text-slate-900 hover:text-emerald-700">{{ $task->title }}</a>
+                                <div class="truncate text-xs text-red-600">
+                                    {{ ucfirst($task->due_on->translatedFormat('D d M')) }} · hace {{ $late }} {{ $late === 1 ? 'día' : 'días' }}@if ($task->taskable && method_exists($task->taskable, 'taskLink'))<span class="text-slate-500"> · {{ $task->taskable->name }}</span>@endif
+                                </div>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+                <div class="space-y-1 border-t border-slate-100 px-4 py-2.5 text-xs text-slate-500">
+                    <p class="max-lg:hidden">Arrástralas a un día del calendario para cambiarles la fecha.</p>
+                    @if ($overdueTotal > $overdue->count())
+                        <a class="link" href="{{ route('tasks.index', $baseQuery + ['view' => 'list']) }}">Ver las {{ $overdueTotal }} vencidas</a>
+                    @endif
+                </div>
+            </section>
+        @endif
+
         <nav class="card p-2 text-sm" aria-label="Listas de tareas">
             @foreach ([['', 'Todas', $allCount], ['none', 'General', $generalCount]] as [$value, $label, $count])
                 <a href="{{ route('tasks.index', $keep + ($value === '' ? [] : ['list' => $value])) }}"

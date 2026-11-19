@@ -327,7 +327,17 @@
     .chip.is-active {
         @apply bg-brand text-on-brand ring-transparent hover:bg-brand-strong;
     }
-    /* Interruptor sí/no: <button class="switch" role="switch" :aria-checked="…"> */
+    /* Tareas: arrastrar al calendario (resources/js/task-calendar.js) */
+    [data-task-drag] {
+        @apply cursor-grab active:cursor-grabbing;
+    }
+    .is-dragging-task [data-drop-day] {
+        @apply transition-colors;
+    }
+    [data-drop-day].is-drop {
+        @apply bg-emerald-50 ring-2 ring-emerald-500 ring-inset;
+    }
+        /* Interruptor sí/no: <button class="switch" role="switch" :aria-checked="…"> */
     .switch {
         @apply relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full bg-slate-300 transition-colors duration-200 disabled:cursor-wait disabled:opacity-60;
     }

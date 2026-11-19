@@ -13,6 +13,7 @@ import { pantryList, pantryToggle } from './pantry';
 import { branchPicker, priceRunStatus } from './online-prices';
 import providerForm from './provider-form';
 import { initLiveFilters } from './live-filter';
+import { initTaskDrag } from './task-calendar';
 import productPrices, { bulkPrices, priceLink, takeFlash } from './product-prices';
 
 Alpine.data('listGrid', listGrid);
@@ -223,6 +224,7 @@ window.addEventListener('live-filter:updated', initCharts);
 
 document.addEventListener('DOMContentLoaded', () => {
     initLiveFilters();
+    initTaskDrag();
     initCharts();
     initProductPrefill();
     initUnitPreview();

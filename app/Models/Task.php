@@ -72,6 +72,17 @@ class Task extends Model
         $query->whereNull('completed_at')->whereNotNull('due_on')->where('due_on', '<', $day->copy()->addDay()->toDateString());
     }
 
+    /** Lo que lleva al arrastrarla al calendario (resources/js/task-calendar.js). */
+    public function dragPayload(): string
+    {
+        return json_encode([
+            'id' => $this->id,
+            'url' => route('tasks.move', $this),
+            'title' => $this->title,
+            'due' => $this->due_on?->toDateString(),
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
     public function isDone(): bool
     {
         return $this->completed_at !== null;

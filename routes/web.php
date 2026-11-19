@@ -89,6 +89,7 @@ Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy
 // Hogar: tareas
 Route::resource('tasks', TaskController::class)->only(['index', 'store', 'edit', 'update', 'destroy']);
 Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
+Route::patch('tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');
 Route::resource('task-lists', TaskListController::class)->only(['store', 'update', 'destroy']);
 
 // Hogar: bienes, su valor y su mantenimiento
