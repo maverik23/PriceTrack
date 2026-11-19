@@ -169,4 +169,24 @@ class InvestmentAccount extends Model
 
         return ! $last || $last->valued_on->lt(today()->subDays(self::STALE_DAYS));
     }
+
+    /**
+     * Para la gráfica: el valor y lo aportado neto en cada captura y movimiento (y hoy).
+     * Necesita `transactions` y `valuations`.
+     *
+     * @return array<int, array{label: string, data: array<int, array{x: string, y: float}>}>
+     */
+    public function series(): array
+    {
+        $dates = $this->valuations->pluck('valued_on')
+            ->merge($this->transactions->pluck('occurred_on'))
+            ->push(today())
+            ->map(fn ($d) => CarbonImmutable::parse($d->toDateString()))
+            ->unique(fn ($d) => $d->toDateString())->sort()->values();
+
+        return [
+            ['label' => 'Valor', 'data' => $dates->map(fn ($d) => ['x' => $d->toDateString(), 'y' => $this->valueOn($d)])->all(), 'stepped' => true],
+            ['label' => 'Aportado neto', 'data' => $dates->map(fn ($d) => ['x' => $d->toDateString(), 'y' => $this->netContributed($d)])->all(), 'stepped' => true, 'borderDash' => [5, 4]],
+        ];
+    }
 }

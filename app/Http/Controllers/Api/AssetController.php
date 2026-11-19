@@ -58,7 +58,7 @@ class AssetController extends Controller
         return response()->json([
             'statuses' => Asset::STATUSES,
             'methods' => Asset::METHODS,
-            'units' => collect(Task::REPEAT_UNITS)->map(fn (array $names) => ['one' => $names[0], 'many' => $names[1]]),
+            'units' => self::units(Task::REPEAT_UNITS),
             'categories' => Asset::distinctValues('category'),
             'locations' => Asset::distinctValues('location'),
         ]);

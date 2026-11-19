@@ -6,7 +6,6 @@ use App\Models\InvestmentAccount;
 use App\Models\InvestmentTransaction;
 use App\Services\FinanceReport;
 use App\Support\InvestmentAccountData;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
 class InvestmentController extends Controller
@@ -37,20 +36,10 @@ class InvestmentController extends Controller
     {
         $investment->load(['transactions', 'valuations']);
 
-        // Valor y aportado neto en cada captura y movimiento, para la gráfica
-        $dates = $investment->valuations->pluck('valued_on')
-            ->merge($investment->transactions->pluck('occurred_on'))
-            ->push(today())
-            ->map(fn ($d) => CarbonImmutable::parse($d->toDateString()))
-            ->unique(fn ($d) => $d->toDateString())->sort()->values();
-
         return view('investments.show', [
             'account' => $investment,
             'kinds' => InvestmentTransaction::KINDS,
-            'series' => [
-                ['label' => 'Valor', 'data' => $dates->map(fn ($d) => ['x' => $d->toDateString(), 'y' => $investment->valueOn($d)])->all(), 'stepped' => true],
-                ['label' => 'Aportado neto', 'data' => $dates->map(fn ($d) => ['x' => $d->toDateString(), 'y' => $investment->netContributed($d)])->all(), 'stepped' => true, 'borderDash' => [5, 4]],
-            ],
+            'series' => $investment->series(),
         ]);
     }
 

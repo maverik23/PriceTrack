@@ -6,7 +6,6 @@ use App\Models\Debt;
 use App\Models\DebtBalance;
 use App\Models\Payment;
 use App\Support\DebtData;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
 class DebtController extends Controller
@@ -39,16 +38,7 @@ class DebtController extends Controller
     {
         $debt->load(['balances', 'payments.recurringPayment', 'recurringPayments']);
 
-        $start = CarbonImmutable::parse(($debt->started_on ?? $debt->balances->first()?->balance_on ?? $debt->payments->first()?->paid_on ?? today())->toDateString());
-        $end = $debt->paid_off_on ? CarbonImmutable::parse($debt->paid_off_on->toDateString())->min(today()) : CarbonImmutable::today();
-        $step = max(1, (int) ceil($start->diffInMonths($end) / 120));
-        $series = [];
-        for ($d = $start; $d->lt($end); $d = $d->addMonthsNoOverflow($step)) {
-            $series[] = ['x' => $d->toDateString(), 'y' => $debt->balanceOn($d)];
-        }
-        $series[] = ['x' => $end->toDateString(), 'y' => $debt->balanceOn($end)];
-
-        return view('debts.show', ['debt' => $debt, 'series' => $series]);
+        return view('debts.show', ['debt' => $debt, 'series' => $debt->balanceSeries()]);
     }
 
     public function edit(Debt $debt)
@@ -73,12 +63,7 @@ class DebtController extends Controller
     /** Captura del saldo según el estado de cuenta (una por día). */
     public function storeBalance(Request $request, Debt $debt)
     {
-        $data = $request->validate([
-            'balance_on' => ['required', 'date', 'before_or_equal:today'],
-            'balance' => ['required', 'numeric', 'min:0', 'max:99999999999999'],
-        ], [], ['balance_on' => 'fecha', 'balance' => 'saldo']);
-        $existing = $debt->balances()->whereDate('balance_on', $data['balance_on'])->first();
-        $existing ? $existing->update($data) : $debt->balances()->create($data);
+        DebtData::saveBalance($debt, $request->all());
 
         return redirect()->route('debts.show', $debt)->with('success', 'Saldo registrado.');
     }
@@ -93,12 +78,7 @@ class DebtController extends Controller
     /** Un pago suelto o un abono a capital (los mensuales se registran desde Pagos). */
     public function storePayment(Request $request, Debt $debt)
     {
-        $data = $request->validate([
-            'paid_on' => ['required', 'date', 'before_or_equal:today'],
-            'amount' => ['required', 'numeric', 'gt:0', 'max:99999999999'],
-            'notes' => ['nullable', 'string', 'max:255'],
-        ], [], ['paid_on' => 'fecha', 'amount' => 'monto']);
-        $debt->payments()->create($data);
+        DebtData::savePayment($debt, $request->all());
 
         return redirect()->route('debts.show', $debt)->with('success', 'Pago registrado.');
     }

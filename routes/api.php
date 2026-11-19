@@ -111,6 +111,47 @@ Route::middleware(ApiToken::class)->name('api.')->group(function () {
     });
     Route::get('reports/assets', [Api\ReportController::class, 'assets']);
 
+    // Finanzas: inversiones y patrimonio
+    Route::get('investments/options', [Api\InvestmentController::class, 'options']);
+    Route::apiResource('investments', Api\InvestmentController::class);
+    Route::scopeBindings()->prefix('investments/{investment}')->controller(Api\InvestmentController::class)->group(function () {
+        Route::post('transactions', 'storeTransaction');
+        Route::delete('transactions/{transaction}', 'destroyTransaction');
+        Route::post('valuations', 'storeValuation');
+        Route::delete('valuations/{valuation}', 'destroyValuation');
+    });
+    Route::get('net-worth', [Api\ReportController::class, 'netWorth']);
+
+    // Finanzas: deudas
+    Route::apiResource('debts', Api\DebtController::class);
+    Route::scopeBindings()->prefix('debts/{debt}')->controller(Api\DebtController::class)->group(function () {
+        Route::post('balances', 'storeBalance');
+        Route::delete('balances/{balance}', 'destroyBalance');
+        Route::post('payments', 'storePayment');
+        Route::delete('payments/{payment}', 'destroyPayment');
+    });
+
+    // Finanzas: pagos recurrentes y los pagos hechos
+    Route::get('recurring/options', [Api\RecurringPaymentController::class, 'options']);
+    Route::apiResource('recurring', Api\RecurringPaymentController::class)->parameters(['recurring' => 'recurringPayment']);
+    Route::post('recurring/{recurringPayment}/pay', [Api\RecurringPaymentController::class, 'pay']);
+    Route::put('paid/{payment}', [Api\RecurringPaymentController::class, 'updatePayment']);
+    Route::delete('paid/{payment}', [Api\RecurringPaymentController::class, 'destroyPayment']);
+
+    // Finanzas: ingresos
+    Route::get('incomes', [Api\IncomeController::class, 'index']);
+    Route::post('incomes', [Api\IncomeController::class, 'store']);
+    Route::delete('incomes/{income}', [Api\IncomeController::class, 'destroy']);
+    Route::post('income-sources', [Api\IncomeController::class, 'storeSource']);
+    Route::put('income-sources/{incomeSource}', [Api\IncomeController::class, 'updateSource']);
+    Route::delete('income-sources/{incomeSource}', [Api\IncomeController::class, 'destroySource']);
+    Route::post('income-sources/{incomeSource}/receive', [Api\IncomeController::class, 'receive']);
+
+    // Reportes del súper
+    Route::get('reports/spending', [Api\ReportController::class, 'spending']);
+    Route::get('reports/inflation', [Api\ReportController::class, 'inflation']);
+    Route::get('reports/changes', [Api\ReportController::class, 'changes']);
+
     // Fotos y documentos: el archivo (?thumb=1 la miniatura) y quitarlo
     Route::get('attachments/{attachment}', [AttachmentController::class, 'show']);
     Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy']);

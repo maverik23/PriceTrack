@@ -6,10 +6,10 @@ use App\Models\Debt;
 use App\Models\Payment;
 use App\Models\RecurringPayment;
 use App\Support\Paginate;
-use Carbon\CarbonImmutable;
+use App\Support\RecurringPaymentData;
+use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class RecurringPaymentController extends Controller
 {
@@ -73,46 +73,27 @@ class RecurringPaymentController extends Controller
      */
     public function pay(Request $request, RecurringPayment $recurringPayment)
     {
-        $data = $request->validate([
-            'paid_on' => ['nullable', 'date', 'before_or_equal:today'],
-            'amount' => ['nullable', 'numeric', 'gt:0', 'max:99999999999'],
-            'reading' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
-            // La primera lectura de un pago sin unidad la trae (kWh, m³) y se queda guardada
-            'meter_unit' => [Rule::requiredIf(fn () => $request->filled('reading') && ! $recurringPayment->meter_unit), 'nullable', 'string', 'max:12'],
-            'notes' => ['nullable', 'string', 'max:255'],
-        ], [], ['paid_on' => 'fecha', 'amount' => 'monto', 'reading' => 'lectura', 'meter_unit' => 'unidad de la lectura']);
-
-        if (isset($data['reading']) && ! $recurringPayment->meter_unit) {
-            $recurringPayment->update(['meter_unit' => trim($data['meter_unit'])]);
-        }
-
         $due = $recurringPayment->next_due_on;
-        $payment = $recurringPayment->markPaid(
-            isset($data['paid_on']) ? CarbonImmutable::parse($data['paid_on']) : null,
-            isset($data['amount']) ? (float) $data['amount'] : null,
-            $data['notes'] ?? null,
-            isset($data['reading']) ? (float) $data['reading'] : null,
-        );
+        $payment = RecurringPaymentData::pay($recurringPayment, $request->all());
 
+        return back()->with('success', self::paidMessage($recurringPayment, $payment, $due));
+    }
+
+    /** "«Luz» del 02 nov pagado: $450.00 · 210 kWh a $2.14/kWh. El siguiente recibo: 02 ene 2027." */
+    public static function paidMessage(RecurringPayment $recurring, Payment $payment, CarbonInterface $due): string
+    {
         $used = $payment->consumption();
-        $detail = $used !== null && $recurringPayment->meter_unit
-            ? ' · '.num($used).' '.$recurringPayment->meter_unit.($payment->unitPrice() ? ' a '.money($payment->unitPrice()).'/'.$recurringPayment->meter_unit : '')
+        $detail = $used !== null && $recurring->meter_unit
+            ? ' · '.num($used).' '.$recurring->meter_unit.($payment->unitPrice() ? ' a '.money($payment->unitPrice()).'/'.$recurring->meter_unit : '')
             : '';
 
-        return back()->with('success', "«{$recurringPayment->name}» del {$due->translatedFormat('d M')} pagado: ".money($payment->amount)."{$detail}. El siguiente recibo: {$recurringPayment->next_due_on->translatedFormat('d M Y')}.");
+        return "«{$recurring->name}» del {$due->translatedFormat('d M')} pagado: ".money($payment->amount)."{$detail}. El siguiente recibo: {$recurring->next_due_on->translatedFormat('d M Y')}.";
     }
 
     /** Corrige un pago ya registrado (monto, fecha, lectura, notas). */
     public function updatePayment(Request $request, Payment $payment)
     {
-        $data = $request->validate([
-            'paid_on' => ['required', 'date', 'before_or_equal:today'],
-            'amount' => ['required', 'numeric', 'gt:0', 'max:99999999999'],
-            'reading' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
-            'notes' => ['nullable', 'string', 'max:255'],
-        ], [], ['paid_on' => 'fecha', 'amount' => 'monto', 'reading' => 'lectura']);
-
-        $payment->update($data);
+        RecurringPaymentData::correct($payment, $request->all());
 
         return back()->with('success', 'Pago corregido.');
     }
@@ -126,25 +107,6 @@ class RecurringPaymentController extends Controller
 
     private function validated(Request $request): array
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'category' => ['nullable', 'string', 'max:60'],
-            'amount' => ['required', 'numeric', 'gt:0', 'max:99999999999'],
-            'meter_unit' => ['nullable', 'string', 'max:12'],
-            'every' => ['required', 'integer', 'min:1', 'max:999'],
-            'every_unit' => ['required', Rule::in(array_keys(RecurringPayment::scheduleUnits(true)))],
-            'next_due_on' => ['required', 'date'],
-            'debt_id' => ['nullable', 'exists:debts,id'],
-            'active' => ['nullable', 'boolean'],
-            'notes' => ['nullable', 'string', 'max:255'],
-        ], [], [
-            'category' => 'categoría', 'amount' => 'monto', 'every' => 'cada cuánto', 'every_unit' => 'unidad',
-            'next_due_on' => 'próximo pago', 'debt_id' => 'deuda', 'meter_unit' => 'unidad de la lectura',
-        ]);
-        $data['category'] = RecurringPayment::canonicalCategory($data['category'] ?? null);
-        $data['active'] = $request->boolean('active', true);
-        $data['meter_unit'] = trim((string) ($data['meter_unit'] ?? '')) ?: null;
-
-        return $data;
+        return RecurringPaymentData::validate($request->all());
     }
 }

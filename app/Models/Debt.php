@@ -141,4 +141,25 @@ class Debt extends Model
 
         return (int) ceil(-log(1 - $balance * $i / $payment) / log(1 + $i));
     }
+
+    /**
+     * Saldo mes a mes (o cada varios meses, máximo ~120 puntos) desde el inicio hasta hoy o
+     * la liquidación, para la gráfica. Necesita `balances` y `payments`.
+     *
+     * @return array<int, array{x: string, y: float}>
+     */
+    public function balanceSeries(): array
+    {
+        $start = CarbonImmutable::parse(($this->started_on ?? $this->balances->first()?->balance_on ?? $this->payments->first()?->paid_on ?? today())->toDateString());
+        $end = $this->paid_off_on ? CarbonImmutable::parse($this->paid_off_on->toDateString())->min(today()) : CarbonImmutable::today();
+        $step = max(1, (int) ceil($start->diffInMonths($end) / 120));
+
+        $series = [];
+        for ($d = $start; $d->lt($end); $d = $d->addMonthsNoOverflow($step)) {
+            $series[] = ['x' => $d->toDateString(), 'y' => $this->balanceOn($d)];
+        }
+        $series[] = ['x' => $end->toDateString(), 'y' => $this->balanceOn($end)];
+
+        return $series;
+    }
 }

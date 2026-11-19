@@ -36,4 +36,16 @@ abstract class Controller extends BaseController
             ],
         ] + $extra);
     }
+
+    /**
+     * Unidades de repetición (Task::REPEAT_UNITS, HasSchedule::scheduleUnits()) como
+     * `{clave: {one, many}}`: "mes" / "meses".
+     *
+     * @param  array<string, array{0: string, 1: string}>  $units
+     * @return array<string, array{one: string, many: string}>
+     */
+    protected static function units(array $units): array
+    {
+        return array_map(fn (array $names) => ['one' => $names[0], 'many' => $names[1]], $units);
+    }
 }
