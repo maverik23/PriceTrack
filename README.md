@@ -36,6 +36,8 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
 - **Cocina: recetas y menú semanal.**
   - Cada ingrediente puede ligarse a un artículo del súper (con su cantidad en g/kg, ml/L o pza) o quedarse como texto ("Sal, al gusto").
   - **Costo de la receta** y por porción: lo que se usa de cada artículo al precio más barato por unidad. Cambia las porciones y se recalculan cantidades y costo.
+  - **Unidades de cocina**: taza, cucharada y cucharadita, y piezas ("1 cebolla") aunque el artículo se compre por kilo. Para pasar de una a otra cada artículo puede tener cuánto pesa una pieza y cuánto pesa una taza.
+  - **Macros**: kcal, proteína, carbohidratos y grasa **por porción** y de toda la receta, con la nutrición de cada artículo (se llena sola desde Open Food Facts al buscar el código de barras). También el peso aproximado de una porción y la **foto** de la receta.
   - **Menú de la semana** (desayuno, comida, cena y otro), con el costo estimado de la semana y lo que se come hoy en el inicio.
   - Manda los ingredientes de una receta o de todo el menú a una **lista de compras**: se suman por artículo y se convierten a presentaciones (250 g de arroz de 1 kg = 0.25).
 - **Hogar: tareas.** Listas de tareas (Casa, Auto…) con fecha, prioridad y notas, agrupadas en **Vencidas, Hoy, Próximas y Sin fecha**; se marcan como hechas con un clic.
@@ -123,6 +125,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 - **Gasto** = lo pagado en los artículos marcados como comprados, en la fecha de la lista. Los promedios usan el gasto por día del periodo real (mínimo una semana).
 - **Ahorro** = lo que te costaba lo mismo en la tienda más cara, con sus paquetes, menos lo que pagaste.
 - **Total más barato** = lo que compraste, cada artículo en la tienda más barata para esa cantidad (con sus paquetes). **Posible ahorro** = lo que pagaste menos ese total.
+- **Macros de una receta** = lo que usa cada ingrediente pasado a gramos, mililitros o piezas del artículo × su nutrición por 100 g/ml (o por pieza) ÷ porciones. Taza = 240 ml, cucharada = 15 ml, cucharadita = 5 ml.
 - **Costo de una receta** = lo que usa cada ingrediente ligado a un artículo × el precio por unidad más barato de ese artículo (no paquetes completos). Al mandarla a la lista ya se cuentan paquetes, como en cualquier compra.
 - **Valor de un bien** = la última captura hasta ese día (o el precio de compra), ajustada desde esa fecha: línea recta baja (compra − rescate) ÷ vida útil por año sin pasar del rescate; porcentaje anual = valor × (1 + %)^años. Vendido o dado de baja vale 0 desde esa fecha.
 - **Próximo servicio** = último servicio del plan (o la compra del bien) + el intervalo; por uso, la lectura del último servicio (o la primera lectura) + el intervalo. *Pronto* = 30 días o 10 % del intervalo de uso.

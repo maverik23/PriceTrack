@@ -84,6 +84,40 @@ class Recipe extends Model
         return $this->ingredients->filter(fn (RecipeIngredient $i) => $i->cost() === null)->count();
     }
 
+    /**
+     * Macros de la receta completa ($servings porciones) con los ingredientes que tienen
+     * datos de nutrición; `missing` = cuántos ingredientes ligados no los tienen.
+     *
+     * @return array{total: array<string, float>, perServing: array<string, float>, missing: int, counted: int}|null
+     */
+    public function nutrition(?float $servings = null): ?array
+    {
+        $servings ??= $this->servings;
+        $factor = $this->factor($servings);
+        $rows = $this->ingredients->map(fn (RecipeIngredient $i) => $i->nutrition($factor));
+        $counted = $rows->filter();
+        if ($counted->isEmpty()) {
+            return null;
+        }
+
+        $total = collect(Product::NUTRIENTS)->map(fn ($label, $key) => round($counted->sum(fn ($n) => $n[$key] ?? 0), 1))->all();
+
+        return [
+            'total' => $total,
+            'perServing' => array_map(fn ($v) => round($v / max(1, $servings), 1), $total),
+            'missing' => $this->ingredients->filter(fn (RecipeIngredient $i) => $i->product_id && $i->nutrition() === null)->count(),
+            'counted' => $counted->count(),
+        ];
+    }
+
+    /** Peso aproximado de una porción con lo que se puede pesar (null si casi nada). */
+    public function gramsPerServing(): ?float
+    {
+        $grams = $this->ingredients->map(fn (RecipeIngredient $i) => $i->grams())->filter(fn ($g) => $g !== null);
+
+        return $grams->isEmpty() ? null : round($grams->sum() / max(1, $this->servings));
+    }
+
     /** Líneas de las instrucciones, una por paso. */
     public function steps(): array
     {

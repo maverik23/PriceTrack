@@ -87,8 +87,8 @@ abrir la hoja. Sin errores de consola ni desbordes horizontales.
 ### Mejoras posibles de la fase 1 (preguntar antes)
 
 - Importar una receta desde una dirección (JSON-LD `Recipe`), como Mealie.
-- Unidades de cocina (taza, cucharada) y "1 cebolla" para artículos por kilo.
-- Foto de la receta, favoritos, copiar el menú de otra semana.
+- ~~Unidades de cocina y "1 cebolla"~~ (fase 8). ~~Foto de la receta~~ (fase 7).
+- Favoritos, copiar el menú de otra semana.
 - Evitar duplicar al mandar el mismo menú dos veces a la misma lista.
 
 ## Fase 2. Hogar: tareas ✅ terminada
@@ -239,7 +239,7 @@ Verificado en el navegador: una foto de 4000×3000 llegó reducida a 2000 px con
 Decisiones: sin miniaturas en el servidor (no hay GD); HEIC que el navegador no puede leer se
 guarda tal cual y se ofrece para descargar; las recetas también aceptan documentos.
 
-### Fase 8. Cocina: unidades de cocina y macros
+### Fase 8. Cocina: unidades de cocina y macros ✅ terminada
 
 - Unidades de ingrediente además de g/kg/ml/L/pza: taza (240 ml), cucharada (15 ml),
   cucharadita (5 ml). En el artículo, opcionales: cuánto pesa una pieza y cuánto pesa una taza,
@@ -247,6 +247,19 @@ guarda tal cual y se ofrece para descargar; las recetas también aceptan documen
 - Macros por artículo (kcal, proteína, carbohidratos, grasa por 100 g/ml o por pieza), que se
   llenan solos desde Open Food Facts al buscar el código. La receta muestra los macros totales y
   **por porción**, junto al costo por porción.
+
+Hecho: migración `2026_11_20_000003_add_kitchen_and_nutrition_to_products.php`; enum
+`IngredientUnit`; conversiones en `Product`; macros y peso de porción en `Recipe`; nutrición
+en el formulario de artículo y desde Open Food Facts; macros por porción en la ficha y kcal
+por porción en el listado; foto de la receta (fase 7); demo con tazas, cucharadas y piezas.
+`tests/Feature/KitchenUnitsAndNutritionTest.php` (4 tests). Verificado en el navegador: el
+arroz (con peso de taza) ofrece taza/cda/cdita, el huevo (con peso de pieza) g/kg/pza, un
+artículo sin datos solo los de su dimensión; ficha con macros y aviso del artículo sin
+nutrición; sin desbordes en móvil.
+
+Decisiones: taza = 240 ml; "porciones" = las que rinde la receta (ya existían), ahora con
+macros y costo por porción y el peso aproximado **en crudo**; la nutrición se guarda por
+artículo, no por ingrediente (los ingredientes de texto libre no cuentan en los macros).
 
 ## Pendientes de decidir con el usuario
 

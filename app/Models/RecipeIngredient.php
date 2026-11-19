@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\Unit;
+use App\Enums\IngredientUnit;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +13,7 @@ class RecipeIngredient extends Model
     protected function casts(): array
     {
         return [
-            'unit' => Unit::class,
+            'unit' => IngredientUnit::class,
             'quantity' => 'float',
             'position' => 'integer',
         ];
@@ -34,23 +34,52 @@ class RecipeIngredient extends Model
         return $this->product?->name ?? $this->name;
     }
 
-    /** Cantidad en unidad base (ml, g, pza); null si es texto libre sin cantidad. */
-    public function baseQty(float $factor = 1): ?float
-    {
-        return $this->quantity && $this->unit ? $this->quantity * $this->unit->toBase() * $factor : null;
-    }
-
     /**
-     * Lo que se usa del artículo, en su unidad base. Null si no hay artículo o
-     * si la unidad ya no es de su dimensión (alguien cambió el artículo de kg a pza).
+     * Lo que se usa del artículo, en su unidad base (g, ml o pza), con las conversiones de
+     * cocina del artículo (taza, pieza). Null sin artículo, sin cantidad o si ya no se
+     * puede convertir (alguien cambió el artículo de kg a pza o borró el peso de la taza).
      */
     public function productBaseQty(float $factor = 1): ?float
     {
-        if (! $this->product || ! $this->unit?->isCompatibleWith($this->product->unit)) {
+        if (! $this->product || ! $this->quantity || ! $this->unit) {
+            return null;
+        }
+        $base = $this->product->fromIngredient($this->unit, $this->quantity * $factor);
+
+        return $base === null ? null : $base;
+    }
+
+    /**
+     * kcal, proteína, carbohidratos y grasa de lo que se usa; null si el artículo no
+     * tiene esos datos o no se puede convertir.
+     *
+     * @return array<string, ?float>|null
+     */
+    public function nutrition(float $factor = 1): ?array
+    {
+        $base = $this->productBaseQty($factor);
+        if ($base === null || ! $this->product->hasNutrition()) {
+            return null;
+        }
+        // Por 100 g/ml, o por pieza en artículos que se miden en piezas
+        $portions = $this->product->unit->dimension() === 'count' ? $base : $base / 100;
+
+        return collect(Product::NUTRIENTS)->map(fn ($label, $key) => $this->product->{$key} === null ? null : $portions * $this->product->{$key})->all();
+    }
+
+    /** Gramos aproximados de lo que se usa (para el tamaño de la porción). */
+    public function grams(float $factor = 1): ?float
+    {
+        if ($this->product) {
+            $base = $this->productBaseQty($factor);
+
+            return $base === null ? null : $this->product->gramsOf($base);
+        }
+        if (! $this->quantity || ! $this->unit || $this->unit->dimension() === 'count') {
             return null;
         }
 
-        return $this->baseQty($factor);
+        return $this->quantity * $this->unit->toBase() * $factor;
     }
 
     /** "250 g", "1.5 L"; vacío si no tiene cantidad. */
@@ -60,7 +89,9 @@ class RecipeIngredient extends Model
             return '';
         }
 
-        return trim(qty(round($this->quantity * $factor, 3)).' '.$this->unit?->label());
+        $quantity = round($this->quantity * $factor, 3);
+
+        return trim(qty($quantity).' '.$this->unit?->labelFor($quantity));
     }
 
     /** Lo que cuesta lo que se usa, con el precio más barato por unidad del artículo. */

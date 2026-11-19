@@ -30,7 +30,7 @@
 <div class="card overflow-x-auto p-0">
     <table class="table">
         <thead>
-        <tr><th>Receta</th><th>Categoría</th><th class="text-right">Porciones</th><th class="text-right">Tiempo</th><th class="text-right">Costo</th><th class="text-right">Por porción</th><th></th></tr>
+        <tr><th>Receta</th><th>Categoría</th><th class="text-right">Porciones</th><th class="text-right">Tiempo</th><th class="text-right">Costo</th><th class="text-right">Por porción</th><th class="text-right">kcal/porción</th><th></th></tr>
         </thead>
         <tbody>
         @forelse ($recipes as $recipe)
@@ -57,10 +57,11 @@
                     @endif
                 </td>
                 <td class="text-right font-semibold tabular-nums">{{ money($recipe->costPerServing()) }}</td>
+                <td class="text-right tabular-nums text-slate-600">{{ ($n = $recipe->nutrition()) ? number_format($n['perServing']['kcal']) : '—' }}</td>
                 <td class="text-right"><a href="{{ route('recipes.show', $recipe) }}" class="btn btn-ghost btn-sm">Abrir →</a></td>
             </tr>
         @empty
-            <tr><td colspan="7" class="py-10 text-center text-slate-500">
+            <tr><td colspan="8" class="py-10 text-center text-slate-500">
                 @if (request()->hasAny(['q', 'category']))
                     Ninguna receta coincide.
                 @else

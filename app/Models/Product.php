@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\IngredientUnit;
 use App\Enums\Unit;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'brand', 'barcode', 'category', 'size', 'unit', 'notes'])]
+#[Fillable(['name', 'brand', 'barcode', 'category', 'size', 'unit', 'notes', 'piece_weight', 'cup_grams', 'kcal', 'protein', 'carbs', 'fat'])]
 class Product extends Model
 {
     use HasFactory;
@@ -20,7 +21,66 @@ class Product extends Model
         return [
             'unit' => Unit::class,
             'size' => 'float',
+            'piece_weight' => 'float',
+            'cup_grams' => 'float',
+            'kcal' => 'float',
+            'protein' => 'float',
+            'carbs' => 'float',
+            'fat' => 'float',
         ];
+    }
+
+    /** Campos de nutrición: por 100 g o 100 ml, o por pieza si el artículo se mide en piezas. */
+    public const NUTRIENTS = ['kcal' => 'kcal', 'protein' => 'Proteína', 'carbs' => 'Carbohidratos', 'fat' => 'Grasa'];
+
+    /**
+     * Pasa la cantidad de un ingrediente a la unidad base del artículo (g, ml o pza).
+     * Entre dimensiones usa el peso de una taza (volumen ↔ peso) y el de una pieza
+     * (piezas ↔ peso o volumen). Null si falta ese dato.
+     */
+    public function fromIngredient(IngredientUnit $unit, float $quantity): ?float
+    {
+        $amount = $quantity * $unit->toBase();
+        $from = $unit->dimension();
+        $to = $this->unit->dimension();
+        $gramsPerMl = $this->cup_grams ? $this->cup_grams / IngredientUnit::CUP_ML : null;
+
+        return match (true) {
+            $from === $to => $amount,
+            $from === 'volume' && $to === 'mass' => $gramsPerMl ? $amount * $gramsPerMl : null,
+            $from === 'mass' && $to === 'volume' => $gramsPerMl ? $amount / $gramsPerMl : null,
+            $from === 'count' => $this->piece_weight ? $amount * $this->piece_weight : null,
+            $to === 'count' && $from === 'mass' => $this->piece_weight ? $amount / $this->piece_weight : null,
+            $to === 'count' && $from === 'volume' => $this->piece_weight && $gramsPerMl ? $amount * $gramsPerMl / $this->piece_weight : null,
+            default => null,
+        };
+    }
+
+    /** Qué dato le falta para usar esa unidad ("cuánto pesa una taza"), o null si se puede. */
+    public function missingConversion(IngredientUnit $unit): ?string
+    {
+        if ($this->fromIngredient($unit, 1) !== null) {
+            return null;
+        }
+
+        return $unit->dimension() === 'count' || $this->unit->dimension() === 'count'
+            ? 'cuánto pesa una pieza'
+            : 'cuánto pesa una taza';
+    }
+
+    public function hasNutrition(): bool
+    {
+        return $this->kcal !== null || $this->protein !== null || $this->carbs !== null || $this->fat !== null;
+    }
+
+    /** Gramos aproximados de una cantidad en la unidad base (para el tamaño de la porción). */
+    public function gramsOf(float $baseQty): ?float
+    {
+        return match ($this->unit->dimension()) {
+            'mass' => $baseQty,
+            'volume' => $baseQty * ($this->cup_grams ? $this->cup_grams / IngredientUnit::CUP_ML : 1),
+            'count' => $this->piece_weight ? $baseQty * $this->piece_weight : null,
+        };
     }
 
     public function prices(): HasMany

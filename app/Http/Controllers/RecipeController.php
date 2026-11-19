@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Unit;
+use App\Enums\IngredientUnit;
 use App\Models\MealPlanEntry;
 use App\Models\Product;
 use App\Models\Recipe;
@@ -122,8 +122,11 @@ class RecipeController extends Controller
                     'id' => $p->id,
                     'name' => $p->fullName(),
                     'unit' => $p->unit->value,
+                    'dimension' => $p->unit->dimension(),
+                    'piece' => $p->piece_weight,
+                    'cup' => $p->cup_grams,
                 ])->all(),
-                'units' => Unit::meta(),
+                'units' => IngredientUnit::meta(),
                 'ingredients' => collect(old('ingredients', $recipe->ingredients->map(fn ($i) => [
                     'product_id' => $i->product_id,
                     'name' => $i->product_id ? '' : $i->name,
@@ -164,7 +167,7 @@ class RecipeController extends Controller
             'ingredients.*.product_id' => ['nullable', 'exists:products,id'],
             'ingredients.*.name' => ['nullable', 'string', 'max:150'],
             'ingredients.*.quantity' => ['nullable', 'numeric', 'gt:0', 'max:9999999'],
-            'ingredients.*.unit' => ['nullable', Rule::enum(Unit::class)],
+            'ingredients.*.unit' => ['nullable', Rule::enum(IngredientUnit::class)],
             'ingredients.*.note' => ['nullable', 'string', 'max:255'],
         ], [], [
             'servings' => 'porciones',
@@ -180,7 +183,7 @@ class RecipeController extends Controller
 
         foreach ($data['ingredients'] ?? [] as $i => $row) {
             $product = $products->get($row['product_id'] ?? null);
-            $unit = filled($row['unit'] ?? null) ? Unit::from($row['unit']) : null;
+            $unit = filled($row['unit'] ?? null) ? IngredientUnit::from($row['unit']) : null;
             $quantity = filled($row['quantity'] ?? null) ? (float) $row['quantity'] : null;
 
             if ($product) {
@@ -188,9 +191,9 @@ class RecipeController extends Controller
                 if (! $quantity || ! $unit) {
                     throw ValidationException::withMessages(["ingredients.$i.quantity" => "Indica cantidad y unidad de «{$product->name}»."]);
                 }
-                if (! $unit->isCompatibleWith($product->unit)) {
-                    $allowed = implode(', ', array_map(fn (Unit $u) => $u->label(), $product->unit->compatibleUnits()));
-                    throw ValidationException::withMessages(["ingredients.$i.unit" => "«{$product->name}» se mide en {$allowed}."]);
+                if ($missing = $product->missingConversion($unit)) {
+                    $allowed = implode(', ', array_map(fn (IngredientUnit $u) => $u->label(), array_filter(IngredientUnit::cases(), fn ($u) => $product->fromIngredient($u, 1) !== null)));
+                    throw ValidationException::withMessages(["ingredients.$i.unit" => "«{$product->name}» se mide en {$allowed}. Para usar {$unit->label()} indica en el artículo {$missing}."]);
                 }
             }
 

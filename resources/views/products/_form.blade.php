@@ -57,4 +57,26 @@
         <label class="label" for="notes">Notas</label>
         <input id="notes" name="notes" value="{{ old('notes', $product->notes) }}" class="input">
     </div>
+    @php($kitchenOpen = $errors->hasAny(['piece_weight', 'cup_grams', 'kcal', 'protein', 'carbs', 'fat']) || $product->piece_weight || $product->cup_grams || $product->hasNutrition())
+    <details class="rounded-lg bg-slate-50 p-4 ring-1 ring-slate-200 sm:col-span-2" @if ($kitchenOpen) open @endif>
+        <summary class="cursor-pointer text-sm font-semibold text-slate-700">Para recetas: peso y nutrición <span class="font-normal text-slate-400">(opcional)</span></summary>
+        <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-6">
+            <div class="col-span-1 sm:col-span-3">
+                <label class="label" for="piece_weight">Una pieza pesa (g)</label>
+                <input id="piece_weight" name="piece_weight" type="number" step="0.1" min="0.1" value="{{ old('piece_weight', num($product->piece_weight)) }}" class="input" placeholder="Ej. 150 (una cebolla)">
+            </div>
+            <div class="col-span-1 sm:col-span-3">
+                <label class="label" for="cup_grams">Una taza pesa (g)</label>
+                <input id="cup_grams" name="cup_grams" type="number" step="0.1" min="0.1" value="{{ old('cup_grams', num($product->cup_grams)) }}" class="input" placeholder="Ej. 200 (arroz)">
+            </div>
+            <p class="col-span-2 -mt-1 text-xs text-slate-500 sm:col-span-6">Para escribir en la receta "1 cebolla" de un artículo por kilo o "1 taza" de uno por peso.</p>
+            <div class="col-span-2 text-xs font-medium text-slate-600 sm:col-span-6">Nutrición por 100 g o 100 ml (por pieza si el artículo se mide en piezas)</div>
+            @foreach (['kcal' => 'kcal', 'protein' => 'Proteína (g)', 'carbs' => 'Carbohidratos (g)', 'fat' => 'Grasa (g)'] as $field => $label)
+                <div class="col-span-1 sm:col-span-3">
+                    <label class="label" for="{{ $field }}">{{ $label }}</label>
+                    <input id="{{ $field }}" name="{{ $field }}" type="number" step="0.01" min="0" max="9999" value="{{ old($field, num($product->{$field})) }}" class="input">
+                </div>
+            @endforeach
+        </div>
+    </details>
 </div>

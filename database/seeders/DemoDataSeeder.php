@@ -315,28 +315,45 @@ class DemoDataSeeder extends Seeder
     /** Recetas con artículos del catálogo y el menú de esta semana. */
     private function seedKitchen($products): void
     {
+        // Para recetas: peso de una pieza / de una taza y nutrición por 100 g/ml (por pieza en el huevo)
+        $kitchen = [
+            'Arroz 1 kg' => ['cup_grams' => 200, 'kcal' => 360, 'protein' => 7, 'carbs' => 79, 'fat' => 0.6],
+            'Frijol negro 900 g' => ['cup_grams' => 190, 'kcal' => 341, 'protein' => 21.6, 'carbs' => 62.4, 'fat' => 1.4],
+            'Huevo blanco 30 pzas' => ['piece_weight' => 50, 'kcal' => 72, 'protein' => 6.3, 'carbs' => 0.4, 'fat' => 4.8],
+            'Aceite vegetal 946 ml' => ['cup_grams' => 218, 'kcal' => 828, 'protein' => 0, 'carbs' => 0, 'fat' => 92],
+            'Salsa de tomate 345 ml' => ['cup_grams' => 245, 'kcal' => 29, 'protein' => 1.3, 'carbs' => 5.5, 'fat' => 0.2],
+            'Tortilla de maíz' => ['piece_weight' => 30, 'kcal' => 218, 'protein' => 5.7, 'carbs' => 44.6, 'fat' => 2.9],
+            'Pan blanco grande' => ['piece_weight' => 28, 'kcal' => 265, 'protein' => 9, 'carbs' => 49, 'fat' => 3.2],
+            'Queso panela 400 g' => ['cup_grams' => 120, 'kcal' => 250, 'protein' => 18, 'carbs' => 3, 'fat' => 18],
+            'Leche entera 1 L' => ['cup_grams' => 248, 'kcal' => 61, 'protein' => 3.2, 'carbs' => 4.8, 'fat' => 3.3],
+            'Plátano' => ['piece_weight' => 120, 'kcal' => 89, 'protein' => 1.1, 'carbs' => 22.8, 'fat' => 0.3],
+        ];
+        foreach ($kitchen as $name => $data) {
+            $products->get($name)?->update($data);
+        }
+
         $recipes = [
             ['Arroz rojo', 'Guarniciones', 4, 35, "Lava y escurre el arroz.\nFríelo en el aceite hasta que se dore.\nLicúa el jitomate con ajo y cebolla, agrégalo y deja que se seque.\nAñade agua caliente y sal, tapa y cocina a fuego bajo 20 minutos.", [
-                ['Arroz 1 kg', 250, 'g', null],
-                ['Aceite vegetal 946 ml', 30, 'ml', null],
+                ['Arroz 1 kg', 1.25, 'cup', null],
+                ['Aceite vegetal 946 ml', 2, 'tbsp', null],
                 ['Salsa de tomate 345 ml', 200, 'ml', null],
                 ['Sal', null, null, 'al gusto'],
             ]],
             ['Frijoles de la olla', 'Guisados', 6, 150, "Remoja los frijoles la noche anterior.\nCuécelos con cebolla y ajo hasta que estén suaves.\nSala al final.", [
-                ['Frijol negro 900 g', 500, 'g', null],
+                ['Frijol negro 900 g', 2.5, 'cup', null],
                 ['Cebolla', 0.5, null, 'en trozo'],
                 ['Sal', null, null, 'al gusto'],
             ]],
             ['Huevos a la mexicana', 'Desayunos', 2, 15, "Pica jitomate, cebolla y chile.\nSofríe en aceite.\nAgrega los huevos batidos y revuelve hasta que cuajen.\nSirve con tortillas.", [
                 ['Huevo blanco 30 pzas', 4, 'item', null],
-                ['Aceite vegetal 946 ml', 15, 'ml', null],
-                ['Tortilla de maíz', 250, 'g', 'calientes'],
+                ['Aceite vegetal 946 ml', 1, 'tbsp', null],
+                ['Tortilla de maíz', 8, 'item', 'calientes'],
                 ['Jitomate, cebolla y chile serrano', null, null, 'picados'],
             ]],
             ['Molletes', 'Desayunos', 4, 20, "Parte el pan a la mitad.\nUnta frijoles y cubre con queso.\nHornea hasta que gratine.", [
-                ['Pan blanco grande', 340, 'g', null],
-                ['Frijol negro 900 g', 200, 'g', 'refritos'],
-                ['Queso panela 400 g', 200, 'g', 'rallado'],
+                ['Pan blanco grande', 8, 'item', 'rebanadas'],
+                ['Frijol negro 900 g', 1, 'cup', 'refritos'],
+                ['Queso panela 400 g', 1.5, 'cup', 'rallado'],
             ]],
         ];
 

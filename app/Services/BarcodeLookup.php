@@ -34,7 +34,7 @@ class BarcodeLookup
     public const UPCITEMDB = 'https://api.upcitemdb.com/prod/trial/lookup';
 
     private const OPEN_FACTS_FIELDS = 'product_name_es,product_name,product_name_en,generic_name_es,generic_name,'
-        .'brands,quantity,product_quantity,product_quantity_unit,categories_tags,image_front_small_url,image_small_url';
+        .'brands,quantity,product_quantity,product_quantity_unit,categories_tags,image_front_small_url,image_small_url,nutriments';
 
     /** Categorías de Open Food Facts → pasillo del súper (gana la primera que coincida). */
     private const OPEN_FACTS_CATEGORIES = [
@@ -212,7 +212,26 @@ class BarcodeLookup
             image: $p['image_front_small_url'] ?? $p['image_small_url'] ?? null,
             source: $source,
             url: "{$base}/product/{$barcode}",
+            nutrition: $this->nutrition((array) ($p['nutriments'] ?? [])),
         );
+    }
+
+    /**
+     * kcal y macros por 100 g/ml de Open Food Facts; null si no trae ninguno.
+     *
+     * @return array<string, float>|null
+     */
+    private function nutrition(array $n): ?array
+    {
+        $kcal = $n['energy-kcal_100g'] ?? (isset($n['energy_100g']) && is_numeric($n['energy_100g']) ? $n['energy_100g'] / 4.184 : null);
+        $values = array_filter([
+            'kcal' => $kcal,
+            'protein' => $n['proteins_100g'] ?? null,
+            'carbs' => $n['carbohydrates_100g'] ?? null,
+            'fat' => $n['fat_100g'] ?? null,
+        ], fn ($v) => is_numeric($v) && $v >= 0 && $v < 10000);
+
+        return $values ? array_map(fn ($v) => round((float) $v, 2), $values) : null;
     }
 
     private function fromUpcItemDb(string $barcode, bool &$failed): ?array
@@ -251,7 +270,7 @@ class BarcodeLookup
         );
     }
 
-    private function result(string $name, ?string $brand, ?string $category, ?array $presentation, ?string $image, string $source, string $url): array
+    private function result(string $name, ?string $brand, ?string $category, ?array $presentation, ?string $image, string $source, string $url, ?array $nutrition = null): array
     {
         // Como en el resto de la app, el nombre lleva la presentación: "Leche entera 1 L"
         if ($presentation && ! self::parseQuantity($name)) {
@@ -269,6 +288,8 @@ class BarcodeLookup
             'image' => is_string($image) && str_starts_with($image, 'https://') ? $image : null,
             'source' => $source,
             'source_url' => $url,
+            // Por 100 g/ml (Open Food Facts)
+            'nutrition' => $nutrition,
         ];
     }
 

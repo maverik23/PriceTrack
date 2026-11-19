@@ -84,6 +84,19 @@ export default function productForm(config) {
                 size.value = s.size;
                 unit.value = s.unit;
             }
+
+            // Nutrición por 100 g/ml: no aplica a artículos que se miden en piezas
+            if (s.nutrition && unit && unit.value !== 'item') {
+                let filled = false;
+                for (const [key, value] of Object.entries(s.nutrition)) {
+                    const el = field(key);
+                    if (el && (force || empty(el))) {
+                        el.value = value;
+                        filled = true;
+                    }
+                }
+                if (filled) field('kcal')?.closest('details')?.setAttribute('open', '');
+            }
         },
     };
 }

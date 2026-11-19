@@ -173,6 +173,15 @@ class ProductController extends Controller
             'size' => ['required', 'numeric', 'gt:0', 'max:9999999'],
             'unit' => ['required', Rule::enum(Unit::class)],
             'notes' => ['nullable', 'string', 'max:255'],
+            'piece_weight' => ['nullable', 'numeric', 'gt:0', 'max:99999999'],
+            'cup_grams' => ['nullable', 'numeric', 'gt:0', 'max:99999'],
+            'kcal' => ['nullable', 'numeric', 'min:0', 'max:9999'],
+            'protein' => ['nullable', 'numeric', 'min:0', 'max:9999'],
+            'carbs' => ['nullable', 'numeric', 'min:0', 'max:9999'],
+            'fat' => ['nullable', 'numeric', 'min:0', 'max:9999'],
+        ], [], [
+            'piece_weight' => 'peso de una pieza', 'cup_grams' => 'peso de una taza',
+            'protein' => 'proteína', 'carbs' => 'carbohidratos', 'fat' => 'grasa',
         ]);
 
         // No permitir cambiar de dimensión (ej. ml → kg) si ya hay precios registrados

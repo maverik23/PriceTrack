@@ -5,6 +5,8 @@
 @php
     $cost = $recipe->cost($servings);
     $uncosted = $recipe->uncostedCount();
+    $nutrition = $recipe->nutrition($servings);
+    $portion = $recipe->gramsPerServing();
 @endphp
 <a href="{{ route('recipes.index') }}" class="link text-sm">← Recetas</a>
 <div class="mt-2 mb-6 flex flex-wrap items-start justify-between gap-3">
@@ -12,7 +14,7 @@
         <h1 class="text-2xl font-semibold text-slate-900">{{ $recipe->name }}</h1>
         <p class="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
             @if ($recipe->category)<span class="badge badge-muted">{{ $recipe->category }}</span>@endif
-            <span>Rinde {{ $recipe->servings }} {{ $recipe->servings === 1 ? 'porción' : 'porciones' }}</span>
+            <span>Rinde {{ $recipe->servings }} {{ $recipe->servings === 1 ? 'porción' : 'porciones' }}@if ($portion) de unos {{ number_format($portion) }} g en crudo @endif</span>
             @if ($recipe->minutes)<span>· {{ $recipe->minutes }} min</span>@endif
             @if ($recipe->source_url)<span>· <a href="{{ $recipe->source_url }}" target="_blank" rel="noopener" class="link">Receta original</a></span>@endif
         </p>
@@ -100,6 +102,29 @@
             </div>
             @if ($uncosted && $cost !== null)
                 <div class="mt-2 text-xs text-amber-700">{{ $uncosted }} {{ $uncosted === 1 ? 'ingrediente no entra' : 'ingredientes no entran' }} en el costo (sin artículo, sin cantidad o sin precio).</div>
+            @endif
+        </div>
+
+        <div class="card">
+            <div class="stat-label">Por porción</div>
+            @if ($nutrition)
+                <div class="stat-value">{{ number_format($nutrition['perServing']['kcal']) }} <span class="text-base font-normal text-slate-500">kcal</span></div>
+                <dl class="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+                    @foreach (['protein' => 'Proteína', 'carbs' => 'Carbohidratos', 'fat' => 'Grasa'] as $key => $label)
+                        <div class="rounded-lg bg-slate-50 px-2 py-2 ring-1 ring-slate-200">
+                            <dt class="text-xs text-slate-500">{{ $label }}</dt>
+                            <dd class="font-semibold tabular-nums">{{ num($nutrition['perServing'][$key]) }} g</dd>
+                        </div>
+                    @endforeach
+                </dl>
+                <div class="mt-2 text-xs text-slate-500">
+                    Toda la receta ({{ $servings }} porc.): {{ number_format($nutrition['total']['kcal']) }} kcal · P {{ num($nutrition['total']['protein']) }} g · C {{ num($nutrition['total']['carbs']) }} g · G {{ num($nutrition['total']['fat']) }} g
+                </div>
+                @if ($nutrition['missing'])
+                    <div class="mt-2 text-xs text-amber-700">{{ $nutrition['missing'] }} {{ $nutrition['missing'] === 1 ? 'artículo no tiene' : 'artículos no tienen' }} datos de nutrición; agrégalos en su ficha.</div>
+                @endif
+            @else
+                <p class="mt-2 text-sm text-slate-500">Agrega la nutrición de los artículos (kcal, proteína, carbohidratos y grasa) para ver los macros. Se llenan solos al buscar su código de barras.</p>
             @endif
         </div>
 
