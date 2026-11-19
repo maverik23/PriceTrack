@@ -190,15 +190,61 @@ cuentas cerradas muestran su fecha de cierre.
   al inicio con el mensaje; sin desbordes). El botón "Menú" del inicio se renombró a
   "Menú semanal" porque en móvil se confundía con el botón del menú de navegación.
 
+## Segunda ronda (pedida por el usuario después de mergear las fases 1–5 a `main`)
+
+Respuestas del usuario: deudas o pagos recurrentes **sí**; avisos fuera de la app **no hacen
+falta**; fotos y documentos **sí**; en cocina: unidades de cocina, porciones, macros y foto de
+la receta. Las fases 1–5 se mergearon a `main` (fast-forward, `d23b4f2`).
+
+### Fase 6. Finanzas: deudas y pagos recurrentes ✅ terminada
+
+- `debts`: hipoteca, auto, tarjeta, personal… con monto original, tasa anual, fecha de inicio y
+  capturas de saldo (`debt_balances`). Saldo en una fecha = última captura (o el monto original)
+  con el interés mensual de la tasa, menos los pagos hechos después.
+- `recurring_payments`: luz, internet, suscripciones, la mensualidad de una deuda… monto, cada N
+  días/semanas/meses/años, próxima fecha, categoría, opcionalmente ligado a una deuda.
+  "Pagado" registra el pago (`payments`) y mueve la próxima fecha **desde la fecha que tocaba**
+  (los pagos tienen día fijo, a diferencia de las tareas). Si está ligado a una deuda, baja el saldo.
+- Costo mensual de los pagos recurrentes; pagos de los próximos días en el inicio (sin avisos).
+- El patrimonio neto resta las deudas.
+
+Hecho: migración `2026_11_20_000001_create_debts_and_payments_tables.php`; modelos `Debt`,
+`DebtBalance`, `RecurringPayment`, `Payment`; `DebtController`, `RecurringPaymentController`;
+vistas `debts/*` y `recurring/*`; menú Finanzas (Inversiones, Deudas, Pagos recurrentes,
+Patrimonio); patrimonio con deudas; "Pagos por hacer" en el inicio; demo (hipoteca y crédito
+del auto con sus mensualidades, servicios y suscripciones); `tests/Feature/DebtsAndPaymentsTest.php`
+(7 tests, con la amortización de un crédito a 5 años = 60 meses).
+
+Decisiones: interés compuesto mensual entre fechas (prorrateado por días); pagado tarde avanza
+un solo periodo desde la fecha que tocaba; deshacer el último pago regresa la fecha; los abonos
+sueltos se registran en la deuda. Al revisarla: la lista de pagos de una hipoteca es larga, se
+muestran los últimos 12 y el resto en un desplegable; una deuda en 0 sin fecha de liquidación
+dice "Pagada".
+
+### Fase 7. Fotos y documentos
+
+- `attachments` polimórfico (bienes y recetas): fotos (jpg, png, webp, heic) y documentos (pdf…),
+  guardados en `storage/app/private/attachments` (el volumen de producción) y servidos por un
+  controlador, sin enlace público. Las fotos grandes se reducen en el navegador antes de subirlas
+  (el servidor no tiene GD). Límite de subida a 20 MB en `docker/php.ini`.
+- Bienes: fotos, facturas, pólizas, manuales. Recetas: su foto (la primera es la portada).
+
+### Fase 8. Cocina: unidades de cocina y macros
+
+- Unidades de ingrediente además de g/kg/ml/L/pza: taza (240 ml), cucharada (15 ml),
+  cucharadita (5 ml). En el artículo, opcionales: cuánto pesa una pieza y cuánto pesa una taza,
+  para "1 cebolla" de un artículo por kilo o "1 taza de arroz". Sin el dato, se pide.
+- Macros por artículo (kcal, proteína, carbohidratos, grasa por 100 g/ml o por pieza), que se
+  llenan solos desde Open Food Facts al buscar el código. La receta muestra los macros totales y
+  **por porción**, junto al costo por porción.
+
 ## Pendientes de decidir con el usuario
 
 - ~~Tareas repetitivas: ¿desde el vencimiento o desde que se completan?~~ Se eligió desde que
   se completan (fase 2). Si hacen falta fechas fijas (pagos), sería un campo por tarea.
-- ¿Deudas dentro de Finanzas (hipoteca, crédito del auto)? No se construyeron; el patrimonio
-  dice "Sin deudas" y `FinanceReport::netWorthOn()` es donde se restarían.
-- ¿Avisos fuera de la app (correo, notificación) para tareas y mantenimientos? Por ahora se
-  ven en el inicio y en Tareas.
-- ¿Fotos y documentos adjuntos (facturas, pólizas, manuales) en los bienes?
+- ~~¿Deudas?~~ Sí, con pagos recurrentes (fase 6).
+- ~~¿Avisos fuera de la app?~~ No hacen falta (usuario).
+- ~~¿Fotos y documentos?~~ Sí (fase 7).
 - Las decisiones "más simples" de las fases 3 y 4 (lo que pase primero en planes por tiempo y
   uso, servicio sin costo al completar el recordatorio, dividendos informativos, etc.) están
   anotadas en cada fase por si se quieren cambiar.

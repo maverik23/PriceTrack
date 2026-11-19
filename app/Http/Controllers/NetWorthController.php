@@ -22,6 +22,7 @@ class NetWorthController extends Controller
             'yearAgo' => $yearAgo,
             'accounts' => $finance->accounts()->reject->isClosed(),
             'assets' => $assets->assets()->filter->isActive(),
+            'debts' => $finance->debts()->reject->isPaidOff(),
         ]);
     }
 }

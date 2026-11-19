@@ -34,6 +34,9 @@
         ]],
         ['Finanzas', [
             ['investments.index', 'Inversiones', 'investments.*'],
+            ['debts.index', 'Deudas', 'debts.*'],
+            ['recurring.index', 'Pagos recurrentes', 'recurring.*'],
+            null,
             ['net-worth', 'Patrimonio', 'net-worth'],
         ]],
     ];

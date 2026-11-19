@@ -6,6 +6,7 @@ use App\Models\MealPlanEntry;
 use App\Models\Price;
 use App\Models\Product;
 use App\Models\Provider;
+use App\Models\RecurringPayment;
 use App\Models\ShoppingList;
 use App\Models\Task;
 use App\Services\AssetReport;
@@ -46,8 +47,12 @@ class DashboardController extends Controller
 
         // Finanzas
         $accounts = $finance->accounts();
-        $netWorth = $finance->netWorthOn($today, $accounts, $assets);
-        $netWorthMonthAgo = $finance->netWorthOn($today->subMonthNoOverflow(), $accounts, $assets);
+        $debts = $finance->debts();
+        $netWorth = $finance->netWorthOn($today, $accounts, $assets, $debts);
+        $netWorthMonthAgo = $finance->netWorthOn($today->subMonthNoOverflow(), $accounts, $assets, $debts);
+        $duePayments = RecurringPayment::with('debt')->active()
+            ->where('next_due_on', '<', $today->addDays(RecurringPayment::SOON_DAYS + 1)->toDateString())
+            ->orderBy('next_due_on')->get();
 
         return view('dashboard', [
             'counts' => [
@@ -76,7 +81,9 @@ class DashboardController extends Controller
             'netWorth' => $netWorth,
             'netWorthChange' => $netWorthMonthAgo['total'] > 0 ? ($netWorth['total'] - $netWorthMonthAgo['total']) / $netWorthMonthAgo['total'] : null,
             'netWorthDelta' => round($netWorth['total'] - $netWorthMonthAgo['total'], 2),
-            'hasFinance' => $accounts->isNotEmpty() || $assets->isNotEmpty(),
+            'hasFinance' => $accounts->isNotEmpty() || $assets->isNotEmpty() || $debts->isNotEmpty(),
+            'duePayments' => $duePayments,
+            'hasRecurring' => RecurringPayment::exists(),
         ]);
     }
 }

@@ -3,12 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\Asset;
+use App\Models\Debt;
 use App\Models\InvestmentAccount;
 use App\Models\MealPlanEntry;
 use App\Models\Price;
 use App\Models\Product;
 use App\Models\Provider;
 use App\Models\Recipe;
+use App\Models\RecurringPayment;
 use App\Models\ShoppingList;
 use App\Models\Task;
 use App\Models\TaskList;
@@ -134,7 +136,56 @@ class DemoDataSeeder extends Seeder
             $this->seedTasks();
             $this->seedAssets();
             $this->seedInvestments();
+            $this->seedDebtsAndPayments();
         });
+    }
+
+    /** Hipoteca y crédito del auto con sus mensualidades pagadas, y servicios del hogar. */
+    private function seedDebtsAndPayments(): void
+    {
+        if (Debt::exists() || RecurringPayment::exists()) {
+            return;
+        }
+        $today = CarbonImmutable::today();
+
+        // nombre, acreedor, tipo, monto, tasa, inicio, mensualidad
+        $debts = [
+            ['Hipoteca', 'Infonavit', 'mortgage', 1800000, 10.5, $today->subYears(7)->startOfMonth(), 17971],
+            ['Crédito del auto', 'Mazda Finance', 'car', 250000, 13.9, $today->subYears(2)->subMonths(2)->startOfMonth(), 8530],
+        ];
+        foreach ($debts as [$name, $lender, $type, $amount, $rate, $start, $monthly]) {
+            $debt = Debt::create(['name' => $name, 'lender' => $lender, 'type' => $type, 'original_amount' => $amount, 'annual_rate' => $rate, 'started_on' => $start]);
+            $recurring = RecurringPayment::create([
+                'name' => 'Mensualidad '.mb_strtolower($name), 'category' => 'Deudas', 'amount' => $monthly,
+                'next_due_on' => $start->addMonth()->addDays(9), 'debt_id' => $debt->id,
+            ]);
+            while ($recurring->next_due_on->lte($today)) {
+                $recurring->markPaid($recurring->next_due_on->copy()->subDays(mt_rand(0, 3)));
+            }
+            $debt->load('balances', 'payments');
+            $debt->balances()->create(['balance_on' => $today->subMonths(2)->startOfMonth(), 'balance' => round($debt->balanceOn($today->subMonths(2)->startOfMonth()) * 1.002, 2)]);
+        }
+
+        // nombre, categoría, monto, cada, unidad, próximo pago
+        $bills = [
+            ['Luz (CFE)', 'Servicios', 640, 2, 'month', $today->addDays(5)],
+            ['Agua', 'Servicios', 280, 2, 'month', $today->subDays(2)],
+            ['Internet', 'Servicios', 499, 1, 'month', $today->addDays(3)],
+            ['Gas', 'Servicios', 520, 1, 'month', $today->addDays(16)],
+            ['Netflix', 'Suscripciones', 299, 1, 'month', $today->addDays(11)],
+            ['Spotify', 'Suscripciones', 129, 1, 'month', $today->addDays(22)],
+            ['Predial', 'Vivienda', 3800, 1, 'year', $today->addMonths(2)->startOfMonth()],
+            ['Seguro del auto', 'Seguros', 14200, 1, 'year', $today->addMonths(4)],
+        ];
+        foreach ($bills as [$name, $category, $amount, $every, $unit, $next]) {
+            $bill = RecurringPayment::create(['name' => $name, 'category' => $category, 'amount' => $amount, 'every' => $every, 'every_unit' => $unit, 'next_due_on' => $next]);
+            // Unos pagos pasados para el historial
+            $due = $bill->advance($next, -3);
+            foreach (range(1, 3) as $_) {
+                $bill->payments()->create(['paid_on' => $due, 'due_on' => $due, 'amount' => round($amount * mt_rand(92, 108) / 100, 2)]);
+                $due = $bill->advance($due);
+            }
+        }
     }
 
     /** Cuentas de inversión con aportaciones mensuales y valores capturados cada mes o cada trimestre. */

@@ -8,7 +8,7 @@
 @endphp
 <div class="mb-6">
     <h1 class="text-2xl font-semibold text-slate-900">Patrimonio neto</h1>
-    <p class="text-sm text-slate-500">Tus inversiones más el valor de tus bienes, en pesos. Sin deudas.</p>
+    <p class="text-sm text-slate-500">Tus inversiones más el valor de tus bienes, menos tus deudas. En pesos.</p>
 </div>
 
 <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -23,6 +23,9 @@
     <a href="{{ route('assets.index') }}" class="card hover:ring-emerald-300">
         <div class="stat-label">Bienes</div>
         <div class="stat-value">{{ money($now['assets']) }}</div>
+        @if ($now['debts'] > 0)
+            <div class="mt-1 text-xs text-red-600">Deudas: −{{ money($now['debts']) }}</div>
+        @endif
     </a>
     <div class="card">
         <div class="stat-label">Cambio</div>
@@ -43,11 +46,12 @@
             ['label' => 'Patrimonio', 'data' => $series->pluck('total')->all(), 'borderWidth' => 3],
             ['label' => 'Bienes', 'data' => $series->pluck('assets')->all()],
             ['label' => 'Inversiones', 'data' => $series->pluck('investments')->all()],
+            ...($series->max('debts') > 0 ? [['label' => 'Deudas', 'data' => $series->pluck('debts')->all(), 'borderColor' => '#dc2626', 'backgroundColor' => '#dc262622']] : []),
         ]]) }}"></canvas>
     </div>
 </section>
 
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
     <section class="card overflow-x-auto p-0">
         <h2 class="card-title px-5 pt-5 pb-2">Inversiones</h2>
         <table class="table">
@@ -76,6 +80,21 @@
                 </tr>
             @empty
                 <tr><td class="py-6 text-center text-sm text-slate-500">Sin bienes. <a class="link" href="{{ route('assets.create') }}">Agrega uno</a>.</td></tr>
+            @endforelse
+            </tbody>
+        </table>
+    </section>
+    <section class="card overflow-x-auto p-0">
+        <h2 class="card-title px-5 pt-5 pb-2">Deudas</h2>
+        <table class="table">
+            <tbody>
+            @forelse ($debts->sortByDesc(fn ($d) => $d->currentBalance()) as $debt)
+                <tr>
+                    <td><a href="{{ route('debts.show', $debt) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $debt->name }}</a></td>
+                    <td class="text-right text-red-600 tabular-nums">−{{ money($debt->currentBalance()) }}</td>
+                </tr>
+            @empty
+                <tr><td class="py-6 text-center text-sm text-slate-500">Sin deudas. <a class="link" href="{{ route('debts.create') }}">Agrega una</a> si tienes.</td></tr>
             @endforelse
             </tbody>
         </table>

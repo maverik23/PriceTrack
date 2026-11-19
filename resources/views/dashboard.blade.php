@@ -20,7 +20,7 @@
             <li><strong>Súper:</strong> revisa tus <a class="link" href="{{ route('providers.index') }}">proveedores</a>, da de alta tus <a class="link" href="{{ route('products.create') }}">artículos</a> y crea una <a class="link" href="{{ route('lists.create') }}">lista de compra</a>.</li>
             <li><strong>Cocina:</strong> guarda tus <a class="link" href="{{ route('recipes.create') }}">recetas</a> y arma el <a class="link" href="{{ route('menu.index') }}">menú de la semana</a>.</li>
             <li><strong>Hogar:</strong> anota tus <a class="link" href="{{ route('tasks.index') }}">tareas</a> y tus <a class="link" href="{{ route('assets.create') }}">bienes</a> con su mantenimiento.</li>
-            <li><strong>Finanzas:</strong> registra tus <a class="link" href="{{ route('investments.create') }}">inversiones</a> para ver tu patrimonio.</li>
+            <li><strong>Finanzas:</strong> registra tus <a class="link" href="{{ route('investments.create') }}">inversiones</a>, <a class="link" href="{{ route('debts.create') }}">deudas</a> y <a class="link" href="{{ route('recurring.index') }}">pagos recurrentes</a> para ver tu patrimonio y lo que toca pagar.</li>
         </ul>
     </div>
 @endif
@@ -48,6 +48,7 @@
         <div class="stat-label">Finanzas · patrimonio neto</div>
         <div class="stat-value">{{ money($netWorth['total'], 0) }}</div>
         <div class="mt-1 text-xs text-slate-500">
+            @if ($netWorth['debts'] > 0)<span class="text-red-600">Deudas −{{ money($netWorth['debts'], 0) }}</span> · @endif
             @if ($netWorthChange !== null)
                 <span class="{{ $netWorthDelta >= 0 ? 'text-emerald-700' : 'text-red-600' }}">{{ $netWorthDelta >= 0 ? '+' : '' }}{{ money($netWorthDelta, 0) }} ({{ pct($netWorthChange) }})</span> en el mes
             @else
@@ -57,7 +58,7 @@
     </a>
 </div>
 
-<div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+<div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
     {{-- Hogar: tareas de hoy y vencidas --}}
     <section class="card p-0">
         <div class="flex items-center justify-between px-4 pt-4 pb-2">
@@ -75,6 +76,29 @@
             @if ($dueTasks->count() > 6)
                 <a href="{{ route('tasks.index') }}" class="block border-t border-slate-100 px-4 py-2 text-xs link">y {{ $dueTasks->count() - 6 }} más…</a>
             @endif
+        @endif
+    </section>
+
+    {{-- Finanzas: pagos por hacer --}}
+    <section class="card p-0">
+        <div class="flex items-center justify-between px-4 pt-4 pb-2">
+            <h2 class="card-title">Pagos por hacer ({{ \App\Models\RecurringPayment::SOON_DAYS }} días)</h2>
+            <a href="{{ route('recurring.index') }}" class="link text-xs">Pagos recurrentes</a>
+        </div>
+        @if ($duePayments->isEmpty())
+            <p class="px-4 pb-5 text-sm text-slate-500">
+                @if ($hasRecurring)
+                    Nada por pagar esta semana.
+                @else
+                    Anota tus <a class="link" href="{{ route('recurring.index') }}">pagos recurrentes</a> (luz, internet, mensualidades) para verlos aquí.
+                @endif
+            </p>
+        @else
+            <ul class="divide-y divide-slate-100 border-t border-slate-100">
+                @foreach ($duePayments as $item)
+                    @include('recurring._row')
+                @endforeach
+            </ul>
         @endif
     </section>
 

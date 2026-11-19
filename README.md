@@ -2,7 +2,7 @@
 
 **PriceTrack** es una app web *self-hosted* para **comparar precios del supermercado** entre tiendas (Sam's Club, Costco, Walmart, Amazon, Soriana, Chedraui o las que agregues), calcular el **precio por unidad** ($/L, $/kg, $/pza) y saber **dónde conviene comprar**. Llevas tu **lista de compras como una hoja de Excel**, cada precio queda guardado con su fecha y su tienda, y con ese historial ves tu **inflación personal** y tu **gasto promedio semanal, mensual y anual**.
 
-Además es la app de tu casa: **recetas y menú de la semana** (los ingredientes van a tu lista de compras), **tareas** con repetición, **bienes** con su valor (depreciación o plusvalía), mantenimiento y garantías, e **inversiones** con su rendimiento y tu **patrimonio neto**. El inicio resume todo: qué se come hoy, qué tareas tocan, qué servicio está vencido y cuánto vale lo que tienes.
+Además es la app de tu casa: **recetas y menú de la semana** (los ingredientes van a tu lista de compras), **tareas** con repetición, **bienes** con su valor (depreciación o plusvalía), mantenimiento y garantías, **inversiones** con su rendimiento, **deudas** y **pagos recurrentes**, y tu **patrimonio neto**. El inicio resume todo: qué se come hoy, qué tareas tocan, qué servicio está vencido y cuánto vale lo que tienes.
 
 Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, servidor casero o VPS), sin cuentas ni login, y tus datos se quedan en tu servidor.
 
@@ -48,7 +48,9 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
   - Cuentas de inversión (CETES, fondos, acciones, cripto, ahorro, Afore…) con **aportaciones, retiros, dividendos o intereses y comisiones**, y el **valor** que capturas de vez en cuando. Sin cotizaciones automáticas.
   - Cuentas en otra moneda: cada movimiento y cada valor llevan el tipo de cambio del día; todo se reporta en pesos.
   - **Ganancia** (valor − aportado neto) y **rendimiento anual ponderado por dinero** (TIR, como XIRR de Excel), por cuenta y de todas juntas. Aviso de cuentas sin valor reciente.
-  - **Patrimonio neto** = inversiones + valor de tus bienes, con su gráfica de 24 meses y el cambio en el mes y en el año.
+  - **Deudas** (hipoteca, auto, tarjeta…): saldo con el interés de su tasa y tus pagos, capturas del estado de cuenta, cuánto pagas al mes y **cuántos meses te faltan**.
+  - **Pagos recurrentes** (luz, internet, suscripciones, mensualidades): cuánto pagas al mes por categoría y los pagos de la semana en el inicio. "Pagado" registra el pago y pasa al siguiente periodo **en la misma fecha** (el día 15 sigue siendo el 15 aunque pagues el 19); si es la mensualidad de una deuda, baja su saldo.
+  - **Patrimonio neto** = inversiones + valor de tus bienes − deudas, con su gráfica de 24 meses y el cambio en el mes y en el año.
 - **Marcas y categorías con autocompletar**, sin duplicados ("lacteos" se une con "Lácteos").
 - Interfaz en español (México), responsiva para usarla en el celular dentro de la tienda.
 
@@ -125,6 +127,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 - **Próximo servicio** = último servicio del plan (o la compra del bien) + el intervalo; por uso, la lectura del último servicio (o la primera lectura) + el intervalo. *Pronto* = 30 días o 10 % del intervalo de uso.
 - **Ganancia de una inversión** = valor (la última captura × su tipo de cambio) − aportado neto (aportaciones − retiros, cada uno con su tipo de cambio). Los dividendos, intereses y comisiones se quedan en la cuenta: ya están en el valor. Sin capturas, la cuenta vale lo aportado.
 - **Rendimiento anual** = la tasa con la que las aportaciones (negativas), los retiros y el valor a la fecha de la última captura suman cero, con años de 365 días (XIRR).
+- **Saldo de una deuda** = la última captura del estado de cuenta (o el monto original al inicio), con interés mensual de la tasa anual ÷ 12 entre fechas, menos cada pago hecho después. **Meses que faltan** = −ln(1 − saldo × i ÷ pago) ÷ ln(1 + i) con la mensualidad actual.
 - **Inflación** = por cada artículo en cada tienda se toma el precio unitario promedio de cada mes, arrastrando el último precio conocido. Luego se encadena la media geométrica de las variaciones mes a mes.
 
 ## Código
@@ -137,6 +140,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 - `app/Models/Task.php`: tareas, repetición y siguiente fecha.
 - `app/Models/Asset.php`, `app/Models/MaintenancePlan.php`, `app/Services/AssetReport.php`: valor, mantenimiento y reporte de bienes.
 - `app/Models/InvestmentAccount.php`, `app/Support/Xirr.php`, `app/Services/FinanceReport.php`: inversiones, rendimiento y patrimonio.
+- `app/Models/Debt.php`, `app/Models/RecurringPayment.php`: deudas y pagos recurrentes.
 - `Dockerfile`, `docker-compose.prod.yml`, `docker/`: imagen y stack de producción.
 
 PriceTrack no está afiliado a ninguna de las tiendas mencionadas; los nombres se usan solo como ejemplo.

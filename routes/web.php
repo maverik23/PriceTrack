@@ -3,6 +3,7 @@
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetRecordController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DebtController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\InvestmentRecordController;
 use App\Http\Controllers\MaintenancePlanController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductLinkController;
 use App\Http\Controllers\ProviderController;
 use App\Http\Controllers\RecipeController;
+use App\Http\Controllers\RecurringPaymentController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ShoppingListController;
@@ -78,6 +80,17 @@ Route::scopeBindings()->prefix('investments/{investment}')->name('investments.')
     Route::post('valuations', 'storeValuation')->name('valuations.store');
     Route::delete('valuations/{valuation}', 'destroyValuation')->name('valuations.destroy');
 });
+Route::resource('debts', DebtController::class);
+Route::scopeBindings()->prefix('debts/{debt}')->name('debts.')->controller(DebtController::class)->group(function () {
+    Route::post('balances', 'storeBalance')->name('balances.store');
+    Route::delete('balances/{balance}', 'destroyBalance')->name('balances.destroy');
+    Route::post('payments', 'storePayment')->name('payments.store');
+    Route::delete('payments/{payment}', 'destroyPayment')->name('payments.destroy');
+});
+Route::resource('recurring', RecurringPaymentController::class)->except(['create', 'show'])
+    ->parameters(['recurring' => 'recurringPayment']);
+Route::post('recurring/{recurringPayment}/pay', [RecurringPaymentController::class, 'pay'])->name('recurring.pay');
+Route::delete('paid/{payment}', [RecurringPaymentController::class, 'destroyPayment'])->name('paid.destroy');
 Route::get('net-worth', NetWorthController::class)->name('net-worth');
 
 Route::prefix('reports')->name('reports.')->controller(ReportController::class)->group(function () {
