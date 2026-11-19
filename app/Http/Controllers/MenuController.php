@@ -112,7 +112,9 @@ class MenuController extends Controller
     private function weekEntries(CarbonImmutable $start)
     {
         return MealPlanEntry::with('recipe.ingredients.product.prices')
-            ->whereBetween('planned_on', [$start->toDateString(), $start->addDays(6)->toDateString()])
+            // Rango semiabierto: con fecha y hora guardadas, whereBetween dejaría fuera el domingo
+            ->where('planned_on', '>=', $start->toDateString())
+            ->where('planned_on', '<', $start->addWeek()->toDateString())
             ->orderBy('planned_on')->orderBy('id')
             ->get();
     }

@@ -26,8 +26,8 @@ class MenuShopper
             $factor = $recipe->factor($servings);
             foreach ($recipe->ingredients as $ingredient) {
                 /** @var RecipeIngredient $ingredient */
-                $base = $ingredient->baseQty($factor);
-                if ($ingredient->product_id && $base !== null) {
+                $base = $ingredient->productBaseQty($factor);
+                if ($base !== null) {
                     $needs[$ingredient->product_id] = ($needs[$ingredient->product_id] ?? 0) + $base;
                 } else {
                     $unlinked[$ingredient->displayName()] = $ingredient->displayName();

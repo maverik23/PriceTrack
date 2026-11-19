@@ -23,6 +23,30 @@
     </div>
 @endif
 
+<div class="card mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="card-title">Hoy se come</h2>
+        <a href="{{ route('menu.index') }}" class="link text-xs">Menú de la semana</a>
+    </div>
+    @if ($todayMeals->isEmpty())
+        <p class="mt-2 text-sm text-slate-500">No hay nada planeado para hoy. <a class="link" href="{{ route('menu.index') }}">Arma el menú</a>.</p>
+    @else
+        <ul class="mt-2 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            @foreach ($todayMeals as $entry)
+                <li class="rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-slate-200">
+                    <div class="text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ $entry->mealLabel() }}</div>
+                    @if ($entry->recipe)
+                        <a href="{{ route('recipes.show', ['recipe' => $entry->recipe, 'servings' => $entry->plannedServings()]) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $entry->recipe->name }}</a>
+                        <span class="text-xs text-slate-500">· {{ $entry->plannedServings() }} porc.</span>
+                    @else
+                        <span class="text-slate-700">{{ $entry->title }}</span>
+                    @endif
+                </li>
+            @endforeach
+        </ul>
+    @endif
+</div>
+
 <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <a href="{{ route('reports.spending') }}" class="card hover:ring-emerald-300">
         <div class="stat-label">Gasto este mes</div>

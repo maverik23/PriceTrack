@@ -40,6 +40,19 @@ class RecipeIngredient extends Model
         return $this->quantity && $this->unit ? $this->quantity * $this->unit->toBase() * $factor : null;
     }
 
+    /**
+     * Lo que se usa del artículo, en su unidad base. Null si no hay artículo o
+     * si la unidad ya no es de su dimensión (alguien cambió el artículo de kg a pza).
+     */
+    public function productBaseQty(float $factor = 1): ?float
+    {
+        if (! $this->product || ! $this->unit?->isCompatibleWith($this->product->unit)) {
+            return null;
+        }
+
+        return $this->baseQty($factor);
+    }
+
     /** "250 g", "1.5 L"; vacío si no tiene cantidad. */
     public function quantityLabel(float $factor = 1): string
     {
@@ -53,8 +66,8 @@ class RecipeIngredient extends Model
     /** Lo que cuesta lo que se usa, con el precio más barato por unidad del artículo. */
     public function cost(float $factor = 1): ?float
     {
-        $base = $this->baseQty($factor);
-        $price = $this->product?->cheapestPrice();
+        $base = $this->productBaseQty($factor);
+        $price = $base === null ? null : $this->product->cheapestPrice();
 
         return $base === null || ! $price ? null : round($base * $price->unit_price, 2);
     }

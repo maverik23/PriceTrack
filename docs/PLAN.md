@@ -41,11 +41,14 @@ inicio que resuma todo.
   y `ReportsTest::test_spending_averages_use_daily_rate`. No se deben romper más; si hay
   MySQL disponible, usarlo.
 - `npm ci && npm run build` necesita internet (fonts.bunny.net). `public/build` no se sube.
-- Para ver las pantallas: `php artisan serve` con SQLite en archivo y Playwright (ya instalado).
+  Si la red de la sesión no deja llegar a fonts.bunny.net, compilar con una copia temporal de
+  `vite.config.js` sin el bloque `fonts` (`npx vite build --config vite.nofonts.config.js`) y
+  borrarla después; no subir esa copia.
+- Para ver las pantallas: `.env` con `DB_CONNECTION=sqlite` y `DB_DATABASE=/ruta/app.sqlite`,
+  `php artisan migrate:fresh --seed && php artisan db:seed --class=DemoDataSeeder`,
+  `php artisan serve` y Playwright (escritorio 1280 px y `devices['iPhone 13']`).
 
-## Fase 1. Cocina: recetas y menú semanal (empezada)
-
-### Ya hecho (en esta rama, con un test de flujo que pasa)
+## Fase 1. Cocina: recetas y menú semanal ✅ terminada
 
 - Migración `2026_11_19_000001_create_recipes_and_meal_plan_tables.php`:
   `recipes` (nombre, categoría, porciones, minutos, preparación, dirección de origen, notas),
@@ -62,25 +65,26 @@ inicio que resuma todo.
 - `RecipeController` (CRUD + `POST recipes/{recipe}/shop`) y `MenuController`
   (`GET menu?week=`, `POST menu`, `DELETE menu/{entry}`, `POST menu/shop`). Semana de lunes a domingo.
 - Vistas `recipes/*` y `menu/index`; Alpine `recipeForm` (`resources/js/recipe-form.js`).
-- `tests/Feature/RecipesAndMenuTest.php`.
+- Menú por secciones (Inicio · Súper · Cocina) en `layouts/app.blade.php`, desplegables con
+  teclado en escritorio y grupos en móvil.
+- Tarjeta "Hoy se come" en el inicio; recetas y menú de la semana en `DemoDataSeeder`.
+- `tests/Feature/RecipesAndMenuTest.php` (8 tests).
 
-### Falta
+Corregido al revisarla en el navegador y en los tests:
 
-1. **Menú por secciones** en `layouts/app.blade.php`: Inicio · Súper (Listas, Artículos,
-   Proveedores, Precios y los tres reportes) · Cocina (Recetas, Menú). Desplegables con
-   Alpine que funcionen en móvil y con teclado. Hoy las pantallas nuevas no tienen enlace.
-2. **Revisar las pantallas en un navegador** (nadie las ha visto todavía): formulario de
-   receta (agregar/quitar renglones, unidades según el artículo, volver con errores de
-   validación conservando lo escrito), ficha de receta, menú en móvil y escritorio.
-3. Compilar con `npm run build` y pasar `pint`.
-4. Más tests: validación de dimensión y de cantidad obligatoria, edición que reemplaza
-   ingredientes, artículo eliminado (el ingrediente queda como texto), semana con varias
-   recetas que comparten artículo, `?week=` inválido.
-5. Recetas de ejemplo en `DemoDataSeeder` (arroz, frijoles, huevo, tortilla ya están en el catálogo).
-6. Tarjeta "Hoy se come" en el inicio.
-7. Documentar en `AGENTS.md` (sección Dominio) y `README.md`.
+- El **domingo** no salía en el menú: `whereBetween` con la fecha guardada con hora lo
+  dejaba fuera. Ahora es rango semiabierto.
+- Si alguien cambia la unidad de un artículo (de kg a pza), sus ingredientes ya no se cuestan
+  ni se mandan a la lista con una cantidad equivocada (`RecipeIngredient::productBaseQty()`).
+- En móvil, las comidas vacías de cada día se volvieron botones ("+ Desayuno", "+ Cena"):
+  antes cada día ocupaba casi una pantalla.
 
-### Mejoras posibles de esta fase (después de lo anterior, preguntar antes)
+Verificado con Playwright (escritorio y iPhone 13): desplegables con clic, flechas y Escape;
+menú móvil; agregar/quitar renglones; unidades según el artículo; error de dimensión que
+vuelve con lo escrito; escalar porciones; botones + del menú; mandar la semana a una lista y
+abrir la hoja. Sin errores de consola ni desbordes horizontales.
+
+### Mejoras posibles de la fase 1 (preguntar antes)
 
 - Importar una receta desde una dirección (JSON-LD `Recipe`), como Mealie.
 - Unidades de cocina (taza, cucharada) y "1 cebolla" para artículos por kilo.

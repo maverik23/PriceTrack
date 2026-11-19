@@ -92,7 +92,8 @@
                 </div>
                 <div class="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-4 sm:divide-x sm:divide-y-0">
                     @foreach ($day['meals'] as $meal => $mealEntries)
-                        <div class="min-w-0 px-4 py-3">
+                        {{-- En móvil las comidas vacías no ocupan lugar: se agregan con los botones de abajo --}}
+                        <div class="min-w-0 px-4 py-3 {{ $mealEntries->isEmpty() ? 'hidden sm:block' : '' }}">
                             <div class="mb-1 flex items-center justify-between">
                                 <span class="text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ $meals[$meal] }}</span>
                                 <button type="button" class="btn btn-ghost btn-sm" title="Agregar a {{ $meals[$meal] }}"
@@ -117,6 +118,14 @@
                         </div>
                     @endforeach
                 </div>
+                @php($empty = $day['meals']->filter(fn ($mealEntries) => $mealEntries->isEmpty()))
+                @if ($empty->isNotEmpty())
+                    <div class="flex flex-wrap gap-1 px-3 py-2 sm:hidden {{ $empty->count() < count($meals) ? 'border-t border-slate-100' : '' }}">
+                        @foreach ($empty as $meal => $_)
+                            <button type="button" class="btn btn-ghost btn-sm" @click="pick('{{ $day['date']->toDateString() }}', '{{ $meal }}')">+ {{ $meals[$meal] }}</button>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         @endforeach
     </div>

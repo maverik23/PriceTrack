@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MealPlanEntry;
 use App\Models\Price;
 use App\Models\Product;
 use App\Models\Provider;
@@ -38,6 +39,10 @@ class DashboardController extends Controller
             'inflation' => $inflation,
             'changes' => $changes,
             'lists' => $lists,
+            'todayMeals' => MealPlanEntry::with('recipe')
+                ->whereDate('planned_on', $today)->get()
+                ->sortBy(fn (MealPlanEntry $e) => array_search($e->meal, array_keys(MealPlanEntry::MEALS)))
+                ->values(),
         ]);
     }
 }

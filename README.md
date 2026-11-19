@@ -2,6 +2,8 @@
 
 **PriceTrack** es una app web *self-hosted* para **comparar precios del supermercado** entre tiendas (Sam's Club, Costco, Walmart, Amazon, Soriana, Chedraui o las que agregues), calcular el **precio por unidad** ($/L, $/kg, $/pza) y saber **dónde conviene comprar**. Llevas tu **lista de compras como una hoja de Excel**, cada precio queda guardado con su fecha y su tienda, y con ese historial ves tu **inflación personal** y tu **gasto promedio semanal, mensual y anual**.
 
+Además lleva tus **recetas y el menú de la semana**, y manda los ingredientes a la lista.
+
 Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, servidor casero o VPS), sin cuentas ni login, y tus datos se quedan en tu servidor.
 
 > 🇬🇧 **English:** self-hosted **grocery price tracker** and **shopping list**. Compare supermarket prices across stores by **unit price** (per liter, kilo or piece), log every price with its date and store, and get your **personal inflation** and **average grocery spending** (weekly, monthly, yearly). Spreadsheet-like shopping list, no login, runs on Docker. The UI is in Spanish (Mexico).
@@ -31,6 +33,11 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
   - **Gasto promedio** semanal, mensual y anual, con desglose por mes, semana, año, tienda y categoría.
   - **Inflación de tu canasta**: índice mensual (base 100), inflación anualizada y variación por artículo.
   - **Cambios de precio**: cada subida o bajada contra el registro anterior del mismo artículo en la misma tienda.
+- **Cocina: recetas y menú semanal.**
+  - Cada ingrediente puede ligarse a un artículo del súper (con su cantidad en g/kg, ml/L o pza) o quedarse como texto ("Sal, al gusto").
+  - **Costo de la receta** y por porción: lo que se usa de cada artículo al precio más barato por unidad. Cambia las porciones y se recalculan cantidades y costo.
+  - **Menú de la semana** (desayuno, comida, cena y otro), con el costo estimado de la semana y lo que se come hoy en el inicio.
+  - Manda los ingredientes de una receta o de todo el menú a una **lista de compras**: se suman por artículo y se convierten a presentaciones (250 g de arroz de 1 kg = 0.25).
 - **Marcas y categorías con autocompletar**, sin duplicados ("lacteos" se une con "Lácteos").
 - Interfaz en español (México), responsiva para usarla en el celular dentro de la tienda.
 
@@ -102,6 +109,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 - **Gasto** = lo pagado en los artículos marcados como comprados, en la fecha de la lista. Los promedios usan el gasto por día del periodo real (mínimo una semana).
 - **Ahorro** = lo que te costaba lo mismo en la tienda más cara, con sus paquetes, menos lo que pagaste.
 - **Total más barato** = lo que compraste, cada artículo en la tienda más barata para esa cantidad (con sus paquetes). **Posible ahorro** = lo que pagaste menos ese total.
+- **Costo de una receta** = lo que usa cada ingrediente ligado a un artículo × el precio por unidad más barato de ese artículo (no paquetes completos). Al mandarla a la lista ya se cuentan paquetes, como en cualquier compra.
 - **Inflación** = por cada artículo en cada tienda se toma el precio unitario promedio de cada mes, arrastrando el último precio conocido. Luego se encadena la media geométrica de las variaciones mes a mes.
 
 ## Código
@@ -110,6 +118,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 - `app/Models/Price.php`: normaliza `base_qty` y `unit_price` al guardar.
 - `app/Services/ReportService.php`: gasto, inflación y cambios de precio.
 - `app/Support/ListGrid.php` + `resources/js/list-grid.js`: la hoja de la lista de compras.
+- `app/Models/Recipe.php`, `app/Services/MenuShopper.php`: recetas, costo y envío de ingredientes a una lista.
 - `Dockerfile`, `docker-compose.prod.yml`, `docker/`: imagen y stack de producción.
 
 PriceTrack no está afiliado a ninguna de las tiendas mencionadas; los nombres se usan solo como ejemplo.

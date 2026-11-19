@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\MealPlanEntry;
 use App\Models\Price;
 use App\Models\Product;
 use App\Models\Provider;
+use App\Models\Recipe;
 use App\Models\ShoppingList;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -123,6 +125,79 @@ class DemoDataSeeder extends Seeder
                     ]);
                 }
             }
+
+            $this->seedKitchen($products->keyBy('name'));
         });
+    }
+
+    /** Recetas con artículos del catálogo y el menú de esta semana. */
+    private function seedKitchen($products): void
+    {
+        $recipes = [
+            ['Arroz rojo', 'Guarniciones', 4, 35, "Lava y escurre el arroz.\nFríelo en el aceite hasta que se dore.\nLicúa el jitomate con ajo y cebolla, agrégalo y deja que se seque.\nAñade agua caliente y sal, tapa y cocina a fuego bajo 20 minutos.", [
+                ['Arroz 1 kg', 250, 'g', null],
+                ['Aceite vegetal 946 ml', 30, 'ml', null],
+                ['Salsa de tomate 345 ml', 200, 'ml', null],
+                ['Sal', null, null, 'al gusto'],
+            ]],
+            ['Frijoles de la olla', 'Guisados', 6, 150, "Remoja los frijoles la noche anterior.\nCuécelos con cebolla y ajo hasta que estén suaves.\nSala al final.", [
+                ['Frijol negro 900 g', 500, 'g', null],
+                ['Cebolla', 0.5, null, 'en trozo'],
+                ['Sal', null, null, 'al gusto'],
+            ]],
+            ['Huevos a la mexicana', 'Desayunos', 2, 15, "Pica jitomate, cebolla y chile.\nSofríe en aceite.\nAgrega los huevos batidos y revuelve hasta que cuajen.\nSirve con tortillas.", [
+                ['Huevo blanco 30 pzas', 4, 'item', null],
+                ['Aceite vegetal 946 ml', 15, 'ml', null],
+                ['Tortilla de maíz', 250, 'g', 'calientes'],
+                ['Jitomate, cebolla y chile serrano', null, null, 'picados'],
+            ]],
+            ['Molletes', 'Desayunos', 4, 20, "Parte el pan a la mitad.\nUnta frijoles y cubre con queso.\nHornea hasta que gratine.", [
+                ['Pan blanco grande', 340, 'g', null],
+                ['Frijol negro 900 g', 200, 'g', 'refritos'],
+                ['Queso panela 400 g', 200, 'g', 'rallado'],
+            ]],
+        ];
+
+        $created = [];
+        foreach ($recipes as [$name, $category, $servings, $minutes, $instructions, $ingredients]) {
+            $recipe = Recipe::firstOrCreate(['name' => $name], [
+                'category' => $category, 'servings' => $servings, 'minutes' => $minutes, 'instructions' => $instructions,
+            ]);
+            if (! $recipe->wasRecentlyCreated) {
+                $created[$name] = $recipe;
+
+                continue;
+            }
+            foreach ($ingredients as $position => [$ingredient, $quantity, $unit, $note]) {
+                $product = $products->get($ingredient);
+                $recipe->ingredients()->create([
+                    'product_id' => $product?->id,
+                    'name' => $ingredient,
+                    'quantity' => $quantity,
+                    'unit' => $unit,
+                    'note' => $note,
+                    'position' => $position,
+                ]);
+            }
+            $created[$name] = $recipe;
+        }
+
+        // Menú de la semana en curso
+        $monday = CarbonImmutable::today()->startOfWeek(CarbonImmutable::MONDAY);
+        $plan = [
+            [0, 'lunch', 'Arroz rojo', null], [0, 'dinner', 'Molletes', null],
+            [1, 'breakfast', 'Huevos a la mexicana', null], [1, 'lunch', 'Frijoles de la olla', null],
+            [2, 'lunch', null, 'Sobras'], [3, 'breakfast', 'Molletes', null],
+            [4, 'lunch', 'Arroz rojo', null], [5, 'lunch', null, 'Comer fuera'],
+            [6, 'breakfast', 'Huevos a la mexicana', 4],
+        ];
+        foreach ($plan as [$day, $meal, $recipe, $extra]) {
+            MealPlanEntry::firstOrCreate(
+                ['planned_on' => $monday->addDays($day)->toDateString(), 'meal' => $meal],
+                $recipe
+                    ? ['recipe_id' => $created[$recipe]->id, 'servings' => $extra]
+                    : ['title' => $extra],
+            );
+        }
     }
 }
