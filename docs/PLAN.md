@@ -110,24 +110,41 @@ abrir la hoja. Sin errores de consola ni desbordes horizontales.
   nueva en Próximas), deshacer, alta rápida con "Más" (lista, prioridad, cada año), alta dentro
   de una lista, editar y volver a la lista; en móvil las listas son chips arriba de las tareas.
 
-## Fase 3. Hogar: bienes, mantenimiento y valor
+## Fase 3. Hogar: bienes, mantenimiento y valor ✅ terminada
 
-- `assets`: nombre, categoría (combobox), marca/modelo, número de serie, ubicación,
-  fecha y precio de compra, garantía hasta, notas, estado (en uso, vendido, dado de baja
-  con fecha y monto de venta).
-- **Valor**: `asset_valuations` (fecha, valor), captura manual con historial, y un método
-  de estimación por bien para los días sin captura:
-  - ninguno (vale la última captura),
-  - línea recta (vida útil en años + valor de rescate),
-  - porcentaje anual (negativo = depreciación, positivo = plusvalía; para casa o terreno).
-  El valor de hoy = última captura, ajustada con el método desde esa fecha. Gráfica del valor
-  en el tiempo y ganancia/pérdida contra el precio de compra.
-- **Mantenimiento**: `maintenance_plans` por bien (qué, cada cuánto: por tiempo y/o por uso,
-  por ejemplo cada 6 meses o 10,000 km; costo estimado) y `maintenance_logs` (fecha, lectura
-  del medidor, costo, proveedor, notas). El bien puede tener un medidor (km, horas) con
-  lecturas. De ahí sale "próximo servicio" y lo vencido; enlazar con las tareas de la fase 2.
-- Reportes: costo de mantenimiento por bien y por año, costo total de tener cada bien
-  (compra + mantenimiento − valor actual), garantías por vencer.
+- Migración `2026_11_19_000003_create_assets_tables.php`: `assets`, `asset_valuations`,
+  `meter_readings`, `maintenance_plans` (con `task_id`) y `maintenance_logs` (con `task_id`).
+- Modelos `Asset` (valor en una fecha con los tres métodos, ganancia, costo de tenerlo,
+  medidor, serie para la gráfica), `AssetValuation`, `MeterReading`, `MaintenancePlan`
+  (próximo servicio por tiempo y por uso, estado, `syncTask()`), `MaintenanceLog`.
+- Controladores `AssetController` (CRUD), `AssetRecordController` (valores, lecturas y
+  servicios), `MaintenancePlanController`; `ReportController::assets` con
+  `App\Services\AssetReport`. Vistas `assets/*` y `reports/assets`. Menú Hogar: Tareas,
+  Bienes, Reporte de bienes.
+- **Enlace con tareas**: cada plan mantiene un recordatorio en la lista "Mantenimiento";
+  completarlo registra el servicio y crea el siguiente; reabrirlo lo deshace.
+- Bienes demo (auto con km, casa con plusvalía y avalúo, refrigerador con garantía por vencer,
+  minisplit, laptop vendida). `tests/Feature/AssetsTest.php` (8 tests).
+
+Decisiones tomadas (las más simples; cambiar si el usuario prefiere otra cosa):
+
+- Con plan por tiempo **y** por uso, toca **lo que pase primero**.
+- Sin servicios previos, el próximo se cuenta desde la **compra** del bien (si no hay, desde
+  que se creó el plan); por uso, desde la **primera lectura** del medidor.
+- El servicio registrado al completar la tarea va **sin costo**; el costo se agrega
+  registrando el servicio en la ficha (o se puede borrar y capturar completo).
+- "Pronto" = 30 días antes o al 10 % del intervalo de uso. Garantías "por vencer" = 60 días.
+- La línea recta usa el **precio de compra** para la pendiente aunque haya capturas: desde una
+  captura sigue bajando al mismo ritmo, sin pasar del valor de rescate.
+- Un bien vendido o dado de baja vale 0 desde esa fecha (para el patrimonio de la fase 4);
+  su ganancia se calcula con lo recibido.
+- Sin fotos ni documentos adjuntos (sigue pendiente de decidir).
+
+Encontrado al revisar: un `@endif` pegado a una palabra rompía la ficha (anotado en
+`AGENTS.md`); los años del reporte saltaban los que no tenían servicios; la tabla de planes se
+apretaba en móvil. Verificado con Playwright: método de valor y estado muestran sus campos,
+combobox de categoría, valor por línea recta, plan vencido, completar el recordatorio desde
+Tareas registra el servicio, vender quita los recordatorios; sin desbordes en móvil.
 
 ## Fase 4. Finanzas: inversiones y patrimonio
 

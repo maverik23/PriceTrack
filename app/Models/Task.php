@@ -138,6 +138,8 @@ class Task extends Model
 
         return DB::transaction(function () use ($at) {
             $this->update(['completed_at' => $at]);
+            // Recordatorio de mantenimiento: queda registrado el servicio y se crea el siguiente
+            MaintenancePlan::where('task_id', $this->id)->get()->each->recordFromTask($this);
             if (! $this->isRecurring()) {
                 return null;
             }
@@ -158,6 +160,18 @@ class Task extends Model
         DB::transaction(function () {
             $this->repetitions()->whereNull('completed_at')->delete();
             $this->update(['completed_at' => null]);
+
+            // Si al completarla se registró un servicio, se quita y esta vuelve a ser el recordatorio
+            MaintenanceLog::with('plan')->where('task_id', $this->id)->get()->each(function (MaintenanceLog $log) {
+                if ($plan = $log->plan) {
+                    if ($plan->task_id !== $this->id) {
+                        Task::whereKey($plan->task_id)->pending()->delete();
+                    }
+                    $plan->task_id = $this->id;
+                    $plan->saveQuietly();
+                }
+                $log->delete();
+            });
         });
     }
 }

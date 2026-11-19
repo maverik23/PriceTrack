@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\AssetController;
+use App\Http\Controllers\AssetRecordController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MaintenancePlanController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductController;
@@ -51,8 +54,22 @@ Route::resource('tasks', TaskController::class)->only(['index', 'store', 'edit',
 Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
 Route::resource('task-lists', TaskListController::class)->only(['store', 'update', 'destroy']);
 
+// Hogar: bienes, su valor y su mantenimiento
+Route::resource('assets', AssetController::class);
+Route::scopeBindings()->prefix('assets/{asset}')->name('assets.')->group(function () {
+    Route::post('valuations', [AssetRecordController::class, 'storeValuation'])->name('valuations.store');
+    Route::delete('valuations/{valuation}', [AssetRecordController::class, 'destroyValuation'])->name('valuations.destroy');
+    Route::post('readings', [AssetRecordController::class, 'storeReading'])->name('readings.store');
+    Route::delete('readings/{meterReading}', [AssetRecordController::class, 'destroyReading'])->name('readings.destroy');
+    Route::post('logs', [AssetRecordController::class, 'storeLog'])->name('logs.store');
+    Route::delete('logs/{maintenanceLog}', [AssetRecordController::class, 'destroyLog'])->name('logs.destroy');
+    Route::resource('plans', MaintenancePlanController::class)->only(['store', 'edit', 'update', 'destroy'])
+        ->parameters(['plans' => 'maintenancePlan']);
+});
+
 Route::prefix('reports')->name('reports.')->controller(ReportController::class)->group(function () {
     Route::get('inflation', 'inflation')->name('inflation');
     Route::get('changes', 'changes')->name('changes');
     Route::get('spending', 'spending')->name('spending');
+    Route::get('assets', 'assets')->name('assets');
 });

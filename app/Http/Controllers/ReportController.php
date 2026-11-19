@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AssetReport;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
 
@@ -37,5 +38,17 @@ class ReportController extends Controller
 
         return view('reports.spending', ['from' => $from, 'to' => $to, 'gaps' => $this->reports->spendingGaps($from, $to)]
             + $this->reports->spending($from, $to));
+    }
+
+    /** Mantenimiento por año, costo de tener cada bien, servicios próximos y garantías por vencer. */
+    public function assets(AssetReport $report)
+    {
+        $assets = $report->assets();
+
+        return view('reports.assets', [
+            'table' => $report->maintenanceByYear($assets),
+            'summary' => $report->summary($assets),
+            'plans' => $report->plans($assets)->filter(fn ($p) => $p->status() !== 'none'),
+        ]);
     }
 }

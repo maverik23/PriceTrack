@@ -2,7 +2,7 @@
 
 **PriceTrack** es una app web *self-hosted* para **comparar precios del supermercado** entre tiendas (Sam's Club, Costco, Walmart, Amazon, Soriana, Chedraui o las que agregues), calcular el **precio por unidad** ($/L, $/kg, $/pza) y saber **dónde conviene comprar**. Llevas tu **lista de compras como una hoja de Excel**, cada precio queda guardado con su fecha y su tienda, y con ese historial ves tu **inflación personal** y tu **gasto promedio semanal, mensual y anual**.
 
-Además lleva tus **recetas y el menú de la semana** (y manda los ingredientes a la lista) y las **tareas de la casa**, con repetición.
+Además lleva tus **recetas y el menú de la semana** (y manda los ingredientes a la lista) las **tareas de la casa** y tus **bienes** (valor, depreciación o plusvalía, mantenimiento y garantías).
 
 Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, servidor casero o VPS), sin cuentas ni login, y tus datos se quedan en tu servidor.
 
@@ -40,6 +40,10 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
   - Manda los ingredientes de una receta o de todo el menú a una **lista de compras**: se suman por artículo y se convierten a presentaciones (250 g de arroz de 1 kg = 0.25).
 - **Hogar: tareas.** Listas de tareas (Casa, Auto…) con fecha, prioridad y notas, agrupadas en **Vencidas, Hoy, Próximas y Sin fecha**; se marcan como hechas con un clic.
   - Las **repetitivas** (cada N días, semanas, meses o años) crean la siguiente al completarlas, **contando desde el día en que la hiciste** (cambias el filtro con una semana de retraso y el siguiente cambio se corre también). Si la desmarcas, se quita la siguiente.
+- **Hogar: bienes, mantenimiento y valor.** El auto, la casa, los electrodomésticos…
+  - **Valor**: capturas el valor cuando quieras (avalúo, Libro Azul) y entre capturas se estima con **línea recta** (vida útil y valor de rescate), un **porcentaje anual** (negativo si se deprecia, positivo si gana plusvalía) o ninguno. Gráfica del valor en el tiempo y ganancia o pérdida contra lo que pagaste (o lo que recibiste al venderlo).
+  - **Mantenimiento**: planes por tiempo y/o por uso (cada 6 meses o 10,000 km, lo que pase primero), con medidor y lecturas. Cada plan deja su recordatorio en **Tareas**; al completarlo se registra el servicio y se crea el siguiente.
+  - **Reporte**: costo de mantenimiento por bien y por año, **costo de tener cada bien** (compra + mantenimiento − valor de hoy), servicios vencidos y próximos, y garantías por vencer.
 - **Marcas y categorías con autocompletar**, sin duplicados ("lacteos" se une con "Lácteos").
 - Interfaz en español (México), responsiva para usarla en el celular dentro de la tienda.
 
@@ -112,6 +116,8 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 - **Ahorro** = lo que te costaba lo mismo en la tienda más cara, con sus paquetes, menos lo que pagaste.
 - **Total más barato** = lo que compraste, cada artículo en la tienda más barata para esa cantidad (con sus paquetes). **Posible ahorro** = lo que pagaste menos ese total.
 - **Costo de una receta** = lo que usa cada ingrediente ligado a un artículo × el precio por unidad más barato de ese artículo (no paquetes completos). Al mandarla a la lista ya se cuentan paquetes, como en cualquier compra.
+- **Valor de un bien** = la última captura hasta ese día (o el precio de compra), ajustada desde esa fecha: línea recta baja (compra − rescate) ÷ vida útil por año sin pasar del rescate; porcentaje anual = valor × (1 + %)^años. Vendido o dado de baja vale 0 desde esa fecha.
+- **Próximo servicio** = último servicio del plan (o la compra del bien) + el intervalo; por uso, la lectura del último servicio (o la primera lectura) + el intervalo. *Pronto* = 30 días o 10 % del intervalo de uso.
 - **Inflación** = por cada artículo en cada tienda se toma el precio unitario promedio de cada mes, arrastrando el último precio conocido. Luego se encadena la media geométrica de las variaciones mes a mes.
 
 ## Código
@@ -122,6 +128,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 - `app/Support/ListGrid.php` + `resources/js/list-grid.js`: la hoja de la lista de compras.
 - `app/Models/Recipe.php`, `app/Services/MenuShopper.php`: recetas, costo y envío de ingredientes a una lista.
 - `app/Models/Task.php`: tareas, repetición y siguiente fecha.
+- `app/Models/Asset.php`, `app/Models/MaintenancePlan.php`, `app/Services/AssetReport.php`: valor, mantenimiento y reporte de bienes.
 - `Dockerfile`, `docker-compose.prod.yml`, `docker/`: imagen y stack de producción.
 
 PriceTrack no está afiliado a ninguna de las tiendas mencionadas; los nombres se usan solo como ejemplo.

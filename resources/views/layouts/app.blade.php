@@ -28,6 +28,9 @@
         ]],
         ['Hogar', [
             ['tasks.index', 'Tareas', 'tasks.*'],
+            ['assets.index', 'Bienes', 'assets.*'],
+            null,
+            ['reports.assets', 'Reporte de bienes', 'reports.assets'],
         ]],
     ];
     $isActive = fn (array $links) => collect($links)->filter()->contains(fn ($link) => request()->routeIs($link[2]));

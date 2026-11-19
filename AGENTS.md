@@ -53,6 +53,14 @@ Comparador personal de precios del súper. Laravel 13 + Sail (PHP 8.5, MySQL 8.4
   - `priority` 1 baja, 2 normal, 3 alta (`Task::PRIORITIES`). Repetición: `repeat_every` + `repeat_unit` (`day|week|month|year`, ambos o ninguno).
   - **La siguiente fecha se cuenta desde el día en que se completa** (`Task::nextDueOn()`, meses y años sin desbordar: 31 ene + 1 mes = 28 feb). `Task::complete()` crea la siguiente con `repeated_from_id`; `reopen()` la borra si sigue pendiente. `POST tasks/{task}/toggle` hace una u otra.
   - `Task::status()`: overdue / today / upcoming / undated / done. `taskable` (morph opcional) es para ligar una tarea a otra cosa (un bien); si el modelo tiene `taskLink()`, el renglón muestra el enlace.
+- **Bienes** (`assets` → `asset_valuations`, `meter_readings`, `maintenance_plans`, `maintenance_logs`):
+  - Estado `active|sold|retired` (vendido o de baja: `disposed_on` + `disposal_amount`). Método de valor `none|straight_line|annual_rate` (`Asset::METHODS`); el controlador vacía los campos de los otros métodos.
+  - `Asset::valueOn($fecha)`: última captura hasta esa fecha (o la compra) ajustada con el método desde esa fecha; null antes de la compra; 0 desde la baja. `gain()`, `ownershipCost()`, `maintenanceCost($año)`, `currentMeter()` (la lectura más alta de lecturas y servicios), `valueSeries()` (gráfica, ≤ ~120 puntos).
+  - Una captura de valor por día (se corrige la de ese día).
+  - `MaintenancePlan`: por tiempo (`every` + `every_unit`, mismas unidades que las tareas) y/o por uso (`every_meter`). `nextDueOn()` desde el último servicio (o la compra, o la creación del plan); `nextMeter()` desde la lectura del último servicio (o la primera lectura). `status()`: overdue / soon (30 días o 10 % del intervalo) / ok / none.
+  - **Enlace con tareas**: cada plan mantiene una tarea pendiente (`maintenance_plans.task_id`, lista "Mantenimiento", `taskable` = el bien) con `syncTask()`. Guardar o borrar un servicio la mueve (eventos de `MaintenanceLog`). Completar la tarea (`Task::complete()`) registra un servicio con `task_id` y crea la siguiente tarea; reabrirla (`Task::reopen()`) borra ese servicio y la vuelve el recordatorio. Vender, dar de baja o borrar el bien, o borrar el plan, quita las tareas pendientes.
+  - Rutas anidadas con `scopeBindings()`: los parámetros se llaman como la relación del bien (`{meterReading}`, `{maintenanceLog}`, `{maintenancePlan}`), si no Laravel no encuentra la relación.
+  - Reportes en `App\Services\AssetReport` (`summary()`, `plans()`, `maintenanceByYear()`, `totalValueOn()`); pantalla `reports/assets`.
 - **Hoja de la lista** (`lists/show`): tabla tipo Excel en Alpine (`resources/js/list-grid.js`) alimentada por `App\Support\ListGrid`. Filas = artículos, columnas = proveedores, celdas = último precio. Editar una celda hace `POST lists/{list}/items/{item}/prices`, que registra el precio con `ShoppingList::priceDate()` (la fecha de la lista, nunca futura). Si ese día ya se capturó desde la misma lista, corrige ese registro; si no, crea uno nuevo y conserva el historial. Si la compra estaba en ese proveedor, pasa al precio nuevo. Los cálculos en vivo del JS replican los de los modelos: si cambias uno, cambia el otro. Un precio a granel se escribe en la celda como `54/kg` o con la presentación `por kg` / `por 100 g`.
 
 ## Convenciones
@@ -70,6 +78,9 @@ Comparador personal de precios del súper. Laravel 13 + Sail (PHP 8.5, MySQL 8.4
 - El parámetro `redirect` de `PriceController` solo acepta rutas internas (`/…`, nunca `//…`).
 
 ## Gotchas
+
+- En Blade, un `@endif` pegado a una palabra (`al año@endif`) se compila, pero el **siguiente** `@endif` queda como texto y la vista truena con *unexpected end of file*. Deja un espacio o una etiqueta antes (`</span>@endif`).
+- En SQLite las columnas `date` se guardan con hora (`2026-11-22 00:00:00`): `whereBetween` con fechas sueltas deja fuera el último día y `where('fecha', '2026-11-22')` no encuentra nada. Usa rangos semiabiertos o `whereDate()`.
 
 - En macOS, `sed` es la versión BSD (no entiende `\b`). Para reemplazos con regex usa `perl -pi -e`.
 - Los tests llaman a `withoutVite()` en `tests/TestCase.php`.

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Asset;
 use App\Models\MealPlanEntry;
 use App\Models\Price;
 use App\Models\Product;
@@ -130,7 +131,64 @@ class DemoDataSeeder extends Seeder
 
             $this->seedKitchen($products->keyBy('name'));
             $this->seedTasks();
+            $this->seedAssets();
         });
+    }
+
+    /** Bienes con distintos métodos de valor, medidor, planes de mantenimiento y servicios. */
+    private function seedAssets(): void
+    {
+        if (Asset::exists()) {
+            return;
+        }
+        $today = CarbonImmutable::today();
+
+        $auto = Asset::create([
+            'name' => 'Auto', 'category' => 'Vehículos', 'brand' => 'Mazda', 'model' => '3 Sedán 2023', 'location' => 'Cochera',
+            'purchased_on' => $today->subYears(3)->subMonths(2), 'purchase_price' => 380000,
+            'valuation_method' => 'annual_rate', 'annual_rate' => -12, 'meter_unit' => 'km',
+        ]);
+        $auto->valuations()->create(['valued_on' => $today->subMonths(8), 'value' => 285000, 'notes' => 'Libro Azul']);
+        foreach ([[38, 0], [26, 9800], [14, 21500], [2, 33200], [0, 34900]] as [$months, $km]) {
+            $auto->meterReadings()->create(['read_on' => $today->subYears(3)->subMonths(2)->addMonths(38 - $months), 'reading' => $km]);
+        }
+        $afinacion = $auto->maintenancePlans()->create(['name' => 'Afinación', 'every' => 1, 'every_unit' => 'year', 'every_meter' => 15000, 'estimated_cost' => 3200]);
+        $aceite = $auto->maintenancePlans()->create(['name' => 'Cambio de aceite', 'every' => 6, 'every_unit' => 'month', 'every_meter' => 7500, 'estimated_cost' => 1400]);
+        $auto->maintenanceLogs()->create(['maintenance_plan_id' => $afinacion->id, 'done_on' => $today->subMonths(13), 'meter_reading' => 20500, 'cost' => 3050, 'provider' => 'Agencia']);
+        $auto->maintenanceLogs()->create(['maintenance_plan_id' => $aceite->id, 'done_on' => $today->subMonths(5), 'meter_reading' => 28900, 'cost' => 1350, 'provider' => 'Taller Gómez']);
+        $auto->maintenanceLogs()->create(['done_on' => $today->subMonths(10), 'cost' => 4800, 'provider' => 'Llantera', 'notes' => 'Dos llantas']);
+
+        $casa = Asset::create([
+            'name' => 'Casa', 'category' => 'Inmuebles', 'location' => 'Coyoacán',
+            'purchased_on' => $today->subYears(7), 'purchase_price' => 2400000,
+            'valuation_method' => 'annual_rate', 'annual_rate' => 6,
+        ]);
+        $casa->valuations()->create(['valued_on' => $today->subYears(2), 'value' => 3150000, 'notes' => 'Avalúo bancario']);
+        $impermeabilizar = $casa->maintenancePlans()->create(['name' => 'Impermeabilizar', 'every' => 3, 'every_unit' => 'year', 'estimated_cost' => 18000]);
+        $casa->maintenanceLogs()->create(['maintenance_plan_id' => $impermeabilizar->id, 'done_on' => $today->subYears(3)->addWeeks(2), 'cost' => 16500]);
+
+        $refri = Asset::create([
+            'name' => 'Refrigerador', 'category' => 'Electrodomésticos', 'brand' => 'LG', 'location' => 'Cocina',
+            'purchased_on' => $today->subYears(1)->addDays(40), 'purchase_price' => 21999, 'warranty_until' => $today->addDays(40),
+            'valuation_method' => 'straight_line', 'useful_life_years' => 10, 'salvage_value' => 1500,
+        ]);
+        $refri->maintenancePlans()->create(['name' => 'Limpiar el condensador', 'every' => 6, 'every_unit' => 'month', 'estimated_cost' => 0]);
+
+        $minisplit = Asset::create([
+            'name' => 'Minisplit recámara', 'category' => 'Electrodomésticos', 'location' => 'Recámara',
+            'purchased_on' => $today->subYears(2), 'purchase_price' => 12500, 'warranty_until' => $today->subMonths(2),
+            'valuation_method' => 'straight_line', 'useful_life_years' => 8,
+        ]);
+        $filtros = $minisplit->maintenancePlans()->create(['name' => 'Lavar filtros', 'every' => 3, 'every_unit' => 'month']);
+        $minisplit->maintenanceLogs()->create(['maintenance_plan_id' => $filtros->id, 'done_on' => $today->subMonths(4)]);
+
+        Asset::create([
+            'name' => 'Laptop', 'category' => 'Electrónica', 'purchased_on' => $today->subYears(4), 'purchase_price' => 24000,
+            'status' => 'sold', 'disposed_on' => $today->subMonths(3), 'disposal_amount' => 7000,
+            'valuation_method' => 'straight_line', 'useful_life_years' => 5,
+        ]);
+
+        Asset::all()->each->syncMaintenanceTasks();
     }
 
     /** Listas de tareas con pendientes vencidos, de hoy, próximos y repetitivos. */
