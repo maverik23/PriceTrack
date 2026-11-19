@@ -5,11 +5,13 @@ import listGrid from './list-grid';
 import combobox from './combobox';
 import barcodeScanner from './barcode-scanner';
 import productForm from './product-form';
+import recipeForm from './recipe-form';
 
 Alpine.data('listGrid', listGrid);
 Alpine.data('combobox', combobox);
 Alpine.data('barcodeScanner', barcodeScanner);
 Alpine.data('productForm', productForm);
+Alpine.data('recipeForm', recipeForm);
 window.Alpine = Alpine;
 Alpine.start();
 

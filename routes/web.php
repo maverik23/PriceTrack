@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MenuController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductLinkController;
 use App\Http\Controllers\ProviderController;
+use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ShoppingListController;
@@ -33,6 +35,14 @@ Route::scopeBindings()->group(function () {
     Route::delete('lists/{list}/items/{item}/prices/{price}', [ShoppingListItemController::class, 'destroyPrice'])
         ->withoutScopedBindings()->name('lists.items.prices.destroy');
 });
+
+// Cocina: recetas y menú semanal
+Route::resource('recipes', RecipeController::class);
+Route::post('recipes/{recipe}/shop', [RecipeController::class, 'shop'])->name('recipes.shop');
+Route::get('menu', [MenuController::class, 'index'])->name('menu.index');
+Route::post('menu', [MenuController::class, 'store'])->name('menu.store');
+Route::post('menu/shop', [MenuController::class, 'shop'])->name('menu.shop');
+Route::delete('menu/{entry}', [MenuController::class, 'destroy'])->name('menu.destroy');
 
 Route::prefix('reports')->name('reports.')->controller(ReportController::class)->group(function () {
     Route::get('inflation', 'inflation')->name('inflation');
