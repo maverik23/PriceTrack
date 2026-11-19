@@ -46,6 +46,7 @@ Route::put('settings/branch', [SettingController::class, 'saveBranch'])->name('s
 Route::post('product-links/{link}/fetch', [ProductLinkController::class, 'fetchLink'])->name('product-links.fetch');
 Route::resource('prices', PriceController::class)->except(['show']);
 
+Route::put('lists/{list}/providers', [ShoppingListController::class, 'providerColumns'])->name('lists.providers');
 Route::post('lists/{list}/done', [ShoppingListController::class, 'toggleDone'])->name('lists.done');
 Route::resource('lists', ShoppingListController::class)->parameters(['lists' => 'list']);
 Route::scopeBindings()->group(function () {

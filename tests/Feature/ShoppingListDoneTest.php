@@ -55,4 +55,20 @@ class ShoppingListDoneTest extends TestCase
         $b->update(['price_id' => null]);
         $this->assertFalse($list->fresh()->isDone(), 'Desmarcar algo la regresa a pendientes');
     }
+
+    public function test_shown_and_hidden_stores_are_remembered_per_list(): void
+    {
+        $walmart = Provider::create(['name' => 'Walmart']);
+        $soriana = Provider::create(['name' => 'Soriana']);
+        $list = ShoppingList::create(['name' => 'Súper', 'shopped_on' => today()]);
+
+        $this->putJson(route('lists.providers', $list), ['added' => [$soriana->id], 'hidden' => [$walmart->id, $soriana->id]])->assertOk()
+            ->assertJsonPath('provider_columns.added', [$soriana->id])
+            ->assertJsonPath('provider_columns.hidden', [$walmart->id]);
+
+        $grid = $this->get(route('lists.show', $list))->assertOk()->viewData('grid');
+        $this->assertSame(['added' => [$soriana->id], 'hidden' => [$walmart->id]], $grid['providerColumns']);
+
+        $this->putJson(route('lists.providers', $list), ['added' => [999999], 'hidden' => []])->assertUnprocessable();
+    }
 }

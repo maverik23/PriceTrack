@@ -24,6 +24,12 @@ class ListGrid
                 'items' => route('lists.items.store', $list, false),
                 'lookup' => route('products.lookup', [], false),
                 'tickets' => url("lists/{$list->id}/tickets"),
+                'providers' => route('lists.providers', $list, false),
+            ],
+            // Tiendas mostradas u ocultadas a mano (por defecto solo se ven las que tienen datos)
+            'providerColumns' => [
+                'added' => array_map('intval', $list->provider_columns['added'] ?? []),
+                'hidden' => array_map('intval', $list->provider_columns['hidden'] ?? []),
             ],
             // Total del ticket capturado por tienda (lo que se pagó); sin él, la suma de lo marcado ahí
             'tickets' => (object) $list->tickets()->pluck('total', 'provider_id')->map(fn ($t) => (float) $t)->all(),

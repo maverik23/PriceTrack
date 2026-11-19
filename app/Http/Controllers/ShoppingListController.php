@@ -32,6 +32,25 @@ class ShoppingListController extends Controller
         ]);
     }
 
+    /**
+     * Qué tiendas se ven en la hoja: por defecto solo las que tienen datos en la lista;
+     * `added` = mostradas a mano, `hidden` = ocultadas a mano.
+     */
+    public function providerColumns(Request $request, ShoppingList $list)
+    {
+        $data = $request->validate([
+            'added' => ['present', 'array'],
+            'added.*' => ['integer', 'exists:providers,id'],
+            'hidden' => ['present', 'array'],
+            'hidden.*' => ['integer', 'exists:providers,id'],
+        ]);
+        $added = array_values(array_unique(array_map('intval', $data['added'])));
+        $hidden = array_values(array_diff(array_unique(array_map('intval', $data['hidden'])), $added));
+        $list->update(['provider_columns' => ['added' => $added, 'hidden' => $hidden]]);
+
+        return response()->json(['provider_columns' => $list->provider_columns]);
+    }
+
     /** Marca la lista como comprada o la reabre. */
     public function toggleDone(Request $request, ShoppingList $list)
     {

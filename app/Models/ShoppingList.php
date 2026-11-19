@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
-#[Fillable(['name', 'shopped_on', 'notes', 'completed_at'])]
+#[Fillable(['name', 'shopped_on', 'notes', 'completed_at', 'provider_columns'])]
 class ShoppingList extends Model
 {
     use HasFactory;
@@ -19,6 +19,7 @@ class ShoppingList extends Model
         return [
             'shopped_on' => 'date',
             'completed_at' => 'datetime',
+            'provider_columns' => 'array',
         ];
     }
 

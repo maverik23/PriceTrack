@@ -151,6 +151,9 @@ export default function listGrid(config) {
         fetchStatus: '',
         // Renglones consultando todas sus tiendas (botón ⟳ del artículo)
         rowFetching: {},
+        // Tiendas mostradas u ocultadas a mano en esta lista
+        columns: { added: [...(config.providerColumns?.added ?? [])], hidden: [...(config.providerColumns?.hidden ?? [])] },
+        columnsError: '',
         run: createRun(),
         money,
 
@@ -243,8 +246,51 @@ export default function listGrid(config) {
             const n = packs(this.need(row), v.base);
             return `Para ${need}: ${n} × ${money(v.price)}`;
         },
+        /** Solo las tiendas que se ven: las ocultas a mano no cuentan para "el más barato". */
         values(row) {
-            return this.providers.map((p) => ({ pid: p.id, v: this.cellValue(row, p.id) })).filter((x) => x.v);
+            return this.visibleProviders.map((p) => ({ pid: p.id, v: this.cellValue(row, p.id) })).filter((x) => x.v);
+        },
+
+        // ---------- tiendas visibles ----------
+        /** La tienda tiene algo en esta lista: un precio de algún artículo, una compra o su ticket. */
+        hasData(pid) {
+            return this.tickets[pid] != null || this.rows.some((r) => r.cells[pid] || this.isBought(r, pid) || r.links[pid]);
+        },
+        /** Se ve si tiene datos (o se agregó a mano) y no se ocultó; donde se compró algo siempre se ve. */
+        isVisible(pid) {
+            if (this.boughtCount(pid) > 0) return true;
+            if (this.columns.hidden.includes(pid)) return false;
+            return this.columns.added.includes(pid) || this.hasData(pid);
+        },
+        get visibleProviders() {
+            return this.providers.filter((p) => this.isVisible(p.id));
+        },
+        get hiddenProviders() {
+            return this.providers.filter((p) => !this.isVisible(p.id));
+        },
+        canHide(pid) {
+            return this.boughtCount(pid) === 0;
+        },
+        showProvider(pid) {
+            pid = Number(pid);
+            if (!pid) return;
+            this.columns.hidden = this.columns.hidden.filter((id) => id !== pid);
+            if (!this.hasData(pid) && !this.columns.added.includes(pid)) this.columns.added.push(pid);
+            this.saveColumns();
+        },
+        hideProvider(pid) {
+            if (!this.canHide(pid)) return;
+            this.columns.added = this.columns.added.filter((id) => id !== pid);
+            if (!this.columns.hidden.includes(pid)) this.columns.hidden.push(pid);
+            this.saveColumns();
+        },
+        async saveColumns() {
+            this.columnsError = '';
+            try {
+                await this.request('PUT', this.urls.providers, { added: this.columns.added, hidden: this.columns.hidden });
+            } catch (e) {
+                this.columnsError = e.message;
+            }
         },
         cheapest(row) {
             const vals = this.values(row);
@@ -399,7 +445,7 @@ export default function listGrid(config) {
             return { covered, total };
         },
         isBestBasket(pid) {
-            const full = this.providers.map((p) => ({ pid: p.id, ...this.basket(p.id) })).filter((b) => b.covered === this.rows.length && b.covered > 0);
+            const full = this.visibleProviders.map((p) => ({ pid: p.id, ...this.basket(p.id) })).filter((b) => b.covered === this.rows.length && b.covered > 0);
             if (full.length < 2) return false;
             return full.reduce((a, b) => (b.total < a.total ? b : a)).pid === pid;
         },
