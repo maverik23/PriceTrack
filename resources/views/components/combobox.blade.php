@@ -1,19 +1,20 @@
 {{--
     Input con autocompletar de valores existentes; lo que no exista se guarda como nuevo.
-    Uso: <x-combobox name="brand" label="Marca" :options="$brands" :value="old('brand', $product->brand)" noun="marca nueva" placeholder="Ej. Bimbo" />
+    Uso (`id` opcional si hay dos con el mismo nombre en la pantalla): <x-combobox name="brand" label="Marca" :options="$brands" :value="old('brand', $product->brand)" noun="marca nueva" placeholder="Ej. Bimbo" />
 --}}
-@props(['name', 'label', 'options' => [], 'value' => null, 'noun' => 'nueva', 'placeholder' => null])
+@props(['name', 'label', 'options' => [], 'value' => null, 'noun' => 'nueva', 'placeholder' => null, 'id' => null])
 
 @php($config = ['options' => collect($options)->values()->all(), 'value' => (string) $value, 'noun' => $noun])
+@php($id ??= $name)
 
 <div class="relative" x-data="combobox({{ Js::from($config['options']) }}, {{ Js::from($config['value']) }}, {{ Js::from($config['noun']) }})">
-    <label class="label" for="{{ $name }}">{{ $label }}</label>
-    <input id="{{ $name }}" name="{{ $name }}" type="text" class="input" autocomplete="off" placeholder="{{ $placeholder }}"
+    <label class="label" for="{{ $id }}">{{ $label }}</label>
+    <input id="{{ $id }}" name="{{ $name }}" type="text" class="input" autocomplete="off" placeholder="{{ $placeholder }}"
            value="{{ $value }}" x-model="value"
-           role="combobox" :aria-expanded="open" aria-autocomplete="list" aria-controls="{{ $name }}-options"
+           role="combobox" :aria-expanded="open" aria-autocomplete="list" aria-controls="{{ $id }}-options"
            @focus="show()" @click="show()" @input="show()" @keydown="onKey($event)" @blur="settle()">
 
-    <div id="{{ $name }}-options" role="listbox" x-show="open && options.length" x-cloak @mousedown.prevent
+    <div id="{{ $id }}-options" role="listbox" x-show="open && options.length" x-cloak @mousedown.prevent
          class="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg bg-surface py-1 shadow-lg ring-1 ring-slate-200">
         <template x-for="(opt, i) in options" :key="opt.key">
             <button type="button" tabindex="-1" role="option" :aria-selected="i === hi"

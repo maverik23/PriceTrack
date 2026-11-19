@@ -5,6 +5,7 @@ use App\Http\Controllers\AssetRecordController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DebtController;
+use App\Http\Controllers\IncomeController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\InvestmentRecordController;
 use App\Http\Controllers\MaintenancePlanController;
@@ -117,6 +118,14 @@ Route::scopeBindings()->prefix('debts/{debt}')->name('debts.')->controller(DebtC
     Route::post('payments', 'storePayment')->name('payments.store');
     Route::delete('payments/{payment}', 'destroyPayment')->name('payments.destroy');
 });
+Route::get('incomes', [IncomeController::class, 'index'])->name('incomes.index');
+Route::post('incomes', [IncomeController::class, 'store'])->name('incomes.store');
+Route::delete('incomes/{income}', [IncomeController::class, 'destroy'])->name('incomes.destroy');
+Route::post('income-sources', [IncomeController::class, 'storeSource'])->name('incomes.sources.store');
+Route::get('income-sources/{incomeSource}/edit', [IncomeController::class, 'editSource'])->name('incomes.sources.edit');
+Route::put('income-sources/{incomeSource}', [IncomeController::class, 'updateSource'])->name('incomes.sources.update');
+Route::delete('income-sources/{incomeSource}', [IncomeController::class, 'destroySource'])->name('incomes.sources.destroy');
+Route::post('income-sources/{incomeSource}/receive', [IncomeController::class, 'receive'])->name('incomes.sources.receive');
 Route::resource('recurring', RecurringPaymentController::class)->except(['create', 'show'])
     ->parameters(['recurring' => 'recurringPayment']);
 Route::post('recurring/{recurringPayment}/pay', [RecurringPaymentController::class, 'pay'])->name('recurring.pay');

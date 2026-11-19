@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasSchedule;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,6 +22,8 @@ use Illuminate\Support\Str;
 #[Fillable(['name', 'category', 'amount', 'every', 'every_unit', 'next_due_on', 'debt_id', 'active', 'notes'])]
 class RecurringPayment extends Model
 {
+    use HasSchedule;
+
     /** Días antes de la fecha en que se marca "pronto". */
     public const SOON_DAYS = 7;
 
@@ -67,40 +70,6 @@ class RecurringPayment extends Model
         $key = static fn (string $v) => Str::lower(Str::ascii($v));
 
         return static::categories()->first(fn ($c) => $key($c) === $key($value)) ?? $value;
-    }
-
-    /** "Cada mes", "Cada 2 meses". */
-    public function intervalLabel(): string
-    {
-        [$one, $many] = Task::REPEAT_UNITS[$this->every_unit] ?? ['mes', 'meses'];
-
-        return $this->every === 1 ? "Cada {$one}" : "Cada {$this->every} {$many}";
-    }
-
-    /** Lo que cuesta al mes (un pago anual de 1,200 = 100 al mes). */
-    public function monthlyAmount(): float
-    {
-        $months = match ($this->every_unit) {
-            'day' => $this->every / 30.436875,
-            'week' => $this->every * 7 / 30.436875,
-            'year' => $this->every * 12,
-            default => $this->every,
-        };
-
-        return round($this->amount / max($months, 0.0001), 2);
-    }
-
-    public function advance(CarbonInterface $from, int $periods = 1): CarbonImmutable
-    {
-        $from = CarbonImmutable::parse($from->toDateString());
-        $n = $this->every * $periods;
-
-        return match ($this->every_unit) {
-            'day' => $from->addDays($n),
-            'week' => $from->addWeeks($n),
-            'year' => $from->addYearsNoOverflow($n),
-            default => $from->addMonthsNoOverflow($n),
-        };
     }
 
     /** overdue | soon | ok | inactive */

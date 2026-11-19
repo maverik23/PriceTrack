@@ -42,6 +42,7 @@
         ]],
         'finanzas' => ['Finanzas', 'wallet', [
             ['net-worth', 'Patrimonio', 'net-worth', 'landmark'],
+            ['incomes.index', 'Ingresos', 'incomes.*', 'banknote'],
             ['investments.index', 'Inversiones', 'investments.*', 'chart-line'],
             ['debts.index', 'Deudas', 'debts.*', 'credit-card'],
             ['recurring.index', 'Pagos recurrentes', 'recurring.*', 'repeat'],

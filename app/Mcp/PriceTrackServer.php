@@ -12,6 +12,7 @@ use App\Mcp\Tools\CreateTask;
 use App\Mcp\Tools\DeleteTask;
 use App\Mcp\Tools\FetchOnlinePrices;
 use App\Mcp\Tools\GetFinances;
+use App\Mcp\Tools\GetIncomes;
 use App\Mcp\Tools\GetMenu;
 use App\Mcp\Tools\GetPantry;
 use App\Mcp\Tools\GetPriceReport;
@@ -27,6 +28,7 @@ use App\Mcp\Tools\ListShoppingLists;
 use App\Mcp\Tools\ListTasks;
 use App\Mcp\Tools\MarkPaymentPaid;
 use App\Mcp\Tools\PlanMeal;
+use App\Mcp\Tools\RecordIncome;
 use App\Mcp\Tools\RecordPrice;
 use App\Mcp\Tools\RemoveListItem;
 use App\Mcp\Tools\RemoveMeal;
@@ -108,6 +110,8 @@ class PriceTrackServer extends Server
         ListAssets::class,
 
         // Finanzas
+        GetIncomes::class,
+        RecordIncome::class,
         GetFinances::class,
         MarkPaymentPaid::class,
     ];

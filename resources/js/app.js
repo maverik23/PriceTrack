@@ -97,6 +97,12 @@ function initCharts() {
             x: { grid: { display: false }, border: { color: ui.grid } },
         };
 
+        // Barras apiladas ({"stacked": true}): p. ej. ingresos en dinero + en especie
+        if (config.stacked) {
+            scales.x.stacked = true;
+            scales.y.stacked = true;
+        }
+
         if (config.timeAxis) {
             scales.x = { ...scales.x, type: 'time', time: { unit: 'month', tooltipFormat: 'dd/MM/yyyy' } };
         }
