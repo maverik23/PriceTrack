@@ -102,6 +102,9 @@
         @if (session('success'))
             <div class="flash flash-success" role="status"><x-icon name="check" class="mt-0.5 size-4" /><div>{{ session('success') }}</div></div>
         @endif
+        @if (session('error'))
+            <div class="flash flash-error" role="alert"><div>{{ session('error') }}</div></div>
+        @endif
         {{-- Aviso guardado antes de recargar (p. ej. al terminar de obtener precios) --}}
         <div x-data="{ msg: window.takeFlash?.() }" x-show="msg" x-cloak class="flash flash-success" role="status"><x-icon name="check" class="mt-0.5 size-4" /><div x-text="msg"></div></div>
         @if ($errors->any())

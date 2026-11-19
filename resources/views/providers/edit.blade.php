@@ -7,14 +7,7 @@
 
 <form method="POST" action="{{ route('providers.update', $provider) }}" class="card max-w-lg space-y-3">
     @csrf @method('PUT')
-    <div>
-        <label class="label" for="name">Nombre</label>
-        <input id="name" name="name" value="{{ old('name', $provider->name) }}" class="input" required>
-    </div>
-    <div>
-        <label class="label" for="notes">Notas</label>
-        <input id="notes" name="notes" value="{{ old('notes', $provider->notes) }}" class="input">
-    </div>
+    @include('providers._form')
     <div class="flex gap-2">
         <button class="btn btn-primary">Guardar</button>
         <a href="{{ route('providers.index') }}" class="btn btn-secondary">Cancelar</a>

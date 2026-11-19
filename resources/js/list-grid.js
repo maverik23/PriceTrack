@@ -11,7 +11,7 @@
  * granel, o los paquetes completos que cubren esa cantidad (Price::costFor()).
  */
 
-import { chainFor, createRun, ensureBranches, requestJson, runTasks } from './online-prices';
+import { createRun, ensureBranches, requestJson, runTasks } from './online-prices';
 
 const UNIT_ALIASES = {
     ml: 'ml', mililitro: 'ml', mililitros: 'ml',
@@ -483,10 +483,10 @@ export default function listGrid(config) {
                 return;
             }
             this.fetchStatus = '';
-            const skipped = await ensureBranches(tasks.map((t) => t.url));
+            const skipped = await ensureBranches(tasks.map((t) => t.pid));
             this.fetching = true;
             await runTasks(this.run, 'Obteniendo precios', tasks, async (task, signal) => {
-                if (skipped.includes(chainFor(task.url))) return { ok: false, message: 'Sin sucursal elegida: no se consultó.' };
+                if (skipped.includes(task.pid)) return { ok: false, message: 'Sin sucursal elegida: no se consultó.' };
                 const k = this.key(task.row, task.pid);
                 this.saving[k] = true;
                 try {

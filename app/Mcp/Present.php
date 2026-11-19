@@ -106,6 +106,7 @@ class Present
             'name' => $list->name,
             'shopped_on' => $list->shopped_on->toDateString(),
             'notes' => $list->notes,
+            'done' => $list->isDone(),
             'items' => $list->items->count(),
             'purchased' => $list->purchasedCount(),
             'total_paid' => round($list->total(), 2),

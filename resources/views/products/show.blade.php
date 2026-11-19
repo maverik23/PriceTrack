@@ -4,7 +4,26 @@
 @section('content')
 <a href="{{ route('products.index') }}" class="link text-sm">← Artículos</a>
 <div class="mt-2 mb-6 flex flex-wrap items-start justify-between gap-3">
-    <div>
+    <div class="flex min-w-0 flex-1 items-start gap-4">
+    {{-- Foto: la portada del artículo; si no tiene, se trae de la tienda o de Open Food Facts --}}
+    @php $cover = $product->coverPhoto(); @endphp
+    <div class="shrink-0">
+        @if ($cover)
+            <a href="{{ route('products.edit', $product) }}#fotos" title="Cambiar fotos">
+                <img src="{{ $cover->url(true) }}" alt="{{ $product->name }}" class="size-24 rounded-2xl bg-white object-contain p-1 ring-1 ring-slate-200 sm:size-28">
+            </a>
+        @else
+            <form method="POST" action="{{ route('products.photo.fetch', $product) }}" class="grid size-24 place-items-center rounded-2xl bg-slate-100 text-center ring-1 ring-slate-200 sm:size-28">
+                @csrf
+                <div class="space-y-1 p-1">
+                    <x-icon name="image" class="mx-auto size-6 text-slate-400" />
+                    <button class="link text-xs" title="De su página en alguna tienda o de Open Food Facts">Traer foto</button>
+                    <a href="{{ route('products.edit', $product) }}#fotos" class="block text-xs text-slate-500 hover:text-slate-700">o subir una</a>
+                </div>
+            </form>
+        @endif
+    </div>
+    <div class="min-w-0">
         <h1 class="text-3xl font-bold text-slate-900">{{ $product->name }}</h1>
         <p class="text-sm text-slate-500">
             {{ $product->sizeLabel() }}
@@ -13,7 +32,7 @@
             @if ($product->barcode) · <span class="font-mono text-xs" title="Código de barras">{{ $product->barcode }}</span> @endif
         </p>
         {{-- Despensa: lo que está en casa no se manda a la lista desde las recetas --}}
-        <div x-data="pantryToggle({{ Js::from(\App\Http\Controllers\PantryController::row($product)) }})" class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+        <div x-data="pantryToggle({{ Js::from(\App\Http\Controllers\PantryController::row($product)) }}, {{ Js::from(\App\Http\Controllers\PantryController::lists()) }})" class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
             <button type="button" class="switch" role="switch" :aria-checked="row.pantry === 'stocked'" :disabled="!!busy[row.id]"
                     aria-label="Lo tengo en casa" @click="toggle(row)"></button>
             <span class="font-medium text-slate-700" x-text="row.pantry === 'stocked' ? 'Lo tengo en casa' : (row.pantry === 'out' ? 'Se acabó' : 'No está en la despensa')"></span>
@@ -25,7 +44,9 @@
             <span x-show="saved[row.id]" x-transition.opacity class="text-xs text-emerald-700">Guardado</span>
             <span x-show="errors[row.id]" class="text-xs text-red-600" x-text="errors[row.id]"></span>
             <a href="{{ route('pantry.index') }}" class="link text-xs">Despensa</a>
+            @include('pantry._to-list')
         </div>
+    </div>
     </div>
     <div class="flex gap-2">
         <a href="{{ route('products.edit', $product) }}" class="btn btn-secondary">Editar</a>
@@ -78,7 +99,7 @@
             $fetchable = $links->whereNotNull('url')->map(fn ($link) => [
                 'url' => $link->url,
                 'provider' => $providers->firstWhere('id', $link->provider_id)?->name,
-                'chain' => \App\Services\StoreBranches::chainFor($link->url),
+                'provider_id' => $link->provider_id,
                 'fetch' => route('product-links.fetch', $link),
             ])->values();
         @endphp

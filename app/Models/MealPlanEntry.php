@@ -56,4 +56,16 @@ class MealPlanEntry extends Model
     {
         return $this->recipe?->cost($this->plannedServings());
     }
+
+    /**
+     * Macros de una porción (lo que come una persona) y si faltan datos de algún ingrediente.
+     *
+     * @return array{kcal: float, protein: float, carbs: float, fat: float, missing: bool}|null
+     */
+    public function macrosPerServing(): ?array
+    {
+        $nutrition = $this->recipe?->nutrition($this->plannedServings());
+
+        return $nutrition ? $nutrition['perServing'] + ['missing' => $nutrition['missing'] > 0] : null;
+    }
 }

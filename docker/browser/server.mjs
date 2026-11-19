@@ -8,7 +8,9 @@
  * ventana limpia (como incógnito): si la tienda marca unas cookies como
  * sospechosas, no arrastran a las siguientes consultas.
  *
- *   GET /html?url=https://…   → 200 con el HTML (cabecera X-Final-Url) o 502 con el error
+ *   GET /html?url=https://…[&cookies=[{name,value,domain,path}]]
+ *                             → 200 con el HTML (cabecera X-Final-Url) o 502 con el error.
+ *                               Las cookies (opcionales) dicen la tienda elegida (Walmart, Sam's).
  *   GET /health               → ok
  *
  * Solo escucha dentro del stack (sin puerto publicado). Atiende una página a la vez.
@@ -40,13 +42,29 @@ function ready() {
 
 let queue = Promise.resolve();
 
-function render(url) {
+/** Cookies válidas y solo del mismo sitio que la página. */
+function cookiesFor(url, raw) {
+    let list;
+    try {
+        list = JSON.parse(raw || '[]');
+    } catch {
+        return [];
+    }
+    const host = new URL(url).hostname;
+    return (Array.isArray(list) ? list : [])
+        .filter((c) => c && typeof c.name === 'string' && typeof c.value === 'string' && typeof c.domain === 'string')
+        .filter((c) => host === c.domain.replace(/^\./, '') || host.endsWith(c.domain.startsWith('.') ? c.domain : '.' + c.domain))
+        .map((c) => ({ name: c.name, value: c.value, domain: c.domain, path: c.path || '/', secure: true, sameSite: 'Lax' }));
+}
+
+function render(url, cookies = []) {
     const job = queue.then(async () => {
         const context = await (await browser()).newContext({
             locale: 'es-MX',
             timezoneId: process.env.TZ || 'America/Mexico_City',
             viewport: { width: 1366, height: 860 },
         });
+        if (cookies.length) await context.addCookies(cookies);
         const page = await context.newPage();
         try {
             await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -69,7 +87,7 @@ http.createServer(async (req, res) => {
     if (!/^https:\/\/[^/]+\.[^/]+/i.test(target)) return res.writeHead(400).end('Solo direcciones https');
 
     try {
-        const { url, html } = await render(target);
+        const { url, html } = await render(target, cookiesFor(target, searchParams.get('cookies')));
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Final-Url': encodeURI(url) }).end(html);
     } catch (e) {
         instance?.close().catch(() => {});

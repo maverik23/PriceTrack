@@ -60,6 +60,28 @@ class Attachment extends Model
         ]);
     }
 
+    /** Guarda una foto ya descargada (de la tienda o de internet) y crea el registro. */
+    public static function storeContents(Model $owner, string $contents, string $mime, string $extension, string $originalName, ?string $title = null, bool $first = false): self
+    {
+        $path = 'attachments/'.now()->format('Y/m').'/'.Str::uuid().'.'.$extension;
+        Storage::disk(self::DISK)->put($path, $contents);
+        if ($first) {
+            $owner->attachments()->increment('position');
+        }
+
+        return $owner->attachments()->create([
+            'kind' => 'photo',
+            // Como portada (antes de las demás) o al final de la galería
+            'position' => $first ? 0 : (int) $owner->attachments()->max('position') + 1,
+            'title' => $title ?: null,
+            'path' => $path,
+            'thumb_path' => null,
+            'original_name' => Str::limit($originalName, 250, ''),
+            'mime' => $mime,
+            'size' => strlen($contents),
+        ]);
+    }
+
     public function isPhoto(): bool
     {
         return $this->kind === 'photo';

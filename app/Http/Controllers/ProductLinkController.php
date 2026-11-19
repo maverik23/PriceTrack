@@ -7,7 +7,6 @@ use App\Models\ProductLink;
 use App\Models\Provider;
 use App\Models\ShoppingList;
 use App\Services\PriceUpdater;
-use App\Services\StoreBranches;
 use App\Support\Barcode;
 use Illuminate\Http\Request;
 
@@ -78,7 +77,7 @@ class ProductLinkController extends Controller
             ->map(fn (ProductLink $l) => [
                 'id' => $l->id,
                 'url' => $l->url,
-                'chain' => StoreBranches::chainFor($l->url),
+                'provider_id' => $l->provider_id,
                 'label' => $l->product?->name.' — '.$l->provider?->name,
                 'fetch' => route('product-links.fetch', $l),
             ])->values();

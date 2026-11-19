@@ -2,7 +2,7 @@
 @section('title', 'Menú de la semana')
 
 @section('content')
-@php($thisWeek = $start->isSameDay(today()->startOfWeek(\Carbon\CarbonInterface::MONDAY)))
+@php $thisWeek = $start->isSameDay(today()->startOfWeek(\Carbon\CarbonInterface::MONDAY)); @endphp
 <div x-data="{ day: {{ Js::from(old('planned_on', today()->betweenIncluded($start, $end) ? today()->toDateString() : $start->toDateString())) }}, meal: {{ Js::from(old('meal', 'lunch')) }}, recipe: {{ Js::from((string) old('recipe_id', '')) }},
                adding: {{ $errors->any() ? 'true' : 'false' }},
                pick(day, meal) { this.day = day; this.meal = meal; this.adding = true; this.$nextTick(() => { const el = document.getElementById('menu-recipe'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.focus({ preventScroll: true }); }); } }">
@@ -69,6 +69,9 @@
             <div class="stat-label">Costo estimado de la semana</div>
             <div class="stat-value">{{ money($total) }}</div>
             <div class="mt-1 text-xs text-slate-500">{{ $entries->count() }} {{ $entries->count() === 1 ? 'comida planeada' : 'comidas planeadas' }} · lo que se usa, al precio más barato</div>
+            @if ($avgKcal)
+                <div class="mt-1 text-xs text-slate-500">Promedio por persona: <span class="font-semibold text-slate-700">{{ number_format($avgKcal) }} kcal</span> al día</div>
+            @endif
             <div class="mt-auto space-y-2 pt-4">
                 @if ($entries->whereNotNull('recipe_id')->isEmpty())
                     <button class="btn btn-secondary w-full" disabled>Mandar a lista de compras</button>
@@ -81,12 +84,18 @@
         </div>
     </div>
 
-    <div class="space-y-3">
+    {{-- Calendario: en pantalla ancha una columna por día con las comidas alineadas (subgrid);
+         en celular, un día debajo de otro. Costo = las porciones planeadas; macros = una porción. --}}
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-7 xl:gap-2">
         @foreach ($days as $day)
-            @php($isToday = $day['date']->isToday())
-            <div class="card p-0 {{ $isToday ? 'ring-2 ring-emerald-400' : '' }}">
-                @php($dateKey = $day['date']->toDateString())
-                <div class="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-slate-100 px-4 py-2"
+            @php
+                $isToday = $day['date']->isToday();
+                $dateKey = $day['date']->toDateString();
+                $empty = $day['meals']->filter(fn ($m) => $m['items']->isEmpty());
+            @endphp
+            <section class="card flex flex-col p-0 xl:row-span-7 xl:grid xl:grid-rows-subgrid xl:gap-0 {{ $isToday ? 'ring-2 ring-emerald-400' : '' }}"
+                     aria-label="{{ ucfirst($day['date']->translatedFormat('l d')) }}">
+                <header class="border-b border-slate-100 px-3 py-2"
                      x-data="{ body: {{ Js::from($notes->get($dateKey)?->body ?? '') }}, draft: '', editing: false, saving: false, error: '',
                                edit() { this.draft = this.body; this.editing = true; this.$nextTick(() => document.getElementById('note-{{ $dateKey }}')?.focus()) },
                                async save() {
@@ -100,58 +109,99 @@
                                        this.body = data.body ?? ''; this.editing = false;
                                    } catch (e) { this.error = e.message } finally { this.saving = false }
                                } }">
-                    <h2 class="card-title">{{ ucfirst($day['date']->translatedFormat('l d')) }}</h2>
-                    @if ($isToday)<span class="badge badge-cheap">Hoy</span>@endif
+                    <div class="flex items-center gap-2">
+                        <div class="flex min-w-0 items-baseline gap-1.5">
+                            <span class="font-display text-2xl leading-none font-semibold {{ $isToday ? 'text-emerald-700' : 'text-slate-900' }}">{{ $day['date']->format('j') }}</span>
+                            <span class="truncate text-sm font-medium capitalize {{ $isToday ? 'text-emerald-700' : 'text-slate-600' }}">{{ $day['date']->translatedFormat('l') }}</span>
+                        </div>
+                        @if ($isToday)<span class="badge badge-cheap xl:hidden">Hoy</span>@endif
+                        <button type="button" x-show="!editing && !body" @click="edit()" class="icon-btn ml-auto size-8 shrink-0 text-slate-400" title="Nota del día" aria-label="Agregar nota del día"><x-icon name="sticky-note" class="size-4" /></button>
+                    </div>
                     {{-- Nota del día: "Mealprep: cocer arroz y pollo" --}}
-                    <button type="button" x-show="!editing && body" @click="edit()" class="flex min-w-0 items-center gap-1.5 rounded-lg bg-amber-50 px-2 py-0.5 text-left text-sm text-amber-900 ring-1 ring-amber-200 hover:ring-amber-400" title="Editar la nota del día">
-                        <x-icon name="sticky-note" class="size-3.5 text-amber-600" /><span x-text="body"></span>
+                    <button type="button" x-show="!editing && body" @click="edit()" class="mt-1.5 flex w-full min-w-0 items-start gap-1.5 rounded-lg bg-amber-50 px-2 py-1 text-left text-xs text-amber-900 ring-1 ring-amber-200 hover:ring-amber-400" title="Editar la nota del día">
+                        <x-icon name="sticky-note" class="mt-0.5 size-3 shrink-0 text-amber-600" /><span x-text="body"></span>
                     </button>
-                    <button type="button" x-show="!editing && !body" @click="edit()" class="btn btn-ghost btn-sm ml-auto text-slate-500">+ Nota del día</button>
-                    <form x-show="editing" x-cloak class="flex w-full items-center gap-2 sm:ml-auto sm:w-auto sm:flex-1" @submit.prevent="save()">
-                        <input :id="'note-{{ $dateKey }}'" type="text" x-model="draft" maxlength="500" class="input py-1.5" placeholder="Ej. Mealprep: cocer arroz y pollo para la semana"
+                    <form x-show="editing" x-cloak class="mt-1.5 flex items-center gap-1.5" @submit.prevent="save()">
+                        <input :id="'note-{{ $dateKey }}'" type="text" x-model="draft" maxlength="500" class="input py-1 text-sm" placeholder="Ej. Mealprep: cocer arroz"
                                aria-label="Nota del {{ $day['date']->translatedFormat('l d') }}" @keydown.escape.prevent="editing = false" @blur="save()">
-                        <button class="btn btn-primary btn-sm" :disabled="saving" @mousedown.prevent><span x-text="saving ? 'Guardando…' : 'Guardar'"></span></button>
+                        <button class="btn btn-primary btn-sm" :disabled="saving" @mousedown.prevent><x-icon name="check" class="size-4" /></button>
                     </form>
-                    <p x-show="error" class="w-full text-xs text-red-600" x-text="error"></p>
-                </div>
-                <div class="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-5 sm:divide-x sm:divide-y-0">
-                    @foreach ($day['meals'] as $meal => $mealEntries)
-                        {{-- En móvil las comidas vacías no ocupan lugar: se agregan con los botones de abajo --}}
-                        <div class="min-w-0 px-4 py-3 {{ $mealEntries->isEmpty() ? 'hidden sm:block' : '' }}">
-                            <div class="mb-1 flex items-center justify-between">
-                                <span class="text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ $meals[$meal] }}</span>
-                                <button type="button" class="btn btn-ghost btn-sm" title="Agregar a {{ $meals[$meal] }}"
-                                        @click="pick('{{ $day['date']->toDateString() }}', '{{ $meal }}')">+</button>
-                            </div>
-                            @foreach ($mealEntries as $entry)
-                                <div class="flex items-start justify-between gap-2 py-1 text-sm">
-                                    <div class="min-w-0">
+                    <p x-show="error" class="text-xs text-red-600" x-text="error"></p>
+                </header>
+
+                @foreach ($day['meals'] as $meal => $slot)
+                    {{-- En celular las comidas vacías no ocupan lugar: se agregan con los botones de abajo --}}
+                    <div class="min-w-0 border-b border-slate-100 px-3 py-2 {{ $slot['items']->isEmpty() ? 'hidden xl:block' : '' }}">
+                        <div class="mb-1 flex items-center justify-between gap-1">
+                            <span class="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">{{ $meals[$meal] }}</span>
+                            @if ($slot['items']->count() > 1)
+                                <span class="text-[11px] text-slate-500 tabular-nums">{{ money($slot['cost']) }}@if ($slot['macros']) · {{ $slot['partial'] ? '~' : '' }}{{ number_format($slot['macros']['kcal']) }} kcal @endif</span>
+                            @endif
+                            <button type="button" class="icon-btn size-7 text-slate-400" title="Agregar a {{ $meals[$meal] }}" aria-label="Agregar a {{ $meals[$meal] }} del {{ $day['date']->translatedFormat('l d') }}"
+                                    @click="pick('{{ $dateKey }}', '{{ $meal }}')"><x-icon name="plus" class="size-4" /></button>
+                        </div>
+                        <div class="space-y-2">
+                            @foreach ($slot['items'] as $item)
+                                @php $entry = $item['entry']; @endphp
+                                <article class="group relative flex overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-200 xl:block">
+                                    @if ($item['photo'])
+                                        {{-- En celular, miniatura al lado; en el calendario ancho, arriba --}}
+                                        <img src="{{ $item['photo'] }}" alt="" loading="lazy" class="size-20 shrink-0 object-cover xl:aspect-[4/3] xl:h-auto xl:w-full">
+                                    @endif
+                                    <div class="min-w-0 flex-1 p-2 pr-9 xl:pr-2">
                                         @if ($entry->recipe)
-                                            <a href="{{ route('recipes.show', ['recipe' => $entry->recipe, 'servings' => $entry->plannedServings()]) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $entry->recipe->name }}</a>
-                                            <div class="text-xs text-slate-500">{{ $entry->plannedServings() }} porc.@if ($entry->cost() !== null) · {{ money($entry->cost()) }}@endif</div>
+                                            <a href="{{ route('recipes.show', ['recipe' => $entry->recipe, 'servings' => $entry->plannedServings()]) }}" class="block text-sm leading-snug font-medium text-slate-900 hover:text-emerald-700">{{ $entry->recipe->name }}</a>
+                                            <div class="mt-0.5 text-xs text-slate-500 tabular-nums">
+                                                {{ $entry->plannedServings() }} porc.@if ($item['cost'] !== null) · <span class="font-medium text-slate-700">{{ money($item['cost']) }}</span>@endif
+                                            </div>
+                                            @if ($item['macros'])
+                                                <div class="mt-1 flex flex-wrap gap-x-2 text-[11px] text-slate-500 tabular-nums" title="Por porción{{ $item['macros']['missing'] ? ' (faltan datos de algún ingrediente)' : '' }}">
+                                                    <span class="font-semibold text-slate-700">{{ $item['macros']['missing'] ? '~' : '' }}{{ number_format($item['macros']['kcal']) }} kcal</span>
+                                                    <span>P {{ num($item['macros']['protein']) }}</span><span>C {{ num($item['macros']['carbs']) }}</span><span>G {{ num($item['macros']['fat']) }}</span>
+                                                </div>
+                                            @endif
                                         @else
-                                            <span class="text-slate-700">{{ $entry->title }}</span>
+                                            <span class="text-sm text-slate-700">{{ $entry->title }}</span>
                                         @endif
                                     </div>
-                                    <form method="POST" action="{{ route('menu.destroy', $entry) }}">
+                                    <form method="POST" action="{{ route('menu.destroy', $entry) }}" class="absolute top-1 right-1">
                                         @csrf @method('DELETE')
-                                        <button class="btn btn-danger btn-sm" title="Quitar del menú">✕</button>
+                                        <button class="icon-btn size-7 bg-surface/90 text-red-600 shadow-sm" title="Quitar del menú" aria-label="Quitar {{ $entry->label() }} del menú"><x-icon name="x" class="size-3.5" /></button>
                                     </form>
-                                </div>
+                                </article>
                             @endforeach
                         </div>
-                    @endforeach
-                </div>
-                @php($empty = $day['meals']->filter(fn ($mealEntries) => $mealEntries->isEmpty()))
+                    </div>
+                @endforeach
+
                 @if ($empty->isNotEmpty())
-                    <div class="flex flex-wrap gap-1 px-3 py-2 sm:hidden {{ $empty->count() < count($meals) ? 'border-t border-slate-100' : '' }}">
+                    <div class="flex flex-wrap gap-1 border-b border-slate-100 px-2 py-2 xl:hidden">
                         @foreach ($empty as $meal => $_)
-                            <button type="button" class="btn btn-ghost btn-sm" @click="pick('{{ $day['date']->toDateString() }}', '{{ $meal }}')">+ {{ $meals[$meal] }}</button>
+                            <button type="button" class="btn btn-ghost btn-sm" @click="pick('{{ $dateKey }}', '{{ $meal }}')">+ {{ $meals[$meal] }}</button>
                         @endforeach
                     </div>
                 @endif
-            </div>
+
+                {{-- Total del día: lo que cuesta lo planeado y lo que come una persona --}}
+                <footer class="mt-auto rounded-b-2xl bg-slate-50 px-3 py-2 text-xs">
+                    @if ($day['count'])
+                        <div class="flex flex-wrap items-baseline justify-between gap-x-2">
+                            <span class="font-semibold text-slate-500">Total del día</span>
+                            <span class="font-display text-base font-semibold text-slate-900 tabular-nums">{{ money($day['cost']) }}</span>
+                        </div>
+                        @if ($day['macros'])
+                            <div class="mt-0.5 text-slate-600 tabular-nums" title="Por persona: una porción de cada platillo{{ $day['partial'] ? '; aproximado, faltan datos' : '' }}">
+                                <span class="font-semibold text-slate-800">{{ $day['partial'] ? '~' : '' }}{{ number_format($day['macros']['kcal']) }} kcal</span>
+                                · P {{ num($day['macros']['protein']) }} · C {{ num($day['macros']['carbs']) }} · G {{ num($day['macros']['fat']) }}
+                            </div>
+                        @endif
+                    @else
+                        <span class="text-slate-400">Nada planeado</span>
+                    @endif
+                </footer>
+            </section>
         @endforeach
     </div>
+    <p class="mt-3 text-xs text-slate-500">Costo: las porciones planeadas, al precio más barato. Macros (P proteína, C carbohidratos, G grasa, en g): una porción de cada platillo, lo que come una persona. «~» = faltan datos de algún ingrediente.</p>
 </div>
 @endsection

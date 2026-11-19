@@ -57,8 +57,18 @@
             @php($cheapest = $latest->first())
             <tr>
                 <td>
-                    <a href="{{ route('products.show', $product) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $product->name }}</a>
-                    @if ($product->brand)<div class="text-xs text-slate-500">{{ $product->brand }}</div>@endif
+                    <div class="flex items-center gap-3">
+                        @php($cover = $product->coverPhoto())
+                        @if ($cover)
+                            <img src="{{ $cover->url(true) }}" alt="" loading="lazy" class="size-10 shrink-0 rounded-lg bg-white object-contain ring-1 ring-slate-200">
+                        @else
+                            <span class="grid size-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-400"><x-icon name="package" class="size-4" /></span>
+                        @endif
+                        <div class="min-w-0">
+                            <a href="{{ route('products.show', $product) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $product->name }}</a>
+                            @if ($product->brand)<div class="text-xs text-slate-500">{{ $product->brand }}</div>@endif
+                        </div>
+                    </div>
                 </td>
                 <td class="text-slate-600">{{ $product->sizeLabel() }}</td>
                 <td>@if ($product->category)<span class="badge badge-muted">{{ $product->category }}</span>@endif</td>

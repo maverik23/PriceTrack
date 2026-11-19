@@ -15,7 +15,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 
-#[Description('Consulta en internet el precio de hoy de un artículo en las tiendas donde tiene enlace guardado (ver `stores` en get-product) y lo registra. Puede tardar hasta un par de minutos; algunas tiendas bloquean la consulta y lo indica en el resultado. Chedraui cambia el precio por sucursal: si falta el código postal o la sucursal, el resultado lo dice; elígela con set-store-branch y vuelve a consultar.')]
+#[Description('Consulta en internet el precio de hoy de un artículo en las tiendas donde tiene enlace guardado (ver `stores` en get-product) y lo registra. Puede tardar hasta un par de minutos; algunas tiendas bloquean la consulta y lo indica en el resultado. Cada proveedor tiene su sucursal (Chedraui cambia el precio por sucursal): si falta el código postal o la sucursal, el resultado lo dice; elígela con set-store-branch y vuelve a consultar.')]
 #[IsOpenWorld]
 class FetchOnlinePrices extends Tool
 {

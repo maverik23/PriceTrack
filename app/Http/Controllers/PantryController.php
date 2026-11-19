@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ShoppingList;
+use App\Models\ShoppingListItem;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -11,10 +13,12 @@ class PantryController extends Controller
 {
     public function index()
     {
-        $products = Product::orderBy('name')->get();
+        $products = Product::with('prices')->orderBy('name')->get();
+        $pending = self::pendingItems();
 
         return view('pantry.index', [
-            'rows' => $products->map(fn (Product $p) => self::row($p))->values(),
+            'rows' => $products->map(fn (Product $p) => self::row($p, $pending))->values(),
+            'lists' => self::lists(),
             'categories' => Product::distinctValues('category'),
             'counts' => [
                 'stocked' => $products->where('pantry', Product::PANTRY_STOCKED)->count(),
@@ -55,9 +59,64 @@ class PantryController extends Controller
         });
     }
 
-    /** @return array<string, mixed> */
-    public static function row(Product $product): array
+    /**
+     * Agrega a una lista de compras algo que se acabó (`list_id`; sin ella, a una lista nueva).
+     * Si ya está pendiente en esa lista no se duplica.
+     */
+    public function addToList(Request $request, Product $product)
     {
+        $data = $request->validate(['list_id' => ['nullable', 'integer', 'exists:shopping_lists,id']], [], ['list_id' => 'lista']);
+
+        $list = isset($data['list_id'])
+            ? ShoppingList::findOrFail($data['list_id'])
+            : ShoppingList::create(['name' => 'Despensa '.today()->translatedFormat('d M Y'), 'shopped_on' => today()]);
+
+        $already = $list->items()->where('product_id', $product->id)->whereNull('price_id')->exists();
+        if (! $already) {
+            $list->items()->create(['product_id' => $product->id, 'quantity' => 1]);
+        }
+        $message = $already ? "«{$product->name}» ya estaba en «{$list->name}»." : "«{$product->name}» se agregó a «{$list->name}».";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'list' => ['id' => $list->id, 'name' => $list->name, 'url' => route('lists.show', $list)],
+                'row' => self::row($product->fresh('prices')),
+            ]);
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /** Listas pendientes donde se puede agregar lo que se acabó. @return array<int, array{id: int, name: string}> */
+    public static function lists(): array
+    {
+        return ShoppingList::pending()->orderByDesc('shopped_on')->orderByDesc('id')->take(10)->get(['id', 'name'])
+            ->map(fn (ShoppingList $l) => ['id' => $l->id, 'name' => $l->name])->all();
+    }
+
+    /** Lista pendiente donde ya está cada artículo sin comprar: product_id => nombre de la lista. */
+    private static function pendingItems(?int $productId = null): array
+    {
+        return ShoppingListItem::query()
+            ->join('shopping_lists', 'shopping_lists.id', '=', 'shopping_list_items.shopping_list_id')
+            ->whereNull('shopping_lists.completed_at')
+            ->whereNull('shopping_list_items.price_id')
+            ->when($productId, fn ($q) => $q->where('shopping_list_items.product_id', $productId))
+            ->orderBy('shopping_lists.shopped_on')
+            ->pluck('shopping_lists.name', 'shopping_list_items.product_id')
+            ->all();
+    }
+
+    /**
+     * @param  array<int, string>|null  $pending  product_id => lista pendiente donde ya está (null = se consulta)
+     * @return array<string, mixed>
+     */
+    public static function row(Product $product, ?array $pending = null): array
+    {
+        $pending ??= self::pendingItems($product->id);
+        $value = $product->pantryValue();
+
         return [
             'id' => $product->id,
             'name' => $product->name,
@@ -70,6 +129,12 @@ class PantryController extends Controller
             'updated' => $product->pantry_updated_at?->diffForHumans(),
             'url' => route('products.show', $product),
             'action' => route('products.pantry', $product),
+            'to_list' => route('products.pantry.list', $product),
+            // Lo que vale lo que queda (estimado con una presentación si es "suficiente")
+            'value' => $value['value'] ?? null,
+            'estimated' => $value['estimated'] ?? false,
+            // Lista pendiente donde ya está, para no preguntar de nuevo
+            'in_list' => $pending[$product->id] ?? null,
         ];
     }
 }

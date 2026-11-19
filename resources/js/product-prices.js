@@ -35,10 +35,10 @@ export default function productPrices(config) {
 
         async fetchAll() {
             if (this.run.active) return;
-            const skipped = await ensureBranches(this.links.map((l) => l.url));
+            const skipped = await ensureBranches(this.links.map((l) => l.provider_id));
             const tasks = this.links.map((l) => ({ ...l, label: `${config.product} — ${l.provider}` }));
             await runTasks(this.run, 'Obteniendo precios', tasks, async (task, signal) => {
-                if (skipped.includes(task.chain)) return { ok: false, message: 'Sin sucursal elegida: no se consultó.' };
+                if (skipped.includes(task.provider_id)) return { ok: false, message: 'Sin sucursal elegida: no se consultó.' };
                 return requestJson('POST', task.fetch, {}, { signal });
             });
             if (this.run.ok && !this.run.failures.length) {
@@ -72,9 +72,9 @@ export function bulkPrices(config) {
                 this.empty = 'Ningún artículo tiene dirección en alguna tienda. Pégala en la ficha del artículo («En cada tienda») o en una celda de la hoja.';
                 return;
             }
-            const skipped = await ensureBranches(links.map((l) => l.url));
+            const skipped = await ensureBranches(links.map((l) => l.provider_id));
             await runTasks(this.run, 'Actualizando todos los precios', links, async (link, signal) => {
-                if (skipped.includes(link.chain)) return { ok: false, message: 'Sin sucursal elegida: no se consultó.' };
+                if (skipped.includes(link.provider_id)) return { ok: false, message: 'Sin sucursal elegida: no se consultó.' };
                 return requestJson('POST', link.fetch, {}, { signal });
             });
             if (this.run.ok && !this.run.failures.length && !this.run.cancelled) {

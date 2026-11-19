@@ -45,6 +45,9 @@ class PriceUpdater
             'sku' => $found['sku'] ? Str::limit($found['sku'], 40, '') : null,
         ]) + ['checked_at' => now(), 'error' => null]);
 
+        // Si el artículo aún no tiene foto, la de la tienda
+        app(ProductPhoto::class)->saveIfMissing($link->product, $found['image'] ?? null, $link->provider?->name ?? $found['source']);
+
         return [
             'provider_id' => $link->provider_id,
             'ok' => true,
@@ -82,13 +85,30 @@ class PriceUpdater
         ];
     }
 
-    /** Consulta la página con el código postal y, si la cadena cambia el precio por sucursal, la sucursal elegida. */
+    /**
+     * Consulta la página con el código postal y la sucursal elegida en el proveedor. Si la
+     * tienda dio el precio de otra sucursal (Walmart y compañía no siempre toman la elegida),
+     * se avisa en `store`.
+     */
     private function find(ProductLink $link): array
     {
-        StoreBranches::ensure($link->url);
-        $chain = StoreBranches::chainFor($link->url);
+        $link->loadMissing('provider');
+        StoreBranches::ensure($link);
+        $provider = $link->provider;
+        // La cadena la dice la dirección; la sucursal del proveedor solo vale si es de esa cadena
+        $chain = StoreBranches::chainFor($link->url) ?? $provider?->chain;
+        $branch = $provider && in_array($provider->chain, [null, $chain], true) ? StoreBranches::selected($provider) : null;
 
-        return $this->fetcher->fetch($link->url, Setting::value(Setting::POSTAL_CODE), $chain ? StoreBranches::selected($chain) : null);
+        $found = $this->fetcher->fetch($link->url, Setting::value(Setting::POSTAL_CODE), $branch, $chain);
+
+        // Walmart, Bodega Aurrera y Sam's: se abrió con tu tienda; la página dice cuál usó
+        if ($branch && $chain && StoreBranches::CHAINS[$chain]['via'] === 'cookies') {
+            $found['store'] = $found['store_id'] && $found['store_id'] !== $branch
+                ? "precio de la tienda {$found['store_id']}, no de la tuya ({$branch})"
+                : ($provider->branch_name ?: "Tienda {$branch}");
+        }
+
+        return $found;
     }
 
     /**

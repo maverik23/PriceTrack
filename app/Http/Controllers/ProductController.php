@@ -10,7 +10,10 @@ use App\Models\Recipe;
 use App\Models\Setting;
 use App\Models\ShoppingList;
 use App\Services\BarcodeLookup;
+use App\Services\PriceFetchException;
+use App\Services\ProductPhoto;
 use App\Services\SubrecipeConverter;
+use App\Support\AttachmentForm;
 use App\Support\Barcode;
 use App\Support\ListGrid;
 use Illuminate\Http\Request;
@@ -28,7 +31,7 @@ class ProductController extends Controller
             return redirect()->route('products.show', $match);
         }
 
-        $products = Product::with('prices.provider')
+        $products = Product::with(['prices.provider', 'attachments'])
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q')->trim().'%';
                 $query->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('brand', 'like', $term));
@@ -93,10 +96,13 @@ class ProductController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ProductPhoto $photos)
     {
         $data = $this->validated($request);
+        AttachmentForm::validate($request);
         $product = Product::create($data);
+        AttachmentForm::apply($product, $request);
+        $this->photoFromInternet($request, $product, $photos);
 
         if ($listId = $request->integer('add_to_list')) {
             $list = ShoppingList::findOrFail($listId);
@@ -169,9 +175,13 @@ class ProductController extends Controller
         ]);
     }
 
-    public function update(Request $request, Product $product)
+    public function update(Request $request, Product $product, ProductPhoto $photos)
     {
-        $product->update($this->validated($request, $product));
+        $data = $this->validated($request, $product);
+        AttachmentForm::validate($request);
+        $product->update($data);
+        AttachmentForm::apply($product, $request);
+        $this->photoFromInternet($request, $product, $photos);
 
         return redirect()->route('products.show', $product)->with('success', 'Artículo actualizado.');
     }
@@ -181,6 +191,46 @@ class ProductController extends Controller
         $product->delete();
 
         return redirect()->route('products.index')->with('success', 'Artículo eliminado (junto con su historial de precios).');
+    }
+
+    /**
+     * Trae la foto del artículo de su página en las tiendas (o de Open Food Facts por su
+     * código). `link_id` = solo de esa tienda. JSON para la ficha; si no, regresa con el aviso.
+     */
+    public function fetchPhoto(Request $request, Product $product, ProductPhoto $photos)
+    {
+        $data = $request->validate(['link_id' => ['nullable', 'integer']]);
+        $link = isset($data['link_id']) ? $product->links()->whereKey($data['link_id'])->whereNotNull('url')->firstOrFail() : null;
+
+        try {
+            $result = $photos->fetch($product, $link);
+        } catch (PriceFetchException $e) {
+            $result = ['ok' => false, 'message' => $e->getMessage(), 'attachment' => null];
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => $result['ok'],
+                'message' => $result['message'],
+                'photo' => $result['attachment']?->url(),
+            ], $result['ok'] ? 200 : 422);
+        }
+
+        return back()->with($result['ok'] ? 'success' : 'error', $result['message']);
+    }
+
+    /** La foto que sugirió la búsqueda del código de barras (image_url), si no se subió otra. */
+    private function photoFromInternet(Request $request, Product $product, ProductPhoto $photos): void
+    {
+        $url = (string) $request->input('image_url');
+        if (! str_starts_with($url, 'https://') || $product->attachments()->where('kind', 'photo')->exists()) {
+            return;
+        }
+        try {
+            $photos->save($product, ProductPhoto::larger($url), 'internet');
+        } catch (PriceFetchException) {
+            // Sin foto: el artículo ya se guardó
+        }
     }
 
     private function validated(Request $request, ?Product $product = null): array

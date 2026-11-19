@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MealDayNote;
 use App\Models\MealPlanEntry;
+use App\Models\Product;
 use App\Models\Recipe;
 use App\Models\ShoppingList;
 use App\Services\MenuShopper;
@@ -21,15 +22,38 @@ class MenuController extends Controller
         $start = $this->weekStart($request->query('week'));
         $entries = $this->weekEntries($start);
 
-        $days = collect(range(0, 6))->map(function (int $offset) use ($start, $entries) {
-            $date = $start->addDays($offset);
-            $ofDay = $entries->filter(fn (MealPlanEntry $e) => $e->planned_on->isSameDay($date));
+        // Costo (de las porciones planeadas) y macros (de una porción: lo que come una persona)
+        // por platillo, por comida y por día
+        $cells = $entries->mapWithKeys(fn (MealPlanEntry $e) => [$e->id => [
+            'entry' => $e,
+            'cost' => $e->cost(),
+            'macros' => $e->macrosPerServing(),
+            'photo' => $e->recipe?->coverPhoto()?->url(true),
+        ]]);
+        $sum = function (Collection $items): array {
+            $withMacros = $items->filter(fn ($i) => $i['macros']);
 
             return [
-                'date' => $date,
-                'meals' => collect(MealPlanEntry::MEALS)->map(fn ($label, $meal) => $ofDay->where('meal', $meal)->values()),
+                'cost' => round($items->sum(fn ($i) => $i['cost'] ?? 0), 2),
+                'macros' => $withMacros->isEmpty() ? null : collect(array_keys(Product::NUTRIENTS))
+                    ->mapWithKeys(fn ($k) => [$k => round($withMacros->sum(fn ($i) => $i['macros'][$k]), 1)])->all(),
+                // Algún platillo sin datos (texto libre o ingredientes sin nutrición): el total es aproximado
+                'partial' => $items->contains(fn ($i) => ! $i['macros'] || $i['macros']['missing']),
             ];
+        };
+
+        $days = collect(range(0, 6))->map(function (int $offset) use ($start, $cells, $sum) {
+            $date = $start->addDays($offset);
+            $ofDay = $cells->filter(fn ($c) => $c['entry']->planned_on->isSameDay($date));
+            $meals = collect(MealPlanEntry::MEALS)->map(function ($label, $meal) use ($ofDay, $sum) {
+                $items = $ofDay->filter(fn ($c) => $c['entry']->meal === $meal)->values();
+
+                return ['items' => $items] + $sum($items);
+            });
+
+            return ['date' => $date, 'meals' => $meals, 'count' => $ofDay->count()] + $sum($ofDay->values());
         });
+        $planned = $days->filter(fn ($d) => $d['macros']);
 
         $notes = MealDayNote::where('planned_on', '>=', $start->toDateString())
             ->where('planned_on', '<', $start->addWeek()->toDateString())
@@ -41,10 +65,12 @@ class MenuController extends Controller
             'end' => $start->addDays(6),
             'days' => $days,
             'entries' => $entries,
-            'total' => round($entries->sum(fn (MealPlanEntry $e) => $e->cost() ?? 0), 2),
+            'total' => round($days->sum('cost'), 2),
+            // Promedio por persona en los días con algo planeado
+            'avgKcal' => $planned->isEmpty() ? null : round($planned->avg(fn ($d) => $d['macros']['kcal'])),
             'meals' => MealPlanEntry::MEALS,
             'recipes' => Recipe::orderBy('name')->get(['id', 'name', 'servings']),
-            'lists' => ShoppingList::orderByDesc('shopped_on')->orderByDesc('id')->take(10)->get(),
+            'lists' => ShoppingList::pending()->orderByDesc('shopped_on')->orderByDesc('id')->take(10)->get(),
         ]);
     }
 
@@ -110,7 +136,7 @@ class MenuController extends Controller
             'newList' => $this->listName($start),
             'rows' => $shopper->reviewRows($result),
             'unlinked' => $result['unlinked'],
-            'lists' => ShoppingList::orderByDesc('shopped_on')->orderByDesc('id')->take(10)->get(),
+            'lists' => ShoppingList::pending()->orderByDesc('shopped_on')->orderByDesc('id')->take(10)->get(),
         ]);
     }
 
@@ -167,7 +193,7 @@ class MenuController extends Controller
 
     private function weekEntries(CarbonImmutable $start)
     {
-        return MealPlanEntry::with(MealPlanEntry::tree())
+        return MealPlanEntry::with([...MealPlanEntry::tree(), 'recipe.attachments'])
             // Rango semiabierto: con fecha y hora guardadas, whereBetween dejaría fuera el domingo
             ->where('planned_on', '>=', $start->toDateString())
             ->where('planned_on', '<', $start->addWeek()->toDateString())

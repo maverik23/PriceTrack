@@ -3,11 +3,15 @@
  * ficha del artículo). Cada cambio se guarda al momento (POST products/{id}/pantry).
  *
  * pantry: null = no se lleva en la despensa, 'stocked' = lo tengo, 'out' = se acabó.
+ * Al acabarse algo se pregunta si se agrega a una lista de compras (POST products/{id}/pantry/list).
+ * `value` = lo que vale lo que queda (estimado si es "suficiente").
  */
 const norm = (s) => (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
-async function save(row, body) {
-    const res = await fetch(row.action, {
+const money = (v) => '$' + Number(v).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+async function save(row, body, url = row.action) {
+    const res = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -19,15 +23,21 @@ async function save(row, body) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message || 'No se pudo guardar');
-    return data.row;
+    return data;
 }
 
-/** Un renglón: interruptor "lo tengo" y cuánto queda. */
-function rowMethods() {
+/** Un renglón: interruptor "lo tengo", cuánto queda y, si se acabó, mandarlo a una lista. */
+function rowMethods(lists = []) {
     return {
         busy: {},
         errors: {},
         saved: {},
+        // Renglones donde se pregunta "¿agregar a la lista?" y lo que se respondió
+        asking: {},
+        added: {},
+        lists,
+        listChoice: lists[0]?.id ?? '',
+        money,
 
         async toggle(row) {
             if (this.busy[row.id]) return;
@@ -43,10 +53,39 @@ function rowMethods() {
         async send(row, body) {
             this.busy[row.id] = true;
             delete this.errors[row.id];
+            const before = row.pantry;
             try {
-                Object.assign(row, await save(row, body));
+                Object.assign(row, (await save(row, body)).row);
+                // Se acabó: ¿a la lista? (si no está ya pendiente en alguna)
+                if (before === 'stocked' && row.pantry === 'out' && !row.in_list) this.asking[row.id] = true;
+                if (row.pantry !== 'out') delete this.asking[row.id];
                 this.saved[row.id] = true;
                 setTimeout(() => delete this.saved[row.id], 1200);
+            } catch (e) {
+                this.errors[row.id] = e.message;
+            } finally {
+                delete this.busy[row.id];
+            }
+        },
+        ask(row) {
+            this.asking[row.id] = true;
+        },
+        dismiss(row) {
+            delete this.asking[row.id];
+        },
+        /** Lo agrega a la lista elegida ('' = una lista nueva). */
+        async addToList(row) {
+            this.busy[row.id] = true;
+            delete this.errors[row.id];
+            try {
+                const data = await save(row, { list_id: this.listChoice || null }, row.to_list);
+                Object.assign(row, data.row);
+                if (!this.lists.some((l) => l.id === data.list.id)) {
+                    this.lists.unshift({ id: data.list.id, name: data.list.name });
+                    this.listChoice = data.list.id;
+                }
+                this.added[row.id] = data.list;
+                delete this.asking[row.id];
             } catch (e) {
                 this.errors[row.id] = e.message;
             } finally {
@@ -60,7 +99,7 @@ export function pantryList(config) {
     const rows = config.rows.map((r) => ({ ...r, _s: norm([r.name, r.brand, r.category].join(' ')) }));
 
     return {
-        ...rowMethods(),
+        ...rowMethods(config.lists || []),
         rows,
         q: '',
         show: 'all',
@@ -85,9 +124,19 @@ export function pantryList(config) {
         count(state) {
             return this.rows.filter((r) => r.pantry === state).length;
         },
+        /** Lo que vale lo que hay en casa (con lo filtrado) y si algo es estimado. */
+        get value() {
+            const stocked = this.filtered.filter((r) => r.pantry === 'stocked' && r.value !== null);
+            return {
+                total: stocked.reduce((sum, r) => sum + r.value, 0),
+                estimated: stocked.some((r) => r.estimated),
+                priced: stocked.length,
+                unpriced: this.filtered.filter((r) => r.pantry === 'stocked' && r.value === null).length,
+            };
+        },
     };
 }
 
-export function pantryToggle(row) {
-    return { ...rowMethods(), row };
+export function pantryToggle(row, lists = []) {
+    return { ...rowMethods(lists), row };
 }

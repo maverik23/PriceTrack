@@ -79,4 +79,13 @@
             @endforeach
         </div>
     </details>
+    <template x-if="found && found.image">
+        <label class="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
+            <input type="checkbox" name="image_url" :value="found.image" checked class="size-4">
+            Guardar la foto que encontré en internet (si no subes otra)
+        </label>
+    </template>
+    <div class="border-t border-slate-100 pt-4 sm:col-span-2">
+        <x-attachments-field :owner="$product" title="Fotos" hint="La primera es la foto del artículo. También se trae sola de la tienda al obtener precios." />
+    </div>
 </div>

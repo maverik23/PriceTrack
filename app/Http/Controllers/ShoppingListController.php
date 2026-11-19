@@ -8,14 +8,37 @@ use Illuminate\Http\Request;
 
 class ShoppingListController extends Controller
 {
-    public function index()
+    /** Por defecto solo las pendientes; las compradas se ven tachadas con ?status=done o all. */
+    public function index(Request $request)
     {
+        $status = in_array($request->query('status'), ['done', 'all'], true) ? $request->query('status') : 'pending';
+
         $lists = ShoppingList::with(['items.price.provider', 'items.product.prices'])
+            ->when($status === 'pending', fn ($q) => $q->pending())
+            ->when($status === 'done', fn ($q) => $q->done())
             ->orderByDesc('shopped_on')
             ->orderByDesc('id')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
-        return view('lists.index', compact('lists'));
+        return view('lists.index', [
+            'lists' => $lists,
+            'status' => $status,
+            'counts' => [
+                'pending' => ShoppingList::pending()->count(),
+                'done' => ShoppingList::done()->count(),
+                'all' => ShoppingList::count(),
+            ],
+        ]);
+    }
+
+    /** Marca la lista como comprada o la reabre. */
+    public function toggleDone(Request $request, ShoppingList $list)
+    {
+        $done = $request->boolean('done', ! $list->isDone());
+        $list->markDone($done);
+
+        return back()->with('success', $done ? "«{$list->name}» quedó como comprada." : "«{$list->name}» volvió a pendientes.");
     }
 
     public function create()

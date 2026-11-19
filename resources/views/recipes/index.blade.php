@@ -3,7 +3,8 @@
 
 @section('content')
 @php
-    $filtered = request()->anyFilled(['q', 'category', 'tag', 'rating']);
+    $filtered = request()->anyFilled(['q', 'category', 'tag', 'rating', 'pantry']);
+    $keep = request()->only(['q', 'category', 'rating', 'tag']);
 @endphp
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
@@ -22,6 +23,7 @@
         <input type="search" name="q" value="{{ request('q') }}" class="input pl-9" placeholder="Buscar receta…" aria-label="Buscar receta">
     </div>
     @if ($tag = request('tag'))<input type="hidden" name="tag" value="{{ $tag }}">@endif
+    @if ($pantry)<input type="hidden" name="pantry" value="{{ $pantry }}">@endif
     <select name="category" class="input w-auto max-w-52" onchange="this.form.submit()" aria-label="Categoría">
         <option value="">Todas las categorías</option>
         @foreach ($categories as $category)
@@ -40,13 +42,27 @@
     @endif
 </form>
 
+{{-- Con lo que hay en la despensa (Recipe::pantryCheck()) --}}
+<div class="mb-3 flex flex-wrap items-center gap-2" aria-label="Despensa">
+    <a href="{{ route('recipes.index', $keep) }}" @class(['chip', 'is-active' => ! $pantry])>Todas</a>
+    <a href="{{ route('recipes.index', [...$keep, 'pantry' => 1]) }}" @class(['chip', 'is-active' => $pantry === '1'])>
+        <x-icon name="refrigerator" class="size-4" /> Con lo que hay <span class="opacity-70">{{ $readyCount }}</span>
+    </a>
+    <a href="{{ route('recipes.index', [...$keep, 'pantry' => 'almost']) }}" @class(['chip', 'is-active' => $pantry === 'almost'])>
+        Falta poco <span class="opacity-70">{{ $almostCount }}</span>
+    </a>
+    @if ($pantry)
+        <span class="text-xs text-slate-500">Según tu <a class="link" href="{{ route('pantry.index') }}">despensa</a>; la sal, el agua y lo escrito sin artículo no se revisan.</span>
+    @endif
+</div>
+
 @if ($tags->isNotEmpty())
     <div class="mb-5 flex flex-wrap gap-2" aria-label="Etiquetas">
         @foreach ($tags as $name)
             @php
                 $active = request('tag') === $name;
             @endphp
-            <a href="{{ route('recipes.index', array_filter([...request()->only(['q', 'category', 'rating']), 'tag' => $active ? null : $name])) }}"
+            <a href="{{ route('recipes.index', array_filter([...request()->only(['q', 'category', 'rating', 'pantry']), 'tag' => $active ? null : $name])) }}"
                @class(['chip', 'is-active' => $active]) @if ($active) aria-current="true" @endif>{{ $name }}</a>
         @endforeach
     </div>
@@ -54,7 +70,10 @@
 
 @if ($recipes->isEmpty())
     <div class="card py-12 text-center text-slate-500">
-        @if ($filtered)
+        @if ($pantry === '1')
+            Con lo que hay en tu despensa no alcanza para ninguna receta todavía. <a class="link" href="{{ route('recipes.index', [...$keep, 'pantry' => 'almost']) }}">Ver a las que les falta poco</a>
+            o marca en la <a class="link" href="{{ route('pantry.index') }}">despensa</a> lo que tienes.
+        @elseif ($filtered)
             Ninguna receta coincide. <a class="link" href="{{ route('recipes.index') }}">Ver todas</a>.
         @else
             No hay recetas todavía. <a class="link" href="{{ route('recipes.create') }}">Agrega la primera</a>.
@@ -67,6 +86,7 @@
                 $cover = $recipe->coverPhoto();
                 $perServing = $recipe->costPerServing();
                 $nutrition = $recipe->nutrition();
+                $check = $checks[$recipe->id] ?? null;
             @endphp
             <a href="{{ route('recipes.show', $recipe) }}" class="card group flex flex-col overflow-hidden p-0">
                 <div @class(['relative bg-slate-100', 'aspect-[16/10]' => $cover, 'h-14 sm:aspect-[16/10] sm:h-auto' => ! $cover])>
@@ -90,6 +110,11 @@
                             </span>
                         @endif
                     </div>
+                    @if ($check && $check['ready'])
+                        <span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700"><x-icon name="refrigerator" class="size-3.5" /> Tienes todo en casa</span>
+                    @elseif ($check && $pantry && count($check['missing']) <= 2)
+                        <span class="text-xs text-amber-700">Falta: {{ implode(', ', $check['missing']) }}</span>
+                    @endif
                     @if ($recipe->tags->isNotEmpty())
                         <div class="flex flex-wrap gap-1">
                             @foreach ($recipe->tags as $tag)<span class="badge badge-cheap">{{ $tag->name }}</span>@endforeach

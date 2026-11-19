@@ -33,6 +33,7 @@ Route::get('products/lookup', [ProductController::class, 'lookup'])->name('produ
 Route::get('products/online-links', [ProductLinkController::class, 'plan'])->name('products.online-links');
 Route::resource('products', ProductController::class);
 Route::put('products/{product}/links', [ProductLinkController::class, 'update'])->name('products.links.update');
+Route::post('products/{product}/photo/fetch', [ProductController::class, 'fetchPhoto'])->name('products.photo.fetch');
 Route::post('products/{product}/prices/fetch', [ProductLinkController::class, 'fetch'])->name('products.prices.fetch');
 Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
 Route::get('settings/branches', [SettingController::class, 'branches'])->name('settings.branches');
@@ -40,6 +41,7 @@ Route::put('settings/branch', [SettingController::class, 'saveBranch'])->name('s
 Route::post('product-links/{link}/fetch', [ProductLinkController::class, 'fetchLink'])->name('product-links.fetch');
 Route::resource('prices', PriceController::class)->except(['show']);
 
+Route::post('lists/{list}/done', [ShoppingListController::class, 'toggleDone'])->name('lists.done');
 Route::resource('lists', ShoppingListController::class)->parameters(['lists' => 'list']);
 Route::scopeBindings()->group(function () {
     Route::post('lists/{list}/items', [ShoppingListItemController::class, 'store'])->name('lists.items.store');
@@ -60,6 +62,7 @@ Route::post('recipes/{recipe}/shop', [RecipeController::class, 'shop'])->name('r
 Route::get('pantry', [PantryController::class, 'index'])->name('pantry.index');
 Route::post('products/{product}/subrecipe', [ProductController::class, 'useRecipe'])->name('products.subrecipe');
 Route::post('products/{product}/pantry', [PantryController::class, 'update'])->name('products.pantry');
+Route::post('products/{product}/pantry/list', [PantryController::class, 'addToList'])->name('products.pantry.list');
 Route::get('menu', [MenuController::class, 'index'])->name('menu.index');
 Route::post('menu', [MenuController::class, 'store'])->name('menu.store');
 Route::get('menu/shop', [MenuController::class, 'shopReview'])->name('menu.shop.review');

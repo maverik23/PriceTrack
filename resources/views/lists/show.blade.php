@@ -10,7 +10,7 @@
     <a href="{{ route('lists.index') }}" class="link text-sm">← Listas</a>
     <div class="mt-2 mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-            <h1 class="text-3xl font-bold text-slate-900">{{ $list->name }}</h1>
+            <h1 class="text-3xl font-bold text-slate-900">{{ $list->name }} @if ($list->isDone()) <span class="badge badge-cheap align-middle text-sm">Comprada</span> @endif</h1>
             <p class="text-sm text-slate-500">{{ ucfirst($list->shopped_on->translatedFormat('l d \d\e F Y')) }} @if ($list->notes) · {{ $list->notes }} @endif</p>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-2">
@@ -20,6 +20,14 @@
                 <x-icon name="refresh-cw" class="size-4" ::class="fetching && 'animate-spin'" />
                 <span x-text="fetching ? 'Consultando…' : 'Obtener precios'">Obtener precios</span>
             </button>
+            <form method="POST" action="{{ route('lists.done', $list) }}" data-no-busy>
+                @csrf
+                <input type="hidden" name="done" value="{{ $list->isDone() ? 0 : 1 }}">
+                <button class="btn btn-secondary" title="{{ $list->isDone() ? 'Volver a ponerla entre las pendientes' : 'Ya se compró: se tacha y deja de verse entre las pendientes' }}">
+                    <x-icon :name="$list->isDone() ? 'rotate-ccw' : 'check'" class="size-4" />
+                    {{ $list->isDone() ? 'Reabrir' : 'Marcar comprada' }}
+                </button>
+            </form>
             <a href="{{ route('lists.edit', $list) }}" class="btn btn-secondary">Editar lista</a>
         </div>
     </div>

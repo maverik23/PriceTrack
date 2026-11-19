@@ -31,25 +31,90 @@ class PriceFetcher
      * Precio y, cuando la tienda los da, nombre, presentación, marca, código de barras
      * (EAN) y código propio de la tienda (sku).
      *
-     * @return array{price: float, name: ?string, presentation: ?array{pack_qty: int, size: float, unit: string, bulk: bool}, brand: ?string, barcode: ?string, sku: ?string, store: ?string, source: string}
+     * `$branch` es la sucursal elegida en el proveedor (StoreBranches): en Chedraui, la tienda
+     * donde se simula el carrito; en Walmart, Bodega Aurrera y Sam's, la tienda con la que el
+     * navegador abre la página (y `store_id` dice de qué tienda salió el precio); en Costco
+     * solo se anota.
+     *
+     * @return array{price: float, name: ?string, presentation: ?array{pack_qty: int, size: float, unit: string, bulk: bool}, brand: ?string, barcode: ?string, sku: ?string, store: ?string, store_id: ?string, image: ?string, source: string}
      *
      * @throws PriceFetchException
      */
-    public function fetch(string $url, ?string $postalCode = null, ?string $chedrauiStore = null): array
+    public function fetch(string $url, ?string $postalCode = null, ?string $branch = null, ?string $chain = null): array
     {
         $host = $this->guard($url);
+        $chain ??= StoreBranches::chainFor($url);
 
         $result = match (true) {
-            str_ends_with($host, 'chedraui.com.mx') => $this->chedraui($url, $postalCode, $chedrauiStore),
-            str_ends_with($host, 'costco.com.mx') => $this->costco($url),
-            default => $this->page($url),
-        } + ['brand' => null, 'barcode' => null, 'sku' => null, 'store' => null];
+            str_ends_with($host, 'chedraui.com.mx') => $this->chedraui($url, $postalCode, $branch),
+            str_ends_with($host, 'costco.com.mx') => $this->costco($url, $branch),
+            default => $this->page($url, $this->branchCookies($chain, $url, $branch, $postalCode)),
+        } + ['brand' => null, 'barcode' => null, 'sku' => null, 'store' => null, 'store_id' => null, 'image' => null];
 
         if (! ($result['price'] > 0)) {
             throw new PriceFetchException('La tienda no muestra precio (¿agotado?).');
         }
 
         return $result;
+    }
+
+    /**
+     * Dirección de la foto del artículo en la página de la tienda (sin consultar el precio).
+     *
+     * @throws PriceFetchException
+     */
+    public function image(string $url): ?string
+    {
+        $host = $this->guard($url);
+
+        if (str_ends_with($host, 'chedraui.com.mx')) {
+            if (! preg_match('#/([^/]+)/p/?$#', (string) parse_url($url, PHP_URL_PATH), $m)) {
+                return null;
+            }
+            $product = $this->json($this->get($this->origin($url)."/api/catalog_system/pub/products/search/{$m[1]}/p"))[0] ?? null;
+
+            return $product['items'][0]['images'][0]['imageUrl'] ?? null;
+        }
+
+        if (str_ends_with($host, 'costco.com.mx')) {
+            if (! preg_match('#/p/(\w+)#', (string) parse_url($url, PHP_URL_PATH), $m)) {
+                return null;
+            }
+            $data = $this->json($this->get($this->origin($url)."/rest/v2/mexico/products/{$m[1]}", ['fields' => 'code,images(url,format,imageType)', 'lang' => 'es_MX']));
+
+            return $this->costcoImage($url, $data['images'] ?? []);
+        }
+
+        return $this->pageImage($this->html($url));
+    }
+
+    /**
+     * Descarga una foto de internet (solo https de dominios públicos, hasta 8 MB, jpg/png/webp/gif/avif).
+     *
+     * @return array{contents: string, mime: string, extension: string}
+     *
+     * @throws PriceFetchException
+     */
+    public function download(string $url): array
+    {
+        $this->guard($url);
+        try {
+            // Sin AVIF en lo que se pide: Costco lo manda si se acepta y no todos lo muestran
+            $response = $this->client()->withHeaders(['Accept' => 'image/webp,image/jpeg,image/png;q=0.9,*/*;q=0.5'])->get($url);
+        } catch (ConnectionException) {
+            throw new PriceFetchException('No se pudo descargar la foto.');
+        }
+
+        $mime = strtolower(trim(Str::before((string) $response->header('Content-Type'), ';')));
+        $extension = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif', 'image/avif' => 'avif'][$mime] ?? null;
+        if (! $response->successful() || ! $extension) {
+            throw new PriceFetchException('La tienda no dio una foto que se pueda guardar.');
+        }
+        if (strlen($response->body()) > 8 * 1024 * 1024) {
+            throw new PriceFetchException('La foto pesa demasiado.');
+        }
+
+        return ['contents' => $response->body(), 'mime' => $mime, 'extension' => $extension];
     }
 
     // ---------- Chedraui (VTEX) ----------
@@ -88,6 +153,8 @@ class PriceFetcher
             'brand' => $product['brand'] ?? null,
             'barcode' => $item['ean'] ?? null,
             'sku' => isset($item['itemId']) ? (string) $item['itemId'] : null,
+            'image' => $item['images'][0]['imageUrl'] ?? null,
+            'store_id' => $seller,
             'store' => $seller ? Str::before($this->chedrauiStores((string) $postalCode)[$seller] ?? $seller, ' · ') : null,
             'source' => 'Chedraui',
         ];
@@ -166,7 +233,7 @@ class PriceFetcher
 
     // ---------- Costco (SAP Commerce) ----------
 
-    private function costco(string $url): array
+    private function costco(string $url, ?string $warehouse = null): array
     {
         // https://www.costco.com.mx/Categoria/.../p/694555
         if (! preg_match('#/p/(\w+)#', (string) parse_url($url, PHP_URL_PATH), $m)) {
@@ -174,7 +241,7 @@ class PriceFetcher
         }
 
         $data = $this->json($this->get($this->origin($url)."/rest/v2/mexico/products/{$m[1]}", [
-            'fields' => 'code,name,price(value),classifications(features(name,featureValues))', 'lang' => 'es_MX', 'curr' => 'MXN',
+            'fields' => 'code,name,price(value),images(url,format,imageType),classifications(features(name,featureValues))', 'lang' => 'es_MX', 'curr' => 'MXN',
         ]));
 
         // Características: "Contenido Neto" ("8 pzas de 387 g") y "Marca". Costco no publica el EAN.
@@ -187,8 +254,59 @@ class PriceFetcher
             'presentation' => self::presentation($feature('Contenido Neto')),
             'brand' => $feature('Marca'),
             'sku' => $data['code'] ?? $m[1],
+            // Un solo precio en línea para todas las bodegas: la tuya solo se anota
+            'store' => $warehouse && $warehouse !== StoreBranches::AUTO ? "Costco {$warehouse}" : null,
+            'image' => $this->costcoImage($url, $data['images'] ?? []),
             'source' => 'Costco',
         ];
+    }
+
+    /** La foto del artículo en Costco (la de su ficha, "product"), con dirección completa. */
+    private function costcoImage(string $url, array $images): ?string
+    {
+        $image = collect($images)->sortBy(fn (array $i) => match ($i['format'] ?? '') {
+            'product' => 0, 'zoom' => 1, 'superZoom' => 2, default => 3,
+        })->first();
+        $path = $image['url'] ?? null;
+
+        return $path ? (str_starts_with($path, 'http') ? $path : $this->origin($url).$path) : null;
+    }
+
+    /**
+     * Bodegas Costco cerca de un código postal, de la más cercana a la más lejana.
+     *
+     * @return array<string, string> nombre de la bodega (Polanco) => "Polanco · 5 km"
+     */
+    public function costcoStores(string $postalCode): array
+    {
+        $key = "costco-stores:{$postalCode}";
+        if (is_array($cached = Cache::get($key))) {
+            return $cached;
+        }
+
+        try {
+            $data = $this->json($this->get('https://www.costco.com.mx/rest/v2/mexico/stores', [
+                'query' => $postalCode, 'pageSize' => 20, 'lang' => 'es_MX',
+                'fields' => 'stores(name,displayName,formattedDistance,address(town))',
+            ]));
+        } catch (PriceFetchException) {
+            return [];
+        }
+
+        $stores = collect($data['stores'] ?? [])
+            // "Oficinas Centrales" no es una bodega
+            ->filter(fn (array $s) => filled($s['name'] ?? null) && ! str_contains(Str::lower($s['name']), 'oficina'))
+            ->mapWithKeys(fn (array $s) => [
+                (string) $s['name'] => collect([$s['displayName'] ?? $s['name'], $s['address']['town'] ?? null])->filter()->unique()->join(', ')
+                    .(isset($s['formattedDistance']) ? ' · '.$s['formattedDistance'] : ''),
+            ])
+            ->all();
+
+        if ($stores) {
+            Cache::put($key, $stores, now()->addDay());
+        }
+
+        return $stores;
     }
 
     /**
@@ -205,39 +323,106 @@ class PriceFetcher
 
     // ---------- Cualquier otra página ----------
 
-    private function page(string $url): array
+    /** @param  list<array{name: string, value: string, domain: string, path: string}>  $cookies */
+    private function page(string $url, array $cookies = []): array
     {
-        $html = $this->html($url);
+        $html = $this->html($url, $cookies);
         $found = $this->jsonLd($html) ?? $this->metaPrice($html) ?? $this->amazonPrice($html);
 
         if (! $found) {
             throw new PriceFetchException('No encontré el precio en la página.');
         }
 
-        return $found + ['presentation' => null, 'source' => (string) parse_url($url, PHP_URL_HOST)];
+        // Walmart, Bodega Aurrera y Sam's dicen en la página de qué tienda es el precio
+        $storeId = $this->pageStoreId($html);
+
+        return $found + [
+            'presentation' => null,
+            'image' => $this->pageImage($html),
+            'store_id' => $storeId,
+            'store' => $storeId ? "Tienda {$storeId}" : null,
+            'source' => (string) parse_url($url, PHP_URL_HOST),
+        ];
+    }
+
+    /**
+     * Cookies con las que el navegador abre la página en tu tienda (Walmart, Bodega Aurrera y
+     * Sam's guardan la tienda elegida en cookies). Si la tienda no las toma, la página dice de
+     * qué tienda es el precio y PriceUpdater avisa.
+     *
+     * @return list<array{name: string, value: string, domain: string, path: string}>
+     */
+    private function branchCookies(?string $chain, string $url, ?string $branch, ?string $postalCode): array
+    {
+        if (($chain === null || (StoreBranches::CHAINS[$chain]['via'] ?? null) !== 'cookies') || (! $branch && ! $postalCode)) {
+            return [];
+        }
+
+        $now = (int) (microtime(true) * 1000);
+        $location = array_filter([
+            'intent' => 'PICKUP',
+            'storeIntent' => 'PICKUP',
+            'mergeFlag' => true,
+            'isDefaulted' => false,
+            'pickup' => $branch ? ['nodeId' => $branch, 'timestamp' => $now, 'selectionType' => 'USER_SELECTED'] : null,
+            'postalCode' => $postalCode ? ['base' => $postalCode, 'timestamp' => $now] : null,
+        ], fn ($v) => $v !== null);
+
+        $domain = '.'.preg_replace('/^www\./', '', (string) parse_url($url, PHP_URL_HOST));
+        $cookies = [['name' => 'locGuestData', 'value' => base64_encode((string) json_encode($location))], ['name' => 'hasLocData', 'value' => '1']];
+        if ($branch) {
+            $cookies[] = ['name' => 'assortmentStoreId', 'value' => $branch];
+        }
+
+        return array_map(fn (array $c) => $c + ['domain' => $domain, 'path' => '/'], $cookies);
+    }
+
+    /** Tienda con la que la página calculó el precio (Walmart: "location":{…,"storeId":"2344"}). */
+    private function pageStoreId(string $html): ?string
+    {
+        return preg_match('#"location":\{[^{}]*?"storeId":"(\d+)"#', $html, $m) ? $m[1] : null;
+    }
+
+    /** Foto del artículo: og:image o la imagen del JSON-LD. */
+    private function pageImage(string $html): ?string
+    {
+        if (preg_match('#<meta[^>]+property=["\']og:image(?::secure_url)?["\'][^>]+content=["\'](https://[^"\']+)#i', $html, $m)
+            || preg_match('#<meta[^>]+content=["\'](https://[^"\']+)["\'][^>]+property=["\']og:image["\']#i', $html, $m)) {
+            return html_entity_decode($m[1]);
+        }
+        foreach ($this->jsonLdProducts($html) as $node) {
+            $image = $node['image'] ?? null;
+            $image = is_array($image) ? ($image['url'] ?? $image[0] ?? null) : $image;
+            $image = is_array($image) ? ($image['url'] ?? null) : $image;
+            if (is_string($image) && str_starts_with($image, 'https://')) {
+                return $image;
+            }
+        }
+
+        return null;
     }
 
     /** HTML de la página: directo, o con el navegador real si la tienda bloquea a los programas. */
-    private function html(string $url): string
+    private function html(string $url, array $cookies = []): string
     {
         $browser = config('services.price_fetch.browser_url');
         if ($browser && Str::endsWith((string) parse_url($url, PHP_URL_HOST), config('services.price_fetch.browser_hosts'))) {
-            return $this->viaBrowser($url);
+            return $this->viaBrowser($url, $cookies);
         }
 
         try {
             return $this->get($url)->body();
         } catch (StoreBlockedException $e) {
-            return $browser ? $this->viaBrowser($url) : throw $e;
+            return $browser ? $this->viaBrowser($url, $cookies) : throw $e;
         }
     }
 
-    /** Abre la página en el navegador de PriceTrack y devuelve el HTML ya cargado. */
-    private function viaBrowser(string $url): string
+    /** Abre la página en el navegador de PriceTrack (con las cookies de tu tienda) y devuelve el HTML ya cargado. */
+    private function viaBrowser(string $url, array $cookies = []): string
     {
         try {
             $response = Http::timeout((int) config('services.price_fetch.browser_timeout'))
-                ->get(rtrim((string) config('services.price_fetch.browser_url'), '/').'/html', ['url' => $url]);
+                ->get(rtrim((string) config('services.price_fetch.browser_url'), '/').'/html', array_filter(['url' => $url, 'cookies' => $cookies ? json_encode($cookies) : null]));
         } catch (ConnectionException) {
             throw new PriceFetchException('No responde el navegador de PriceTrack (contenedor «browser»).');
         }
@@ -255,35 +440,44 @@ class PriceFetcher
     /** schema.org Product → offers.price (o lowPrice), en cualquier bloque JSON-LD. */
     private function jsonLd(string $html): ?array
     {
-        preg_match_all('#<script[^>]+application/ld\+json[^>]*>(.*?)</script>#is', $html, $blocks);
+        foreach ($this->jsonLdProducts($html) as $node) {
+            $offers = $node['offers'] ?? [];
+            $offer = array_is_list($offers) ? ($offers[0] ?? []) : $offers;
+            $price = $this->number($offer['price'] ?? $offer['lowPrice'] ?? null);
+            if ($price) {
+                $brand = $node['brand'] ?? null;
+                $gtin = $node['gtin13'] ?? $node['gtin'] ?? $node['gtin12'] ?? $node['gtin14'] ?? $node['gtin8'] ?? null;
 
-        foreach ($blocks[1] as $block) {
-            $data = json_decode(trim($block), true);
-            $nodes = is_array($data) ? (array_is_list($data) ? $data : ($data['@graph'] ?? [$data])) : [];
-
-            foreach ($nodes as $node) {
-                if (! is_array($node) || ! in_array('Product', (array) ($node['@type'] ?? []), true)) {
-                    continue;
-                }
-                $offers = $node['offers'] ?? [];
-                $offer = array_is_list($offers) ? ($offers[0] ?? []) : $offers;
-                $price = $this->number($offer['price'] ?? $offer['lowPrice'] ?? null);
-                if ($price) {
-                    $brand = $node['brand'] ?? null;
-                    $gtin = $node['gtin13'] ?? $node['gtin'] ?? $node['gtin12'] ?? $node['gtin14'] ?? $node['gtin8'] ?? null;
-
-                    return [
-                        'price' => $price,
-                        'name' => is_string($node['name'] ?? null) ? $node['name'] : $this->title($html),
-                        'brand' => is_array($brand) ? ($brand['name'] ?? null) : $brand,
-                        'barcode' => is_scalar($gtin) ? (string) $gtin : null,
-                        'sku' => is_scalar($node['sku'] ?? null) ? (string) $node['sku'] : null,
-                    ];
-                }
+                return [
+                    'price' => $price,
+                    'name' => is_string($node['name'] ?? null) ? $node['name'] : $this->title($html),
+                    'brand' => is_array($brand) ? ($brand['name'] ?? null) : $brand,
+                    'barcode' => is_scalar($gtin) ? (string) $gtin : null,
+                    'sku' => is_scalar($node['sku'] ?? null) ? (string) $node['sku'] : null,
+                ];
             }
         }
 
         return null;
+    }
+
+    /** Nodos schema.org Product de los bloques JSON-LD. */
+    private function jsonLdProducts(string $html): array
+    {
+        preg_match_all('#<script[^>]+application/ld\+json[^>]*>(.*?)</script>#is', $html, $blocks);
+
+        $products = [];
+        foreach ($blocks[1] as $block) {
+            $data = json_decode(trim($block), true);
+            $nodes = is_array($data) ? (array_is_list($data) ? $data : ($data['@graph'] ?? [$data])) : [];
+            foreach ($nodes as $node) {
+                if (is_array($node) && in_array('Product', (array) ($node['@type'] ?? []), true)) {
+                    $products[] = $node;
+                }
+            }
+        }
+
+        return $products;
     }
 
     private function metaPrice(string $html): ?array

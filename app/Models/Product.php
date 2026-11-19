@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\IngredientUnit;
 use App\Enums\Unit;
+use App\Models\Concerns\HasAttachments;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
 #[Fillable(['name', 'brand', 'barcode', 'category', 'size', 'unit', 'notes', 'piece_weight', 'cup_grams', 'kcal', 'protein', 'carbs', 'fat', 'pantry', 'pantry_qty'])]
 class Product extends Model
 {
-    use HasFactory;
+    use HasAttachments, HasFactory;
 
     protected function casts(): array
     {
@@ -74,6 +75,23 @@ class Product extends Model
             ? ['pantry' => self::PANTRY_STOCKED, 'pantry_qty' => $qty !== null && $qty > 0 ? round($qty, 3) : null]
             : ['pantry' => $this->pantry === null ? null : self::PANTRY_OUT, 'pantry_qty' => null]
         )->save();
+    }
+
+    /**
+     * Cuánto vale lo que hay en casa: lo que queda (o, si es "suficiente", una presentación
+     * habitual: estimado) al precio por unidad más barato. Null si no está en casa o no tiene precio.
+     *
+     * @return array{value: float, estimated: bool}|null
+     */
+    public function pantryValue(): ?array
+    {
+        $price = $this->inPantry() ? $this->cheapestPrice() : null;
+        if (! $price) {
+            return null;
+        }
+        $qty = $this->pantry_qty ?? $this->standardBaseQty();
+
+        return ['value' => round($qty * $price->unit_price, 2), 'estimated' => $this->pantry_qty === null];
     }
 
     /** Lo que queda en casa en texto ("300 g", "1.5 L"); null = suficiente o no está. */

@@ -5,8 +5,8 @@
  *   (la tienda cambia el precio por sucursal y falta el código postal o la sucursal,
  *   App\Services\StoreBranches), abre la ventana para elegirla y reintenta una vez.
  * - pickBranch(): abre la ventana global <x-branch-picker /> y espera a que se guarde.
- * - ensureBranches(): antes de una consulta larga, pregunta una sola vez por cada cadena
- *   que haga falta (las cadenas y lo que falta vienen del layout, #branch-chains).
+ * - ensureBranches(): antes de una consulta larga, pregunta una sola vez por cada proveedor
+ *   al que le falte la sucursal (los proveedores y lo que falta vienen del layout, #branch-chains).
  * - createRun() / runTasks(): avance de una operación larga, tarea por tarea, cancelable,
  *   con lo que salió bien, lo que falló y por qué (lo pinta <x-progress-panel />).
  */
@@ -14,27 +14,13 @@ import Alpine from 'alpinejs';
 
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content;
 
-/** Cadenas con precio por sucursal y qué les falta (del servidor, en el layout). */
+/** Proveedores de alguna cadena y qué les falta (del servidor, en el layout): id del proveedor => info. */
 export function branchChains() {
     try {
         return JSON.parse(document.getElementById('branch-chains')?.textContent || '{}');
     } catch {
         return {};
     }
-}
-
-/** La cadena de una dirección, si cambia el precio por sucursal. */
-export function chainFor(url) {
-    let host = '';
-    try {
-        host = new URL(url).hostname.toLowerCase();
-    } catch {
-        return null;
-    }
-    for (const [key, chain] of Object.entries(branchChains())) {
-        if (host === chain.host || host.endsWith('.' + chain.host)) return key;
-    }
-    return null;
 }
 
 let pending = null;
@@ -51,17 +37,17 @@ export function pickBranch(info) {
 }
 
 /**
- * Pregunta, una vez y antes de empezar, la sucursal de cada cadena de esas direcciones
- * a la que le falte. Devuelve las cadenas que quedaron sin elegir (se cancelaron).
+ * Pregunta, una vez y antes de empezar, la sucursal de cada uno de esos proveedores al que
+ * le falte. Devuelve los ids de los proveedores que quedaron sin elegir (se cancelaron).
  */
-export async function ensureBranches(urls) {
+export async function ensureBranches(providerIds) {
     const chains = branchChains();
-    const needed = [...new Set(urls.map(chainFor).filter(Boolean))].filter((key) => chains[key]?.missing);
+    const needed = [...new Set(providerIds.map(Number))].filter((id) => chains[id]?.missing);
     const skipped = [];
-    for (const key of needed) {
-        const ok = await pickBranch({ chain: key, name: chains[key].name, postal_code: chains[key].postal_code, missing: chains[key].missing });
-        if (ok) chains[key].missing = null;
-        else skipped.push(key);
+    for (const id of needed) {
+        const ok = await pickBranch(chains[id]);
+        if (ok) chains[id].missing = null;
+        else skipped.push(id);
     }
     return skipped;
 }
@@ -91,7 +77,7 @@ export async function requestJson(method, url, body, { retry = true, signal } = 
     const data = await res.json().catch(() => ({}));
     if (res.status === 409 && data.needs_branch && retry) {
         if (await pickBranch(data.needs_branch)) return requestJson(method, url, body, { retry: false, signal });
-        throw new RequestError(`Sin sucursal de ${data.needs_branch.name}: no se consultó.`, data, 409);
+        throw new RequestError(`Sin sucursal de ${data.needs_branch.provider || data.needs_branch.name}: no se consultó.`, data, 409);
     }
     if (!res.ok) {
         const message = data.errors ? Object.values(data.errors).flat().join(' ') : data.message || (res.status >= 500 ? 'Error del servidor; intenta de nuevo.' : 'No se pudo completar.');
@@ -202,7 +188,7 @@ export function branchPicker(urls) {
             this.error = '';
             this.searched = this.postal;
             try {
-                const params = new URLSearchParams({ chain: this.info.chain, postal_code: this.postal });
+                const params = new URLSearchParams({ chain: this.info.chain, postal_code: this.postal, provider_id: this.info.provider_id });
                 const data = await requestJson('GET', `${urls.branches}?${params}`, null, { retry: false });
                 this.branches = data.branches;
                 this.branch = data.selected && data.selected !== 'auto' && data.branches.some((b) => b.id === data.selected) ? data.selected : 'auto';
@@ -221,14 +207,17 @@ export function branchPicker(urls) {
             this.saving = true;
             this.error = '';
             try {
-                await requestJson('PUT', urls.save, { chain: this.info.chain, postal_code: this.postal, branch: this.branch }, { retry: false });
+                const name = this.branches.find((b) => b.id === this.branch)?.label || null;
+                await requestJson('PUT', urls.save, {
+                    provider_id: this.info.provider_id, chain: this.info.chain, postal_code: this.postal, branch: this.branch, branch_name: name,
+                }, { retry: false });
                 const chains = branchChains();
                 const el = document.getElementById('branch-chains');
-                if (el && chains[this.info.chain]) {
-                    // Otro CP: las demás cadenas se vuelven a preguntar
-                    for (const [key, chain] of Object.entries(chains)) {
-                        if (key === this.info.chain) Object.assign(chain, { missing: null, postal_code: this.postal });
-                        else if (chain.postal_code !== this.postal) Object.assign(chain, { missing: 'branch', postal_code: this.postal });
+                if (el) {
+                    // Otro CP: los demás proveedores que eligen de una lista se vuelven a preguntar
+                    for (const [id, info] of Object.entries(chains)) {
+                        if (Number(id) === Number(this.info.provider_id)) Object.assign(info, { missing: null, postal_code: this.postal });
+                        else if (info.postal_code !== this.postal) Object.assign(info, { postal_code: this.postal, missing: info.listable && info.ask ? 'branch' : info.missing });
                     }
                     el.textContent = JSON.stringify(chains);
                 }

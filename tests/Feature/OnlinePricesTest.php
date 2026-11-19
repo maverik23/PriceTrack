@@ -13,6 +13,7 @@ use App\Models\Setting;
 use App\Models\ShoppingList;
 use App\Services\PriceFetcher;
 use App\Services\PriceFetchException;
+use App\Services\StoreBranches;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -41,11 +42,10 @@ class OnlinePricesTest extends TestCase
         parent::setUp();
         config(['services.price_fetch.resolve_hosts' => false, 'services.price_fetch.browser_url' => null]);
         Http::preventStrayRequests();
-        $this->chedraui = Provider::create(['name' => 'Chedraui']);
-        $this->costco = Provider::create(['name' => 'Costco']);
         // Como quien ya eligió su tienda: código postal y Chedraui automática (la más cercana que lo tenga)
+        $this->chedraui = Provider::create(['name' => 'Chedraui', 'chain' => 'chedraui', 'branch' => 'auto']);
+        $this->costco = Provider::create(['name' => 'Costco', 'chain' => 'costco']);
         Setting::put(Setting::POSTAL_CODE, '77518');
-        Setting::put(Setting::CHEDRAUI_STORE, 'auto');
     }
 
     /** Catálogo VTEX + regiones + simulación del carrito, como responde chedraui.com.mx. */
@@ -395,23 +395,72 @@ class OnlinePricesTest extends TestCase
         $this->assertSame('Bloqueado por la tienda (anti-bots).', $this->fetchError('https://www.walmart.com.mx/ip/leche/1'));
     }
 
-    public function test_chedraui_store_is_chosen_from_the_stores_near_the_postal_code(): void
+    public function test_each_provider_chooses_its_branch_from_the_stores_near_the_postal_code(): void
     {
         $this->fakeChedraui();
-        $this->put(route('settings.update'), ['postal_code' => '77518'])->assertSessionHasNoErrors();
+        Http::fake(['www.costco.com.mx/rest/v2/mexico/stores*' => Http::response(['stores' => [
+            ['name' => 'Polanco', 'displayName' => 'Polanco', 'formattedDistance' => '5 km', 'address' => ['town' => 'Miguel Hidalgo']],
+            ['name' => 'Mixcoac', 'displayName' => 'Mixcoac', 'formattedDistance' => '5.5 km', 'address' => ['town' => 'Alvaro Obregón']],
+        ]])]);
 
-        $this->get(route('providers.index'))->assertOk()
-            ->assertSee('Tu tienda Chedraui')
-            ->assertSee('CHEDRAUI CANCÚN VILLAS DEL MAR · 3.1 km');
+        // Ya no hay un solo ajuste de "tu tienda Chedraui" en Proveedores
+        $this->get(route('providers.index'))->assertOk()->assertDontSee('Tu tienda Chedraui')->assertSee('Cadena');
 
-        $this->put(route('settings.update'), ['postal_code' => '77518', 'chedraui_store' => 'chedrauimx0255']);
-        $this->assertSame('chedrauimx0255', Setting::value(Setting::CHEDRAUI_STORE));
+        // La lista de sucursales sale por cadena
+        $this->getJson(route('settings.branches', ['chain' => 'chedraui', 'postal_code' => '77518', 'provider_id' => $this->chedraui->id]))->assertOk()
+            ->assertJsonPath('branches.0.label', 'CHEDRAUI CANCÚN VILLAS DEL MAR · 3.1 km')->assertJsonPath('selected', 'auto');
+        $this->getJson(route('settings.branches', ['chain' => 'costco', 'postal_code' => '06600']))->assertOk()
+            ->assertJsonPath('branches.0.id', 'Polanco')->assertJsonPath('branches.0.label', 'Polanco, Miguel Hidalgo · 5 km');
 
-        // Otro código postal: otras tiendas, se vuelve a elegir
-        $this->put(route('settings.update'), ['postal_code' => '06600', 'chedraui_store' => 'chedrauimx0255']);
-        $this->assertNull(Setting::value(Setting::CHEDRAUI_STORE));
+        // Al editar el proveedor se guarda su sucursal
+        $this->put(route('providers.update', $this->chedraui), [
+            'name' => 'Chedraui Kabah', 'chain' => 'chedraui', 'branch' => 'chedrauimx0255', 'branch_name' => 'CHEDRAUI CANCÚN KABAH · 3.8 km',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(['chedrauimx0255', 'CHEDRAUI CANCÚN KABAH'], [$this->chedraui->fresh()->branch, $this->chedraui->fresh()->branch_name]);
+        $this->get(route('providers.index'))->assertSee('CHEDRAUI CANCÚN KABAH');
 
-        $this->put(route('settings.update'), ['postal_code' => '06600', 'chedraui_store' => 'walmart'])->assertSessionHasErrors('chedraui_store');
+        $this->put(route('providers.update', $this->chedraui), ['name' => 'Chedraui', 'chain' => 'chedraui', 'branch' => 'walmart'])->assertSessionHasErrors('branch');
+
+        // Un proveedor nuevo con su tienda escrita a mano
+        $this->post(route('providers.store'), ['name' => 'Walmart Universidad', 'chain' => 'walmart', 'branch' => '2344', 'branch_name' => 'Walmart Universidad'])->assertSessionHasNoErrors();
+        $walmart = Provider::where('name', 'Walmart Universidad')->firstOrFail();
+        $this->assertSame(['walmart', '2344', 'Walmart Universidad'], [$walmart->chain, $walmart->branch, $walmart->branch_name]);
+        $this->post(route('providers.store'), ['name' => 'Walmart Coapa', 'chain' => 'walmart', 'branch' => 'abc'])->assertSessionHasErrors('branch');
+
+        // Otro código postal: las sucursales que salen de una lista se vuelven a elegir
+        $this->put(route('settings.update'), ['postal_code' => '06600'])->assertSessionHasNoErrors();
+        $this->assertNull($this->chedraui->fresh()->branch);
+        $this->assertSame('2344', $walmart->fresh()->branch);
+    }
+
+    public function test_chain_is_guessed_from_the_provider_name(): void
+    {
+        $this->assertSame('sams', StoreBranches::guess("Sam's Club Universidad"));
+        $this->assertSame('bodega', StoreBranches::guess('Bodega Aurrerá Express'));
+        $this->assertSame('walmart', StoreBranches::guess('Walmart Express'));
+        $this->assertNull(StoreBranches::guess('Mercado de la colonia'));
+    }
+
+    public function test_walmart_page_is_opened_with_the_chosen_store_and_says_which_store_priced_it(): void
+    {
+        config(['services.price_fetch.browser_url' => 'http://browser:3000']);
+        $walmart = Provider::create(['name' => 'Walmart', 'chain' => 'walmart', 'branch' => '2344', 'branch_name' => 'Walmart Universidad']);
+        $product = Product::create(['name' => 'Leche', 'size' => 1, 'unit' => 'l']);
+        $link = $product->links()->create(['provider_id' => $walmart->id, 'url' => 'https://www.walmart.com.mx/ip/leche-lala-1-l/00750102056596']);
+        $page = fn (string $store) => '<script type="application/ld+json">{"@type":"Product","name":"Leche Lala 1 l","offers":{"price":"28.50"}}</script>'
+            .'<script id="__NEXT_DATA__">{"location":{"postalCode":"06600","storeId":"'.$store.'","pickupStore":"'.$store.'"}}</script>';
+        Http::fakeSequence('browser:3000/*')->push($page('2344'))->push($page('2670'));
+
+        $this->postJson(route('product-links.fetch', $link))->assertOk()->assertJsonPath('ok', true)->assertJsonPath('message', fn ($m) => str_contains($m, 'Walmart Universidad'));
+        Http::assertSent(function (Request $r) {
+            $cookies = collect(json_decode($r['cookies'] ?? '[]', true))->pluck('value', 'name');
+
+            return str_contains($r->url(), 'browser:3000/html') && $cookies['assortmentStoreId'] === '2344'
+                && json_decode(base64_decode($cookies['locGuestData']), true)['pickup']['nodeId'] === '2344';
+        });
+
+        // Si la tienda no tomó la sucursal, se dice
+        $this->postJson(route('product-links.fetch', $link))->assertOk()->assertJsonPath('message', fn ($m) => str_contains($m, 'tienda 2670, no de la tuya'));
     }
 
     public function test_postal_code_is_a_global_setting(): void
@@ -430,32 +479,34 @@ class OnlinePricesTest extends TestCase
     {
         $this->fakeChedraui();
         Setting::put(Setting::POSTAL_CODE, null);
-        Setting::put(Setting::CHEDRAUI_STORE, null);
+        $this->chedraui->update(['branch' => null]);
         $product = Product::create(['name' => 'Leche', 'size' => 1.8, 'unit' => 'l']);
         $link = $product->links()->create(['provider_id' => $this->chedraui->id, 'url' => self::MILK]);
         $costco = $product->links()->create(['provider_id' => $this->costco->id, 'url' => self::COSTCO]);
 
         // Sin código postal: 409 con lo que falta, y no se consulta la tienda
         $this->postJson(route('product-links.fetch', $link))->assertStatus(409)
-            ->assertJsonPath('needs_branch.chain', 'chedraui')->assertJsonPath('needs_branch.missing', 'postal_code');
+            ->assertJsonPath('needs_branch.chain', 'chedraui')->assertJsonPath('needs_branch.missing', 'postal_code')
+            ->assertJsonPath('needs_branch.provider_id', $this->chedraui->id);
         Http::assertNothingSent();
         $this->get(route('lists.index'))->assertSee('"missing":"postal_code"', false);
 
         // La ventana lista las sucursales del CP y guarda la elegida
         $this->getJson(route('settings.branches', ['chain' => 'chedraui', 'postal_code' => '77518']))->assertOk()
             ->assertJsonPath('branches.0.id', 'chedrauimx0112')->assertJsonPath('branches.1.label', 'CHEDRAUI CANCÚN KABAH · 3.8 km');
-        $this->putJson(route('settings.branch'), ['chain' => 'chedraui', 'postal_code' => '77518', 'branch' => 'walmart'])->assertStatus(422);
-        $this->putJson(route('settings.branch'), ['chain' => 'chedraui', 'postal_code' => '77518', 'branch' => 'chedrauimx0255'])->assertOk();
-        $this->assertSame(['77518', 'chedrauimx0255'], [Setting::value(Setting::POSTAL_CODE), Setting::value(Setting::CHEDRAUI_STORE)]);
+        $this->putJson(route('settings.branch'), ['provider_id' => $this->chedraui->id, 'postal_code' => '77518', 'branch' => 'walmart'])->assertStatus(422);
+        $this->putJson(route('settings.branch'), ['provider_id' => $this->chedraui->id, 'postal_code' => '77518', 'branch' => 'chedrauimx0255', 'branch_name' => 'CHEDRAUI CANCÚN KABAH · 3.8 km'])
+            ->assertOk()->assertJsonPath('label', 'CHEDRAUI CANCÚN KABAH');
+        $this->assertSame(['77518', 'chedrauimx0255'], [Setting::value(Setting::POSTAL_CODE), $this->chedraui->fresh()->branch]);
 
         // Y la consulta sigue: el precio de esa sucursal
         $this->postJson(route('product-links.fetch', $link))->assertOk()->assertJsonPath('ok', true)->assertJsonPath('price.price', 43.5);
 
         // Con otro código postal la sucursal se vuelve a preguntar
-        Setting::put(Setting::CHEDRAUI_STORE, null);
+        $this->chedraui->fresh()->update(['branch' => null]);
         $this->postJson(route('product-links.fetch', $link))->assertStatus(409)->assertJsonPath('needs_branch.missing', 'branch');
-        $this->putJson(route('settings.branch'), ['chain' => 'chedraui', 'postal_code' => '77518', 'branch' => 'auto'])->assertOk();
-        $this->assertSame('auto', Setting::value(Setting::CHEDRAUI_STORE));
+        $this->putJson(route('settings.branch'), ['provider_id' => $this->chedraui->id, 'postal_code' => '77518', 'branch' => 'auto'])->assertOk();
+        $this->assertSame('auto', $this->chedraui->fresh()->branch);
         $this->postJson(route('product-links.fetch', $link))->assertOk()->assertJsonPath('price.price', 41);
 
         // Las tiendas sin sucursal no preguntan nada
@@ -498,14 +549,15 @@ class OnlinePricesTest extends TestCase
     public function test_mcp_lists_and_saves_the_branch(): void
     {
         $this->fakeChedraui();
-        Setting::put(Setting::CHEDRAUI_STORE, null);
+        $this->chedraui->update(['branch' => null]);
         $product = Product::create(['name' => 'Leche', 'size' => 1, 'unit' => 'l']);
         $product->links()->create(['provider_id' => $this->chedraui->id, 'url' => self::MILK]);
+        $id = $this->chedraui->id;
 
         PriceTrackServer::tool(FetchOnlinePrices::class, ['product_id' => $product->id])->assertOk()->assertSee('set-store-branch');
-        PriceTrackServer::tool(SetStoreBranch::class, ['chain' => 'chedraui', 'postal_code' => '77518'])->assertOk()->assertSee('CHEDRAUI CANCÚN KABAH');
-        PriceTrackServer::tool(SetStoreBranch::class, ['chain' => 'chedraui', 'postal_code' => '77518', 'branch' => 'x'])->assertHasErrors(['no es válida']);
-        PriceTrackServer::tool(SetStoreBranch::class, ['chain' => 'chedraui', 'postal_code' => '77518', 'branch' => 'chedrauimx0112'])->assertOk();
+        PriceTrackServer::tool(SetStoreBranch::class, ['provider_id' => $id, 'postal_code' => '77518'])->assertOk()->assertSee('CHEDRAUI CANCÚN KABAH');
+        PriceTrackServer::tool(SetStoreBranch::class, ['provider_id' => $id, 'postal_code' => '77518', 'branch' => 'x'])->assertHasErrors(['no es válida']);
+        PriceTrackServer::tool(SetStoreBranch::class, ['provider_id' => $id, 'postal_code' => '77518', 'branch' => 'chedrauimx0112'])->assertOk()->assertSee('VILLAS DEL MAR');
         PriceTrackServer::tool(FetchOnlinePrices::class, ['product_id' => $product->id])->assertOk()->assertSee('41.00');
     }
 
@@ -521,8 +573,8 @@ class OnlinePricesTest extends TestCase
         $this->getJson(route('products.online-links'))->assertOk()
             ->assertJsonCount(2, 'links')
             ->assertJsonPath('links.0.label', 'Aspiradora — Costco')
-            ->assertJsonPath('links.0.chain', null)
-            ->assertJsonPath('links.1.chain', 'chedraui');
+            ->assertJsonPath('links.0.provider_id', $this->costco->id)
+            ->assertJsonPath('links.1.provider_id', $this->chedraui->id);
         $this->get(route('products.index'))->assertOk()->assertSee('Actualizar todos los precios');
     }
 }

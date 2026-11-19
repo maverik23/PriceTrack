@@ -284,6 +284,55 @@ class Recipe extends Model
         return $needs;
     }
 
+    /**
+     * ¿Se puede hacer con lo que hay en la despensa? Suma lo que piden la receta y sus
+     * sub-recetas por artículo y lo compara con lo que hay en casa (`Product::pantryCovers()`).
+     * Los ingredientes de texto libre (sal, agua) o sin conversión no se pueden revisar: no
+     * impiden hacerla y se cuentan en `unchecked`. Necesita el árbol cargado (withTree()).
+     *
+     * @return array{ready: bool, missing: list<string>, unchecked: int}
+     */
+    public function pantryCheck(?float $servings = null): array
+    {
+        $needs = [];
+        $unchecked = 0;
+        foreach ($this->shoppingNeeds($this->factor($servings ?? $this->servings)) as [$productId, $base]) {
+            if ($productId === null) {
+                $unchecked++;
+            } else {
+                $needs[$productId] = ($needs[$productId] ?? 0) + $base;
+            }
+        }
+
+        $products = $this->productsInTree();
+        $missing = [];
+        foreach ($needs as $productId => $need) {
+            $product = $products[$productId] ?? null;
+            // Se tolera un redondeo mínimo (0.5 %): 999.9 g de 1 kg alcanzan
+            if (! $product || $product->pantryCovers($need) < $need * 0.995) {
+                $missing[] = $product?->name ?? 'Artículo';
+            }
+        }
+
+        return ['ready' => $missing === [], 'missing' => $missing, 'unchecked' => $unchecked];
+    }
+
+    /** Los artículos de la receta y sus sub-recetas (ya cargados), por id. @return array<int, Product> */
+    private function productsInTree(array $stack = []): array
+    {
+        $stack[] = $this->id;
+        $products = [];
+        foreach ($this->ingredients as $ingredient) {
+            if ($ingredient->product) {
+                $products[$ingredient->product_id] = $ingredient->product;
+            } elseif ($ingredient->subrecipe && ! in_array($ingredient->subrecipe->id, $stack, true) && count($stack) < self::MAX_DEPTH) {
+                $products += $ingredient->subrecipe->productsInTree($stack);
+            }
+        }
+
+        return $products;
+    }
+
     // ---------- Sub-recetas: ciclos ----------
 
     /**

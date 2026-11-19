@@ -27,8 +27,21 @@ class RecipeController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Qué se puede hacer con lo de la despensa (?pantry=1: solo esas; ?pantry=almost: falta 1 o 2 cosas)
+        $checks = $recipes->mapWithKeys(fn (Recipe $r) => [$r->id => $r->ingredients->isEmpty() ? null : $r->pantryCheck()]);
+        $pantry = in_array($request->query('pantry'), ['1', 'almost'], true) ? $request->query('pantry') : null;
+        if ($pantry) {
+            $recipes = $recipes->filter(fn (Recipe $r) => ($check = $checks[$r->id]) && ($pantry === '1'
+                ? $check['ready']
+                : ! $check['ready'] && count($check['missing']) <= 2))->values();
+        }
+
         return view('recipes.index', [
             'recipes' => $recipes,
+            'checks' => $checks,
+            'pantry' => $pantry,
+            'readyCount' => $checks->filter(fn ($c) => $c && $c['ready'])->count(),
+            'almostCount' => $checks->filter(fn ($c) => $c && ! $c['ready'] && count($c['missing']) <= 2)->count(),
             'categories' => Recipe::categories(),
             'tags' => Tag::has('recipes')->orderBy('name')->pluck('name'),
         ]);
@@ -146,7 +159,7 @@ class RecipeController extends Controller
 
     private function recentLists()
     {
-        return ShoppingList::orderByDesc('shopped_on')->orderByDesc('id')->take(10)->get();
+        return ShoppingList::pending()->orderByDesc('shopped_on')->orderByDesc('id')->take(10)->get();
     }
 
     private function formData(Recipe $recipe): array

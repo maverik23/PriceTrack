@@ -1,7 +1,8 @@
 {{--
-    Ventana global para elegir el código postal y la sucursal de una tienda que cambia el
-    precio por sucursal (App\Services\StoreBranches). La abre pickBranch() de
+    Ventana global para elegir el código postal y la sucursal de un proveedor cuya cadena
+    cambia el precio por sucursal (App\Services\StoreBranches). La abre pickBranch() de
     resources/js/online-prices.js cuando el servidor dice que falta; al guardar, la consulta sigue sola.
+    #branch-chains: id del proveedor => cadena y qué le falta.
 --}}
 <script type="application/json" id="branch-chains">{!! json_encode(\App\Services\StoreBranches::forPage(), JSON_HEX_TAG) !!}</script>
 <div x-data="branchPicker({{ Js::from(['branches' => route('settings.branches'), 'save' => route('settings.branch')]) }})"
@@ -12,7 +13,7 @@
         <div class="border-b border-slate-100 px-5 pt-5 pb-4">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <h2 id="branch-title" class="font-display text-xl font-semibold text-slate-900">Tu tienda <span x-text="info?.name"></span></h2>
+                    <h2 id="branch-title" class="font-display text-xl font-semibold text-slate-900">Tu sucursal de <span x-text="info?.provider"></span></h2>
                     <p class="mt-1 text-sm text-slate-500"><span x-text="info?.name"></span> cambia el precio en cada sucursal. Dinos dónde compras y traemos el precio de esa tienda.</p>
                 </div>
                 <button type="button" class="icon-btn shrink-0" @click="close(false)" aria-label="Cancelar"><x-icon name="x" class="size-5" /></button>
@@ -51,6 +52,6 @@
                 <span x-text="saving ? 'Guardando…' : 'Guardar y seguir'"></span>
             </button>
         </div>
-        <p class="px-5 pb-4 text-center text-xs text-slate-400">Se puede cambiar después en <a class="link" href="{{ route('providers.index') }}">Proveedores</a>.</p>
+        <p class="px-5 pb-4 text-center text-xs text-slate-400">Se puede cambiar después al editar el proveedor, en <a class="link" href="{{ route('providers.index') }}">Proveedores</a>.</p>
     </form>
 </div>

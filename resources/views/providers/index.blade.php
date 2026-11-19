@@ -15,6 +15,7 @@
             <thead>
             <tr>
                 <th>Nombre</th>
+                <th>Sucursal</th>
                 <th>Notas</th>
                 <th class="text-right">Precios</th>
                 <th>Último registro</th>
@@ -25,6 +26,14 @@
             @forelse ($providers as $provider)
                 <tr>
                     <td class="font-medium text-slate-900">{{ $provider->name }}</td>
+                    <td class="text-sm">
+                        @if ($provider->chain)
+                            <span class="text-slate-700">{{ $provider->branchLabel() ?? 'Sin elegir' }}</span>
+                            <span class="block text-xs text-slate-500">{{ $provider->chainName() }}</span>
+                        @else
+                            <span class="text-slate-400">—</span>
+                        @endif
+                    </td>
                     <td class="text-slate-500">{{ $provider->notes }}</td>
                     <td class="text-right tabular-nums">
                         <a class="link" href="{{ route('prices.index', ['provider_id' => $provider->id]) }}">{{ $provider->prices_count }}</a>
@@ -40,7 +49,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="py-8 text-center text-slate-500">Aún no hay proveedores. Agrega el primero →</td></tr>
+                <tr><td colspan="6" class="py-8 text-center text-slate-500">Aún no hay proveedores. Agrega el primero →</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -50,14 +59,7 @@
     <form method="POST" action="{{ route('providers.store') }}" class="card space-y-3">
         @csrf
         <h2 class="card-title">Nuevo proveedor</h2>
-        <div>
-            <label class="label" for="name">Nombre</label>
-            <input id="name" name="name" value="{{ old('name') }}" class="input" placeholder="Ej. Soriana" required>
-        </div>
-        <div>
-            <label class="label" for="notes">Notas</label>
-            <input id="notes" name="notes" value="{{ old('notes') }}" class="input" placeholder="Sucursal, membresía…">
-        </div>
+        @include('providers._form', ['provider' => new \App\Models\Provider])
         <button class="btn btn-primary w-full">Agregar</button>
     </form>
 
@@ -68,25 +70,9 @@
         <div>
             <label class="label" for="postal_code">Para consultar precios en línea</label>
             <input id="postal_code" name="postal_code" value="{{ old('postal_code', $postalCode) }}" class="input" inputmode="numeric" maxlength="5" placeholder="Ej. 06600">
-            <p class="mt-1 text-xs text-slate-500">Chedraui cambia el precio por tienda; Costco y Home Depot dan su precio en línea.</p>
+            @error('postal_code') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            <p class="mt-1 text-xs text-slate-500">Con él se buscan las sucursales de cada proveedor (se eligen al agregarlo o editarlo) y se pide el precio de tu zona.</p>
         </div>
-        @if ($postalCode)
-            <div>
-                <label class="label" for="chedraui_store">Tu tienda Chedraui</label>
-                <select id="chedraui_store" name="chedraui_store" class="input">
-                    <option value="auto">Automática: la más cercana que lo tenga</option>
-                    @foreach ($chedrauiStores as $seller => $name)
-                        <option value="{{ $seller }}" @selected($chedrauiStore === $seller)>{{ $name }}</option>
-                    @endforeach
-                    @if ($chedrauiStore && $chedrauiStore !== 'auto' && ! isset($chedrauiStores[$chedrauiStore]))
-                        <option value="{{ $chedrauiStore }}" selected>{{ $chedrauiStore }}</option>
-                    @endif
-                </select>
-                @if (! $chedrauiStores)
-                    <p class="mt-1 text-xs text-amber-700">No se pudo leer la lista de tiendas de Chedraui para este código postal.</p>
-                @endif
-            </div>
-        @endif
         <button class="btn btn-secondary w-full">Guardar</button>
     </form>
     </div>

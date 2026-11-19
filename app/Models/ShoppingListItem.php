@@ -29,6 +29,13 @@ class ShoppingListItem extends Model
                 if ($product?->pantry === Product::PANTRY_OUT) {
                     $product->setPantry(true);
                 }
+                $item->shoppingList?->completeIfAllBought();
+            } elseif (! $item->price_id && ($item->wasChanged('price_id') || $item->wasRecentlyCreated)) {
+                // Algo volvió a quedar pendiente (se desmarcó o se agregó): la lista ya no está comprada
+                $list = $item->shoppingList;
+                if ($list?->isDone()) {
+                    $list->markDone(false);
+                }
             }
         });
     }

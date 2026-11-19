@@ -17,7 +17,10 @@ class ListProviders extends Tool
     {
         return $this->json([
             'providers' => Provider::withCount('prices')->orderBy('name')->get()
-                ->map(fn (Provider $p) => ['id' => $p->id, 'name' => $p->name, 'notes' => $p->notes, 'prices' => $p->prices_count])->all(),
+                ->map(fn (Provider $p) => [
+                    'id' => $p->id, 'name' => $p->name, 'notes' => $p->notes, 'prices' => $p->prices_count,
+                    'chain' => $p->chain, 'branch' => $p->branch, 'branch_label' => $p->branchLabel(),
+                ])->all(),
         ]);
     }
 }

@@ -5,7 +5,7 @@
 <a href="{{ route('products.show', $product) }}" class="link text-sm">← {{ $product->name }}</a>
 <h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">Editar artículo</h1>
 
-<form method="POST" action="{{ route('products.update', $product) }}" class="card max-w-2xl space-y-4">
+<form method="POST" action="{{ route('products.update', $product) }}" class="card max-w-2xl space-y-4" enctype="multipart/form-data">
     @method('PUT')
     @include('products._form')
     <div class="flex gap-2">

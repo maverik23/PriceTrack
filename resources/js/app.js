@@ -11,6 +11,7 @@ import attachmentsField from './attachments-field';
 import themeToggle from './theme';
 import { pantryList, pantryToggle } from './pantry';
 import { branchPicker } from './online-prices';
+import providerForm from './provider-form';
 import productPrices, { bulkPrices, priceLink, takeFlash } from './product-prices';
 
 Alpine.data('listGrid', listGrid);
@@ -25,6 +26,7 @@ Alpine.data('themeToggle', themeToggle);
 Alpine.data('pantryList', pantryList);
 Alpine.data('pantryToggle', pantryToggle);
 Alpine.data('branchPicker', branchPicker);
+Alpine.data('providerForm', providerForm);
 Alpine.data('productPrices', productPrices);
 Alpine.data('priceLink', priceLink);
 Alpine.data('bulkPrices', bulkPrices);

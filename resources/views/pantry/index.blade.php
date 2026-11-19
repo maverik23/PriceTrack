@@ -2,7 +2,7 @@
 @section('title', 'Despensa')
 
 @section('content')
-<script type="application/json" id="pantry-data">{!! json_encode(['rows' => $rows], JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) !!}</script>
+<script type="application/json" id="pantry-data">{!! json_encode(['rows' => $rows, 'lists' => $lists], JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) !!}</script>
 
 <div x-data="pantryList(JSON.parse(document.getElementById('pantry-data').textContent))">
     <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
@@ -15,6 +15,32 @@
             </p>
         </div>
         <a href="{{ route('menu.index') }}" class="btn btn-secondary"><x-icon name="calendar-days" class="size-4" /> Menú de la semana</a>
+    </div>
+
+    {{-- Lo que vale lo que hay en casa (de lo que se ve con los filtros) --}}
+    <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="card">
+            <div class="stat-label">Valor de la despensa</div>
+            <div class="stat-value"><span x-show="value.estimated">~</span><span x-text="money(value.total)">$0.00</span></div>
+            <div class="mt-1 text-xs text-slate-500">
+                Lo que queda, al precio por unidad más barato.
+                <span x-show="value.estimated">«~»: lo que tiene «suficiente» cuenta como una presentación.</span>
+                <span x-show="value.unpriced"><span x-text="value.unpriced"></span> sin precio no cuentan.</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="stat-label">En casa</div>
+            <div class="stat-value" x-text="count('stocked')">{{ $counts['stocked'] }}</div>
+            <div class="mt-1 text-xs text-slate-500">artículos que tienes</div>
+        </div>
+        <div class="card">
+            <div class="stat-label">Se acabó</div>
+            <div class="stat-value" :class="count('out') && 'text-amber-700'" x-text="count('out')">{{ $counts['out'] }}</div>
+            <div class="mt-1 text-xs text-slate-500">
+                <span x-show="rows.some((r) => r.pantry === 'out' && !r.in_list)">Algunos aún no están en una lista: <button type="button" class="link" @click="show = 'out'">verlos</button>.</span>
+                <span x-show="!rows.some((r) => r.pantry === 'out' && !r.in_list)">Todo lo que se acabó ya está en una lista.</span>
+            </div>
+        </div>
     </div>
 
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -67,6 +93,10 @@
                                            :title="'Cuánto queda (300 g, 1.5 ' + row.unit + '); vacío = suficiente'"
                                            @change="setQty(row, $event.target.value.trim())" @keydown.enter.prevent="$event.target.blur()">
                                 </label>
+                                <span x-show="row.pantry === 'stocked' && row.value !== null" class="w-20 text-right text-sm text-slate-600 tabular-nums"
+                                      :title="row.estimated ? 'Estimado: una presentación al precio más barato' : 'Lo que queda al precio más barato'"
+                                      x-text="(row.estimated ? '~' : '') + money(row.value)"></span>
+                                @include('pantry._to-list')
                             </li>
                         </template>
                     </ul>
