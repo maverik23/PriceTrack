@@ -49,7 +49,8 @@ class DashboardController extends Controller
         $accounts = $finance->accounts();
         $debts = $finance->debts();
         $netWorth = $finance->netWorthOn($today, $accounts, $assets, $debts);
-        $netWorthMonthAgo = $finance->netWorthOn($today->subMonthNoOverflow(), $accounts, $assets, $debts);
+        // "En el mes" = contra el cierre del mes pasado, igual que la pantalla de Patrimonio
+        $netWorthMonthAgo = $finance->netWorthOn($today->subMonthNoOverflow()->endOfMonth()->startOfDay(), $accounts, $assets, $debts);
         $duePayments = RecurringPayment::with('debt')->active()
             ->where('next_due_on', '<', $today->addDays(RecurringPayment::SOON_DAYS + 1)->toDateString())
             ->orderBy('next_due_on')->get();
