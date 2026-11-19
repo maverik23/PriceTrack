@@ -54,6 +54,7 @@ Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, serv
   - **Pagos recurrentes** (luz, internet, suscripciones, mensualidades): cuánto pagas al mes por categoría y los pagos de la semana en el inicio. "Pagado" registra el pago y pasa al siguiente periodo **en la misma fecha** (el día 15 sigue siendo el 15 aunque pagues el 19); si es la mensualidad de una deuda, baja su saldo.
   - **Patrimonio neto** = inversiones + valor de tus bienes − deudas, con su gráfica de 24 meses y el cambio en el mes y en el año.
 - **Fotos y documentos** en los bienes (fotos, factura, póliza, garantía, manual) y en las recetas (la primera foto es la portada). Las fotos grandes se reducen en el navegador antes de subirlas; todo se guarda en tu servidor, fuera de lo público.
+- **Asistente de IA (MCP).** La app trae un servidor [MCP](https://modelcontextprotocol.io) para que Claude u otro asistente consulte y use tus datos: "¿dónde me sale más barata la despensa de esta semana?", "agrega aguacate a la lista", "planea el menú y manda los ingredientes a la lista", "¿qué tareas tengo vencidas?". Ver [Conectar un asistente de IA](#conectar-un-asistente-de-ia-mcp).
 - **Marcas y categorías con autocompletar**, sin duplicados ("lacteos" se une con "Lácteos").
 - Interfaz en español (México), responsiva para usarla en el celular dentro de la tienda.
 
@@ -82,6 +83,8 @@ Variables opcionales (en un `.env` junto al compose, o en Portainer):
 | `APP_KEY` | *(se genera sola)* | Si no la defines, se genera una vez y se guarda en el volumen |
 | `BARCODE_LOOKUP` | `true` | `false` para no consultar internet al buscar un código de barras |
 | `PRICE_FETCH_BROWSER_URL` | `http://browser:3000` | Navegador para Walmart, Sam's, Amazon; vacío para no usarlo |
+| `MCP_ENABLED` | `true` | `false` para quitar la dirección `/mcp` del servidor para asistentes de IA |
+| `MCP_TOKEN` | *(vacío)* | Si la defines, `/mcp` solo responde a quien manda ese token |
 
 ### Portainer
 
@@ -91,6 +94,47 @@ Variables opcionales (en un `.env` junto al compose, o en Portainer):
 4. **Deploy the stack**. Portainer construye la imagen y levanta la app y la base de datos.
 
 Para actualizar: en el stack, **Pull and redeploy**. Tus datos viven en los volúmenes `db` (la base de datos) y `storage` (las fotos y documentos que subes, en `storage/app/private/attachments`): respalda los dos.
+
+## Conectar un asistente de IA (MCP)
+
+PriceTrack incluye un servidor [MCP](https://modelcontextprotocol.io) (Model Context Protocol) en `http://<tu-servidor>:8090/mcp`. Un asistente que hable MCP (Claude Code, Claude Desktop, Cursor, VS Code…) puede consultar y usar la app con 30 herramientas:
+
+| Sección | Qué puede hacer |
+|---|---|
+| Inicio | Resumen de hoy: gasto del mes, comidas, tareas vencidas, mantenimientos, pagos de la semana y patrimonio |
+| Súper | Buscar artículos y ver su precio en cada tienda, crear artículos, registrar precios (o consultarlos en línea), crear listas, agregar artículos, marcar lo comprado, reportes de gasto, inflación y cambios de precio |
+| Cocina | Ver y crear recetas (con costo y macros), ver y armar el menú de la semana, mandar los ingredientes a una lista |
+| Hogar | Ver, crear, cambiar, completar y borrar tareas; ver los bienes con su valor y sus mantenimientos |
+| Finanzas | Ver patrimonio, inversiones, deudas y pagos recurrentes; marcar un pago como pagado |
+
+**Claude Code** (por HTTP):
+
+```bash
+claude mcp add --transport http pricetrack http://localhost:8090/mcp
+```
+
+**Claude Desktop** y otros que usan un programa local (stdio), en su archivo de configuración de servidores MCP:
+
+```json
+{
+  "mcpServers": {
+    "pricetrack": {
+      "command": "docker",
+      "args": ["exec", "-i", "pricetrack", "php", "artisan", "mcp:start", "pricetrack"]
+    }
+  }
+}
+```
+
+En desarrollo con Sail la dirección es `http://localhost:8080/mcp`, y por stdio `./vendor/bin/sail artisan mcp:start pricetrack`.
+
+**Seguridad.** Igual que el resto de la app, `/mcp` no pide login: quien llegue a esa dirección puede leer y modificar tus datos (incluidas tus finanzas). En la red de tu casa suele bastar; si la app es accesible desde fuera, define `MCP_TOKEN` y el asistente tendrá que mandarlo:
+
+```bash
+claude mcp add --transport http pricetrack http://localhost:8090/mcp --header "Authorization: Bearer <tu-token>"
+```
+
+Con `MCP_ENABLED=false` se quita la dirección `/mcp` (la conexión por stdio sigue funcionando porque ya requiere acceso al servidor). Los asistentes que se conectan desde la nube (los conectores de claude.ai, por ejemplo) necesitan que la dirección sea pública y con HTTPS.
 
 ## Desarrollo (Laravel Sail)
 
@@ -137,6 +181,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 ## Código
 
 - `app/Enums/Unit.php`: unidades y conversiones.
+- `app/Mcp/`: servidor MCP (`PriceTrackServer`) y sus herramientas (`Tools/`); rutas en `routes/ai.php`.
 - `app/Models/Price.php`: normaliza `base_qty` y `unit_price` al guardar.
 - `app/Services/ReportService.php`: gasto, inflación y cambios de precio.
 - `app/Support/ListGrid.php` + `resources/js/list-grid.js`: la hoja de la lista de compras.

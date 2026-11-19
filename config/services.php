@@ -48,6 +48,14 @@ return [
         'browser_hosts' => ['walmart.com.mx', 'sams.com.mx', 'soriana.com', 'amazon.com.mx', 'bodegaaurrera.com.mx'],
     ],
 
+    // Servidor MCP para asistentes de IA (routes/ai.php, App\Mcp\PriceTrackServer)
+    'mcp' => [
+        // false quita la dirección /mcp (el servidor local por stdio sigue disponible)
+        'enabled' => (bool) env('MCP_ENABLED', true),
+        // Si se define, /mcp exige "Authorization: Bearer <token>"
+        'token' => env('MCP_TOKEN'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
