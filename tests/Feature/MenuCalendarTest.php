@@ -43,4 +43,23 @@ class MenuCalendarTest extends TestCase
         $response->assertSee('Total del día')->assertSee('$24.00')->assertSee('~720 kcal')->assertSee('Fruta');
         $this->assertEqualsWithDelta(24, $response->viewData('total'), 0.001);
     }
+
+    public function test_the_plus_of_each_meal_is_the_only_way_to_add(): void
+    {
+        $recipe = Recipe::create(['name' => 'Arroz blanco', 'servings' => 4]);
+        $monday = today()->startOfWeek();
+
+        // Un solo formulario (se mueve a la comida cuyo «+» se toca) y un lugar para él en cada comida
+        $html = $this->get(route('menu.index', ['week' => $monday->toDateString()]))->assertOk()
+            ->assertDontSee('Agregar al menú</h2>', false)
+            ->assertSee('id="add-'.$monday->toDateString().'|snack"', false)
+            ->assertSee('data-servings="4"', false)
+            ->getContent();
+        $this->assertSame(1, substr_count($html, 'action="'.route('menu.store').'"'));
+
+        // Si el alta falla, se reabre el mismo «+» con lo escrito
+        $this->from(route('menu.index'))->post(route('menu.store'), ['planned_on' => $monday->toDateString(), 'meal' => 'snack', 'recipe_id' => $recipe->id, 'servings' => 0])
+            ->assertSessionHasErrors('servings');
+        $this->get(route('menu.index'))->assertSee($monday->toDateString().'|snack', false);
+    }
 }
