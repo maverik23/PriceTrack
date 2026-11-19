@@ -19,7 +19,7 @@ class ListShoppingLists extends Tool
     {
         $data = $request->validate(['limit' => ['nullable', 'integer', 'min:1', 'max:50']]);
 
-        $lists = ShoppingList::with(['items.price', 'items.product.prices'])
+        $lists = ShoppingList::with(['items.price', 'items.product.prices', 'tickets'])
             ->orderByDesc('shopped_on')->orderByDesc('id')
             ->take($data['limit'] ?? 10)->get();
 

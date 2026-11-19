@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['shopping_list_id', 'product_id', 'quantity', 'price_id'])]
+#[Fillable(['shopping_list_id', 'product_id', 'quantity', 'price_id', 'bought_qty'])]
 class ShoppingListItem extends Model
 {
     use HasFactory;
@@ -16,11 +16,24 @@ class ShoppingListItem extends Model
     {
         return [
             'quantity' => 'float',
+            'bought_qty' => 'float',
         ];
     }
 
     protected static function booted(): void
     {
+        // Lo comprado (paquetes) es de la tienda elegida: al cambiar de tienda o desmarcar se
+        // vuelve a calcular. Un precio nuevo en la misma tienda lo conserva.
+        static::saving(function (ShoppingListItem $item) {
+            if ($item->exists && $item->isDirty('price_id') && ! $item->isDirty('bought_qty') && $item->bought_qty !== null) {
+                $before = Price::find($item->getOriginal('price_id'));
+                $after = $item->price_id ? Price::find($item->price_id) : null;
+                if (! $before || ! $after || $before->provider_id !== $after->provider_id) {
+                    $item->bought_qty = null;
+                }
+            }
+        });
+
         // Comprar un básico de la despensa que se había acabado lo vuelve a marcar en casa.
         // Solo los que se llevan sin cantidad: no se lleva inventario automático.
         static::saved(function (ShoppingListItem $item) {
@@ -70,12 +83,41 @@ class ShoppingListItem extends Model
     }
 
     /**
-     * Lo que se pagó en la tienda elegida: lo justo si es a granel o los
-     * paquetes completos que cubren la cantidad (ver Price::costFor()).
+     * Lo que se compró, en unidades del precio elegido: lo capturado (`bought_qty`) o, si no,
+     * lo justo a granel o los paquetes completos que cubren lo pedido (Price::packsFor()).
+     */
+    public function boughtUnits(): ?float
+    {
+        if (! $this->price) {
+            return null;
+        }
+        if ($this->bought_qty !== null) {
+            return $this->bought_qty;
+        }
+
+        return $this->price->bulk
+            ? $this->needBaseQty() / $this->price->base_qty
+            : (float) $this->price->packsFor($this->needBaseQty());
+    }
+
+    /** Lo comprado en unidad base (ml, g, pza). */
+    public function boughtBaseQty(): ?float
+    {
+        $units = $this->boughtUnits();
+
+        return $units === null ? null : $units * $this->price->base_qty;
+    }
+
+    /**
+     * Lo que se pagó en la tienda elegida: lo comprado × el precio. Sin capturar cuánto,
+     * es lo justo a granel o los paquetes completos que cubren lo pedido (Price::costFor()).
+     * El ticket de la tienda (ListTicket), si se capturó, manda sobre la suma.
      */
     public function subtotal(): ?float
     {
-        return $this->price?->costFor($this->needBaseQty());
+        $units = $this->boughtUnits();
+
+        return $units === null ? null : round($units * $this->price->price, 2);
     }
 
     /**

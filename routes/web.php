@@ -52,6 +52,7 @@ Route::scopeBindings()->group(function () {
     Route::post('lists/{list}/items', [ShoppingListItemController::class, 'store'])->name('lists.items.store');
     Route::patch('lists/{list}/items/{item}', [ShoppingListItemController::class, 'update'])->name('lists.items.update');
     Route::delete('lists/{list}/items/{item}', [ShoppingListItemController::class, 'destroy'])->name('lists.items.destroy');
+    Route::put('lists/{list}/tickets/{provider}', [ShoppingListItemController::class, 'saveTicket'])->withoutScopedBindings()->name('lists.tickets.update');
     Route::post('lists/{list}/items/{item}/prices', [ShoppingListItemController::class, 'savePrice'])->name('lists.items.prices.store');
     Route::post('lists/{list}/items/{item}/prices/fetch', [ShoppingListItemController::class, 'fetchPrices'])->name('lists.items.prices.fetch');
     Route::post('lists/{list}/items/{item}/links', [ShoppingListItemController::class, 'saveLink'])->name('lists.items.links.store');

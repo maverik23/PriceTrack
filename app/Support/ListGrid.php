@@ -23,7 +23,10 @@ class ListGrid
             'urls' => [
                 'items' => route('lists.items.store', $list, false),
                 'lookup' => route('products.lookup', [], false),
+                'tickets' => url("lists/{$list->id}/tickets"),
             ],
+            // Total del ticket capturado por tienda (lo que se pagó); sin él, la suma de lo marcado ahí
+            'tickets' => (object) $list->tickets()->pluck('total', 'provider_id')->map(fn ($t) => (float) $t)->all(),
             'units' => Unit::meta(),
             'providers' => Provider::orderBy('name')->get(['id', 'name'])->toArray(),
             'products' => Product::with('links')->orderBy('name')->get()->map(fn (Product $p) => self::product($p))->values(),
@@ -59,6 +62,7 @@ class ListGrid
             'id' => $item->id,
             'quantity' => $item->quantity,
             'price_id' => $item->price_id,
+            'bought_qty' => $item->bought_qty,
             'selected' => self::price($item->price, $list),
             'product' => self::product($item->product),
             'cells' => (object) $cells,
@@ -78,6 +82,7 @@ class ListGrid
             'id' => $item->id,
             'quantity' => $item->quantity,
             'price_id' => $item->price_id,
+            'bought_qty' => $item->bought_qty,
             'selected' => self::price($item->price, $list),
         ];
     }

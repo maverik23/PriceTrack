@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ListTicket;
 use App\Models\Price;
 use App\Models\ShoppingListItem;
 use Carbon\CarbonImmutable;
@@ -226,13 +227,42 @@ class ReportService
             ->whereHas('shoppingList', fn ($q) => $q->whereBetween('shopped_on', [$from->toDateString(), $to->toDateString()]))
             ->get();
 
-        $rows = $items->map(fn (ShoppingListItem $item) => (object) [
-            'date' => $item->shoppingList->shopped_on->toImmutable(),
-            'amount' => $item->subtotal() ?? 0,
-            'provider' => $item->price->provider->name,
-            'category' => $item->product->category ?: 'Sin categoría',
-            'list_id' => $item->shopping_list_id,
-        ])->sortBy(fn ($r) => $r->date->timestamp)->values();
+        // El ticket capturado de una tienda (ListTicket) es lo que se pagó: la diferencia contra
+        // la suma de sus artículos (descuentos) se reparte entre ellos en proporción
+        $tickets = ListTicket::with(['provider', 'shoppingList'])
+            ->whereHas('shoppingList', fn ($q) => $q->whereBetween('shopped_on', [$from->toDateString(), $to->toDateString()]))
+            ->get()
+            ->keyBy(fn (ListTicket $t) => $t->shopping_list_id.':'.$t->provider_id);
+
+        $rows = collect();
+        $groups = $items->groupBy(fn (ShoppingListItem $item) => $item->shopping_list_id.':'.$item->price->provider_id);
+        foreach ($groups as $key => $group) {
+            $computed = $group->sum(fn (ShoppingListItem $item) => $item->subtotal() ?? 0);
+            $ticket = $tickets->get($key);
+            $factor = $ticket && $computed > 0 ? $ticket->total / $computed : 1.0;
+            foreach ($group as $item) {
+                $rows->push((object) [
+                    'date' => $item->shoppingList->shopped_on->toImmutable(),
+                    'amount' => ($item->subtotal() ?? 0) * $factor,
+                    'provider' => $item->price->provider->name,
+                    'category' => $item->product->category ?: 'Sin categoría',
+                    'list_id' => $item->shopping_list_id,
+                ]);
+            }
+        }
+        // Ticket de una tienda sin artículos marcados ahí: cuenta completo, sin desglose
+        foreach ($tickets as $key => $ticket) {
+            if (! $groups->has($key) && $ticket->total > 0) {
+                $rows->push((object) [
+                    'date' => $ticket->shoppingList->shopped_on->toImmutable(),
+                    'amount' => $ticket->total,
+                    'provider' => $ticket->provider->name,
+                    'category' => 'Sin desglose',
+                    'list_id' => $ticket->shopping_list_id,
+                ]);
+            }
+        }
+        $rows = $rows->sortBy(fn ($r) => $r->date->timestamp)->values();
 
         $total = (float) $rows->sum('amount');
 

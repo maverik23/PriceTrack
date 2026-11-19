@@ -36,7 +36,7 @@ class GetSummary extends Tool
             'groceries' => [
                 'spent_this_month' => round($month['total'], 2),
                 'spent_last_month' => round($lastMonth['total'], 2),
-                'recent_lists' => ShoppingList::with(['items.price', 'items.product.prices'])
+                'recent_lists' => ShoppingList::with(['items.price', 'items.product.prices', 'tickets'])
                     ->orderByDesc('shopped_on')->orderByDesc('id')->take(4)->get()
                     ->map(fn (ShoppingList $l) => Present::shoppingList($l))->all(),
             ],

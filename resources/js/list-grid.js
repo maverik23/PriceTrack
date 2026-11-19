@@ -115,6 +115,9 @@ export default function listGrid(config) {
 
     const drafts = {};
     const qty = {};
+    const tickets = asObject(config.tickets);
+    const ticketDrafts = {};
+    for (const p of config.providers) ticketDrafts[p.id] = tickets[p.id] != null ? Number(tickets[p.id]).toFixed(2) : '';
     for (const row of rows) {
         qty[row.id] = qtyText(row, row.quantity, config.units);
         for (const p of config.providers) {
@@ -129,6 +132,10 @@ export default function listGrid(config) {
         products,
         drafts,
         qty,
+        // Lo comprado que se está escribiendo en la tienda elegida, y el total de cada ticket
+        boughtDrafts: {},
+        tickets,
+        ticketDrafts,
         errors: {},
         saving: {},
         flashed: {},
@@ -264,8 +271,63 @@ export default function listGrid(config) {
         isBought(row, pid) {
             return row.selected && row.selected.provider_id === pid;
         },
+        /**
+         * Lo comprado en unidades del precio elegido: lo capturado (`bought_qty`) o lo que cubre
+         * lo pedido (lo justo a granel, paquetes completos si no). Igual que ShoppingListItem::boughtUnits().
+         */
+        boughtUnits(row) {
+            const v = this.selectedValue(row);
+            if (!v) return null;
+            if (row.bought_qty != null) return Number(row.bought_qty);
+            return v.bulk ? this.need(row) / v.base : packs(this.need(row), v.base);
+        },
+        /** Lo pagado por el artículo: lo comprado × el precio (ShoppingListItem::subtotal()). */
         subtotal(row) {
-            return row.selected ? this.costOf(row, this.selectedValue(row)) : null;
+            const units = this.boughtUnits(row);
+            return units === null ? null : cents(units * row.selected.price);
+        },
+        /** Lo comprado no alcanza para lo pedido. */
+        boughtShort(row) {
+            const units = this.boughtUnits(row);
+            return units !== null && units * this.selectedValue(row).base < this.need(row) * (1 - PACK_TOLERANCE);
+        },
+        /** Texto para el campo "Compré" de la tienda elegida: paquetes ("3") o, a granel, el contenido ("1.2 kg"). */
+        boughtInput(row) {
+            const units = this.boughtUnits(row);
+            if (units === null) return '';
+            const v = this.selectedValue(row);
+            return v.bulk ? amountText(units * v.base, this.units[row.product.unit].dimension) : plain(units);
+        },
+        boughtDraft(row) {
+            return this.boughtDrafts[row.id] ?? this.boughtInput(row);
+        },
+        async commitBought(row, text) {
+            const v = this.selectedValue(row);
+            if (!v) return;
+            const k = this.key(row, row.selected.provider_id);
+            const t = norm(text).replace(/,/g, '.');
+            let units;
+            if (t === '') {
+                units = null;
+            } else {
+                const m = t.match(/^(\d+(?:\.\d+)?|\.\d+)\s*([a-zñ]*)\.?$/);
+                const unit = m && m[2] ? UNIT_ALIASES[m[2]] : null;
+                if (!m || (m[2] && (!unit || this.units[unit].dimension !== this.units[row.product.unit].dimension))) {
+                    this.errors[k] = v.bulk ? 'Escribe cuánto: 1.2 kg, 800 g…' : 'Escribe cuántos paquetes: 1, 2, 3…';
+                    return;
+                }
+                // Con unidad: el contenido (1.2 kg); sin unidad: paquetes (o múltiplos de "por kg")
+                units = unit ? (parseFloat(m[1]) * this.units[unit].base) / v.base : parseFloat(m[1]);
+                if (!(units > 0)) return;
+                units = Math.round(units * 1e4) / 1e4;
+            }
+            delete this.errors[k];
+            delete this.boughtDrafts[row.id];
+            if ((row.bought_qty ?? null) === units) return;
+            await this.track(k, this.request('PATCH', `${this.urls.items}/${row.id}`, { bought_qty: units }).then((res) => {
+                row.bought_qty = res.item.bought_qty;
+                this.flash(k);
+            }));
         },
         /** Pendiente: en la tienda más barata para lo que necesitas (igual que ShoppingListItem::estimatedSubtotal()). */
         estimated(row) {
@@ -297,11 +359,16 @@ export default function listGrid(config) {
         get purchasedCount() {
             return this.rows.filter((r) => r.selected).length;
         },
+        /** Lo pagado en la lista: el ticket de cada tienda o, sin ticket, la suma de lo marcado ahí (ShoppingList::total()). */
         get totalPurchased() {
+            return this.providers.reduce((s, p) => s + this.ticketTotal(p.id), 0);
+        },
+        /** La suma de lo marcado, sin los tickets (para comparar con lo de cada tienda). */
+        get totalMarked() {
             return this.rows.reduce((s, r) => s + (this.subtotal(r) ?? 0), 0);
         },
         get totalEstimated() {
-            return this.rows.reduce((s, r) => s + (this.subtotal(r) ?? this.estimated(r) ?? 0), 0);
+            return this.totalPurchased + this.rows.reduce((s, r) => s + (r.selected ? 0 : (this.estimated(r) ?? 0)), 0);
         },
         /** Ahorro real: lo que costaba lo que necesitabas en la tienda más cara (paquetes completos) − lo que pagaste. */
         get realSavings() {
@@ -317,7 +384,7 @@ export default function listGrid(config) {
         },
         /** Lo que te habrías ahorrado comprando cada artículo en su tienda más barata. */
         get possibleSavings() {
-            return Math.max(0, this.totalPurchased - this.cheapestTotal);
+            return Math.max(0, this.totalMarked - this.cheapestTotal);
         },
         basket(pid) {
             let covered = 0;
@@ -339,6 +406,30 @@ export default function listGrid(config) {
         boughtAt(pid) {
             return this.rows.reduce((s, r) => s + (this.isBought(r, pid) ? this.subtotal(r) : 0), 0);
         },
+        /** Lo pagado en esa tienda: el ticket capturado o, si no, la suma de lo marcado ahí. */
+        ticketTotal(pid) {
+            return this.tickets[pid] != null ? Number(this.tickets[pid]) : this.boughtAt(pid);
+        },
+        hasTicket(pid) {
+            return this.tickets[pid] != null;
+        },
+        async commitTicket(pid) {
+            const text = (this.ticketDrafts[pid] ?? '').toString().trim();
+            const value = text === '' ? null : parseDecimal(text);
+            const k = `ticket:${pid}`;
+            if (text !== '' && !(value >= 0)) {
+                this.errors[k] = 'Escribe el total del ticket, ej. 1234.50';
+                return;
+            }
+            delete this.errors[k];
+            if ((this.tickets[pid] ?? null) === value) return;
+            await this.track(k, this.request('PUT', `${this.urls.tickets}/${pid}`, { total: value }).then((res) => {
+                if (res.ticket == null) delete this.tickets[pid];
+                else this.tickets[pid] = Number(res.ticket);
+                this.ticketDrafts[pid] = res.ticket == null ? '' : Number(res.ticket).toFixed(2);
+                this.flash(k);
+            }));
+        },
         /** Cuántos artículos se compraron en esa tienda. */
         boughtCount(pid) {
             return this.rows.filter((r) => this.isBought(r, pid)).length;
@@ -356,10 +447,27 @@ export default function listGrid(config) {
             const v = this.selectedValue(row);
             if (!v) return '';
             const dimension = this.units[row.product.unit].dimension;
-            if (v.bulk) return `${amountText(this.need(row), dimension)} a granel`;
-            const n = packs(this.need(row), v.base);
+            const units = this.boughtUnits(row);
+            if (v.bulk) return `${amountText(units * v.base, dimension)} a granel`;
             const pres = row.selected.presentation;
-            return n === 1 ? pres : `${n} × ${pres} = ${amountText(n * v.base, dimension)}`;
+            return units === 1 ? pres : `${plain(units)} × ${pres} = ${amountText(units * v.base, dimension)}`;
+        },
+        /** Lo comprado, corto para la tarjeta del artículo: "3 × 900 g" o, a granel, "1.2 kg". */
+        boughtShortText(row) {
+            const v = this.selectedValue(row);
+            if (!v) return '';
+            const units = this.boughtUnits(row);
+            if (v.bulk) return amountText(units * v.base, this.units[row.product.unit].dimension);
+            return units === 1 ? row.selected.presentation : `${plain(units)} × ${row.selected.presentation}`;
+        },
+        /** Lo comprado en contenido: "2.7 kg". */
+        boughtAmount(row) {
+            const units = this.boughtUnits(row);
+            return units === null ? '' : amountText(units * this.selectedValue(row).base, this.units[row.product.unit].dimension);
+        },
+        /** Lo pedido en contenido: "1.8 kg" (para "pedido / comprado"). */
+        needAmount(row) {
+            return amountText(this.need(row), this.units[row.product.unit].dimension);
         },
 
         // ---------- guardar ----------
@@ -409,6 +517,7 @@ export default function listGrid(config) {
             return this.track(k, this.request('POST', `${this.urls.items}/${row.id}/prices`, body).then((res) => {
                 row.cells[pid] = res.price;
                 row.price_id = res.item.price_id;
+                row.bought_qty = res.item.bought_qty;
                 row.selected = res.item.selected;
                 // No pisar lo que se siguió escribiendo mientras se guardaba
                 const cur = this.drafts[k];
@@ -429,6 +538,7 @@ export default function listGrid(config) {
             if (res.price) row.cells[pid] = res.price;
             else delete row.cells[pid];
             row.price_id = res.item.price_id;
+            row.bought_qty = res.item.bought_qty;
             row.selected = res.item.selected;
             this.syncCell(row, pid);
         },
@@ -440,6 +550,7 @@ export default function listGrid(config) {
             const priceId = row.price_id === c.id ? null : c.id;
             await this.track(k, this.request('PATCH', `${this.urls.items}/${row.id}`, { price_id: priceId }).then((res) => {
                 row.price_id = res.item.price_id;
+                row.bought_qty = res.item.bought_qty;
                 row.selected = res.item.selected;
             }));
         },
@@ -467,6 +578,7 @@ export default function listGrid(config) {
             row.links = asObject(res.row.links);
             row.stores = asObject(res.row.stores);
             row.price_id = res.row.price_id;
+            row.bought_qty = res.row.bought_qty;
             row.selected = res.row.selected;
             for (const r of res.results) {
                 const k = this.key(row, r.provider_id);

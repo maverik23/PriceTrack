@@ -28,7 +28,7 @@ class DashboardController extends Controller
         $year = $reports->spending($today->subYear()->addDay()->startOfDay(), $today->endOfDay());
         $inflation = $reports->inflation($today->subYear()->addDay()->startOfDay(), $today->endOfDay());
         $changes = $reports->priceChanges($today->subDays(60)->startOfDay(), $today->endOfDay())->take(5);
-        $lists = ShoppingList::with(['items.price', 'items.product.prices'])
+        $lists = ShoppingList::with(['items.price', 'items.product.prices', 'tickets'])
             ->orderByDesc('shopped_on')->orderByDesc('id')
             ->take(4)->get();
 

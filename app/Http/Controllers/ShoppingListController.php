@@ -13,7 +13,7 @@ class ShoppingListController extends Controller
     {
         $status = in_array($request->query('status'), ['done', 'all'], true) ? $request->query('status') : 'pending';
 
-        $lists = ShoppingList::with(['items.price.provider', 'items.product.prices'])
+        $lists = ShoppingList::with(['items.price.provider', 'items.product.prices', 'tickets'])
             ->when($status === 'pending', fn ($q) => $q->pending())
             ->when($status === 'done', fn ($q) => $q->done())
             ->orderByDesc('shopped_on')

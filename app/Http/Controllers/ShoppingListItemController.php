@@ -6,6 +6,7 @@ use App\Enums\Unit;
 use App\Models\Price;
 use App\Models\Product;
 use App\Models\ProductLink;
+use App\Models\Provider;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
 use App\Services\PriceUpdater;
@@ -80,7 +81,9 @@ class ShoppingListItemController extends Controller
             'quantity' => ['sometimes', 'numeric', 'gt:0', 'max:9999'],
             // Solo se puede elegir un precio del mismo artículo
             'price_id' => ['sometimes', 'nullable', Rule::exists('prices', 'id')->where('product_id', $item->product_id)],
-        ]);
+            // Lo comprado en unidades del precio elegido (paquetes o, a granel, su contenido); null = lo que cubre lo pedido
+            'bought_qty' => ['sometimes', 'nullable', 'numeric', 'gt:0', 'max:99999'],
+        ], [], ['bought_qty' => 'cantidad comprada']);
 
         $item->update($data);
 
@@ -91,6 +94,28 @@ class ShoppingListItemController extends Controller
         return back()->with('success', array_key_exists('price_id', $data)
             ? ($data['price_id'] ? 'Marcado como comprado.' : 'Compra desmarcada.')
             : 'Cantidad actualizada.');
+    }
+
+    /**
+     * Total del ticket de una tienda en esta lista: lo que de verdad se pagó (con descuentos).
+     * Vacío lo quita y vuelve a contar la suma de lo marcado ahí.
+     */
+    public function saveTicket(Request $request, ShoppingList $list, Provider $provider)
+    {
+        $data = $request->validate(['total' => ['nullable', 'numeric', 'min:0', 'max:9999999']], [], ['total' => 'total del ticket']);
+
+        if (($data['total'] ?? null) === null) {
+            $list->tickets()->where('provider_id', $provider->id)->delete();
+        } else {
+            $list->tickets()->updateOrCreate(['provider_id' => $provider->id], ['total' => round((float) $data['total'], 2)]);
+        }
+        $list->load(['items.price', 'tickets']);
+
+        return response()->json([
+            'provider_id' => $provider->id,
+            'ticket' => $list->tickets->firstWhere('provider_id', $provider->id)?->total,
+            'total' => round($list->total(), 2),
+        ]);
     }
 
     public function destroy(Request $request, ShoppingList $list, ShoppingListItem $item)

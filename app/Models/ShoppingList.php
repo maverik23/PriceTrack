@@ -38,16 +38,51 @@ class ShoppingList extends Model
         return $this->shopped_on->isFuture() ? today() : $this->shopped_on->copy();
     }
 
-    /** Total de lo comprado (artículos con precio elegido). */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(ListTicket::class);
+    }
+
+    /**
+     * Lo pagado en cada tienda: la suma de lo marcado ahí (`computed`, con cuántos artículos)
+     * y el total del ticket si se capturó (`ticket`); `paid` = el ticket o, si no, la suma.
+     * Necesita `items.price` cargado.
+     *
+     * @return array<int, array{computed: float, items: int, ticket: ?float, paid: float}>
+     */
+    public function paidByProvider(): array
+    {
+        $byProvider = [];
+        foreach ($this->items as $item) {
+            if ($item->price) {
+                $row = &$byProvider[$item->price->provider_id];
+                $row['computed'] = ($row['computed'] ?? 0) + ($item->subtotal() ?? 0);
+                $row['items'] = ($row['items'] ?? 0) + 1;
+                unset($row);
+            }
+        }
+        foreach ($this->tickets as $ticket) {
+            $byProvider[$ticket->provider_id]['ticket'] = $ticket->total;
+        }
+
+        return array_map(fn (array $r) => [
+            'computed' => round($r['computed'] ?? 0, 2),
+            'items' => $r['items'] ?? 0,
+            'ticket' => $r['ticket'] ?? null,
+            'paid' => round($r['ticket'] ?? $r['computed'] ?? 0, 2),
+        ], $byProvider);
+    }
+
+    /** Total pagado: el ticket de cada tienda o, sin ticket, la suma de lo marcado ahí. */
     public function total(): float
     {
-        return (float) $this->items->sum(fn (ShoppingListItem $item) => $item->subtotal() ?? 0);
+        return (float) array_sum(array_column($this->paidByProvider(), 'paid'));
     }
 
     /** Lo comprado + lo pendiente estimado con el más barato. */
     public function estimatedTotal(): float
     {
-        return (float) $this->items->sum(fn (ShoppingListItem $item) => $item->subtotal() ?? $item->estimatedSubtotal() ?? 0);
+        return $this->total() + (float) $this->items->whereNull('price_id')->sum(fn (ShoppingListItem $item) => $item->estimatedSubtotal() ?? 0);
     }
 
     public function purchasedCount(): int
