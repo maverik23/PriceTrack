@@ -17,30 +17,33 @@
     </div>
 </div>
 
-<form method="GET" class="mb-3 flex flex-wrap gap-2">
+<form method="GET" id="recipes-filter" class="mb-3 flex flex-wrap gap-2" data-live-filter data-live-links>
     <div class="relative w-full sm:max-w-xs">
         <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
-        <input type="search" name="q" value="{{ request('q') }}" class="input pl-9" placeholder="Buscar receta…" aria-label="Buscar receta">
+        <input type="search" name="q" value="{{ request('q') }}" autocomplete="off" class="input pl-9" placeholder="Buscar receta…" aria-label="Buscar receta">
     </div>
-    @if ($tag = request('tag'))<input type="hidden" name="tag" value="{{ $tag }}">@endif
-    @if ($pantry)<input type="hidden" name="pantry" value="{{ $pantry }}">@endif
-    <select name="category" class="input w-auto max-w-52" onchange="this.form.submit()" aria-label="Categoría">
+    {{-- Siempre presentes (vacíos = sin filtro) para que el filtro en vivo los conserve al cambiar de etiqueta --}}
+    <input type="hidden" name="tag" value="{{ request('tag') }}">
+    <input type="hidden" name="pantry" value="{{ $pantry }}">
+    <select name="category" class="input w-auto max-w-52" aria-label="Categoría">
         <option value="">Todas las categorías</option>
         @foreach ($categories as $category)
             <option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>
         @endforeach
     </select>
-    <select name="rating" class="input w-auto" onchange="this.form.submit()" aria-label="Calificación">
+    <select name="rating" class="input w-auto" aria-label="Calificación">
         <option value="">Cualquier calificación</option>
         @foreach ([5 => '★★★★★', 4 => '★★★★ o más', 3 => '★★★ o más'] as $value => $label)
             <option value="{{ $value }}" @selected((int) request('rating') === $value)>{{ $label }}</option>
         @endforeach
     </select>
-    <button class="btn btn-secondary">Buscar</button>
-    @if ($filtered)
-        <a href="{{ route('recipes.index') }}" class="btn btn-ghost">Limpiar</a>
-    @endif
+    <span id="recipes-clear" data-live-part>
+        @if ($filtered)
+            <a href="{{ route('recipes.index') }}" class="btn btn-ghost">Limpiar</a>
+        @endif
+    </span>
 </form>
+<div id="recipes-results" data-live-results>
 
 {{-- Con lo que hay en la despensa (Recipe::pantryCheck()) --}}
 <div class="mb-3 flex flex-wrap items-center gap-2" aria-label="Despensa">
@@ -131,4 +134,5 @@
         @endforeach
     </div>
 @endif
+</div>
 @endsection

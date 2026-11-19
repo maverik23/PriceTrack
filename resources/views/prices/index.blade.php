@@ -10,7 +10,7 @@
     <a href="{{ route('prices.create') }}" class="btn btn-primary">+ Capturar precio</a>
 </div>
 
-<form method="GET" class="card mb-4 grid grid-cols-1 gap-3 sm:grid-cols-5 sm:items-end">
+<form method="GET" id="prices-filter" class="card mb-4 grid grid-cols-1 gap-3 sm:grid-cols-5 sm:items-end" data-live-filter data-live-links>
     <div>
         <label class="label" for="f-product">Artículo</label>
         <select id="f-product" name="product_id" class="input">
@@ -38,10 +38,10 @@
         <input id="f-to" type="date" name="to" value="{{ request('to') }}" class="input">
     </div>
     <div class="flex gap-2">
-        <button class="btn btn-primary">Filtrar</button>
-        <a href="{{ route('prices.index') }}" class="btn btn-ghost">Limpiar</a>
+        <a href="{{ route('prices.index') }}" class="btn btn-ghost">Limpiar filtros</a>
     </div>
 </form>
+<div id="prices-results" data-live-results>
 
 <div class="card overflow-x-auto p-0">
     <table class="table">
@@ -76,4 +76,5 @@
     </table>
 </div>
 <div class="mt-4">{{ $prices->links() }}</div>
+</div>
 @endsection

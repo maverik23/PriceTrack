@@ -167,6 +167,7 @@
 
 <x-barcode-scanner />
 <x-branch-picker />
+<x-price-run-status />
 
 </body>
 </html>

@@ -230,3 +230,72 @@ export function branchPicker(urls) {
         },
     };
 }
+
+// ---------- Actualización de precios en el servidor ----------
+
+/**
+ * Avance de "Actualizar todos los precios", que corre en el servidor (App\Jobs\ProcessPriceRun):
+ * vive en el layout (<x-price-run-status />), así que se ve en cualquier pantalla y sigue al
+ * recargar. Pregunta el avance cada 2 s mientras corre. El objeto `run` tiene la forma de
+ * createRun() para usar <x-progress-panel />.
+ */
+export function priceRunStatus(config) {
+    return {
+        run: null,
+        timer: null,
+        error: '',
+
+        init() {
+            const self = this;
+            this.run = {
+                id: null, url: null, active: false, finished: false, stalled: false, title: '', total: 0, done: 0, ok: 0, failures: [], current: '', cancelled: false,
+                get percent() {
+                    return this.total ? Math.round((this.done / this.total) * 100) : 0;
+                },
+                cancel() {
+                    self.cancel();
+                },
+                dismiss() {
+                    self.dismiss();
+                },
+            };
+            if (config.run) this.apply(config.run);
+            window.addEventListener('price-run-started', (e) => this.apply(e.detail));
+        },
+        apply(state) {
+            Object.assign(this.run, state);
+            clearTimeout(this.timer);
+            if (this.run.active) this.timer = setTimeout(() => this.poll(), 2000);
+        },
+        async poll() {
+            try {
+                this.apply((await requestJson('GET', this.run.url, null, { retry: false })).run);
+                this.error = '';
+            } catch (e) {
+                this.error = e.message;
+                this.timer = setTimeout(() => this.poll(), 5000);
+            }
+        },
+        async cancel() {
+            this.run.cancelled = true;
+            try {
+                this.apply((await requestJson('POST', `${this.run.url}/cancel`, {}, { retry: false })).run);
+            } catch (e) {
+                this.error = e.message;
+            }
+        },
+        async resume() {
+            try {
+                this.apply((await requestJson('POST', `${this.run.url}/resume`, {}, { retry: false })).run);
+            } catch (e) {
+                this.error = e.message;
+            }
+        },
+        dismiss() {
+            Object.assign(this.run, { finished: false, failures: [] });
+        },
+        reload() {
+            window.location.reload();
+        },
+    };
+}

@@ -10,6 +10,7 @@
     <a href="{{ route('lists.create') }}" class="btn btn-primary">+ Nueva lista</a>
 </div>
 
+<div id="lists-results" data-live-results>
 <nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtrar listas">
     @foreach (['pending' => 'Pendientes', 'done' => 'Compradas', 'all' => 'Todas'] as $key => $label)
         <a href="{{ route('lists.index', $key === 'pending' ? [] : ['status' => $key]) }}" class="chip {{ $status === $key ? 'is-active' : '' }}" @if ($status === $key) aria-current="page" @endif>
@@ -67,4 +68,5 @@
     </table>
 </div>
 <div class="mt-4">{{ $lists->links() }}</div>
+</div>
 @endsection

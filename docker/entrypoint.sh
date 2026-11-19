@@ -37,4 +37,16 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+# Cola en segundo plano ("Actualizar todos los precios"): un trabajador que se reinicia solo
+# si se cae y cada hora (para tomar cambios de configuración). QUEUE_WORKER=false lo apaga.
+if [ "${QUEUE_WORKER:-true}" != "false" ] && [ "${QUEUE_CONNECTION:-database}" != "sync" ]; then
+    (
+        while true; do
+            php artisan queue:work --sleep=2 --tries=1 --timeout=180 --max-time=3600 --quiet || true
+            sleep 2
+        done
+    ) &
+    echo "[pricetrack] Cola en segundo plano iniciada"
+fi
+
 exec docker-php-entrypoint "$@"

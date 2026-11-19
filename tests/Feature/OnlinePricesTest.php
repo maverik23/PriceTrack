@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ProcessPriceRun;
 use App\Mcp\PriceTrackServer;
 use App\Mcp\Tools\FetchOnlinePrices;
 use App\Mcp\Tools\SetStoreBranch;
 use App\Models\Price;
+use App\Models\PriceRun;
 use App\Models\Product;
 use App\Models\ProductLink;
 use App\Models\Provider;
@@ -13,10 +15,12 @@ use App\Models\Setting;
 use App\Models\ShoppingList;
 use App\Services\PriceFetcher;
 use App\Services\PriceFetchException;
+use App\Services\PriceUpdater;
 use App\Services\StoreBranches;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -576,5 +580,55 @@ class OnlinePricesTest extends TestCase
             ->assertJsonPath('links.0.provider_id', $this->costco->id)
             ->assertJsonPath('links.1.provider_id', $this->chedraui->id);
         $this->get(route('products.index'))->assertOk()->assertSee('Actualizar todos los precios');
+    }
+
+    public function test_bulk_update_runs_in_the_background_and_keeps_its_progress(): void
+    {
+        $this->fakeChedraui();
+        Http::fake(['www.costco.com.mx/*' => Http::response(['code' => '694555', 'name' => 'Aspiradora', 'price' => ['value' => 4149]])]);
+        $milk = Product::create(['name' => 'Leche', 'size' => 1.8, 'unit' => 'l']);
+        $tv = Product::create(['name' => 'Aspiradora', 'size' => 1, 'unit' => 'item']);
+        $milk->links()->create(['provider_id' => $this->chedraui->id, 'url' => self::MILK]);
+        $tv->links()->create(['provider_id' => $this->costco->id, 'url' => self::COSTCO]);
+        $broken = Product::create(['name' => 'Café', 'size' => 1, 'unit' => 'kg']);
+        $broken->links()->create(['provider_id' => $this->costco->id, 'url' => 'https://www.costco.com.mx/sin-codigo']);
+
+        // En las pruebas la cola es síncrona: la corrida termina dentro de la petición
+        $run = $this->postJson(route('price-runs.store'))->assertCreated()->json('run');
+        $this->assertSame(3, $run['total']);
+
+        $state = $this->getJson($run['url'])->assertOk()->json('run');
+        $this->assertSame(['done', 3, 2, false], [$state['status'], $state['done'], $state['ok'], $state['active']]);
+        $this->assertSame('Café — Costco', $state['failures'][0]['label']);
+        $this->assertSame(2, Price::count());
+
+        // Saltar proveedores sin sucursal elegida
+        $run = $this->postJson(route('price-runs.store'), ['skip_providers' => [$this->costco->id]])->assertCreated()->json('run');
+        $this->assertSame(1, $run['total']);
+    }
+
+    public function test_a_running_bulk_update_shows_on_every_page_and_can_be_cancelled_or_resumed(): void
+    {
+        Queue::fake();
+        $product = Product::create(['name' => 'Leche', 'size' => 1, 'unit' => 'l']);
+        $product->links()->create(['provider_id' => $this->chedraui->id, 'url' => self::MILK]);
+
+        $run = $this->postJson(route('price-runs.store'))->assertCreated()->json('run');
+        Queue::assertPushed(ProcessPriceRun::class);
+        // Ya corre: no se inicia otra
+        $this->assertSame($run['id'], $this->postJson(route('price-runs.store'))->assertOk()->json('run.id'));
+
+        // Al recargar cualquier pantalla se ve el avance
+        $this->get(route('lists.index'))->assertOk()->assertSee('Actualizando todos los precios');
+
+        // Sin avance en un rato: se ofrece reanudar
+        PriceRun::query()->update(['updated_at' => now()->subMinutes(10)]);
+        $this->assertTrue($this->getJson($run['url'])->json('run.stalled'));
+        $this->postJson($run['url'].'/resume')->assertOk()->assertJsonPath('run.stalled', false);
+
+        $this->postJson($run['url'].'/cancel')->assertOk()->assertJsonPath('run.cancelled', true);
+        (new ProcessPriceRun($run['id']))->handle(app(PriceUpdater::class));
+        $this->assertSame('cancelled', PriceRun::find($run['id'])->status);
+        $this->get(route('lists.index'))->assertDontSee('Actualizando todos los precios');
     }
 }

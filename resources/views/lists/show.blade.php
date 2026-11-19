@@ -71,7 +71,8 @@
                 {{-- La ayuda de teclado no sirve en el celular --}}
                 <span class="hidden sm:inline">Escribe y usa <kbd class="rounded bg-slate-100 px-1">Tab</kbd> / <kbd class="rounded bg-slate-100 px-1">Enter</kbd> / <kbd class="rounded bg-slate-100 px-1">↑↓</kbd>.
                 <kbd class="rounded bg-slate-100 px-1">Enter</kbd> sobre un precio anterior lo confirma para esta fecha; borrarlo deshace lo capturado hoy.</span>
-                En <strong class="text-slate-700">Cant.</strong> pon lo que necesitas (<code>2</code> o <code>610 g</code>). Si se vende a granel escribe el precio como <code>54/kg</code>.
+                En <strong class="text-slate-700">Pedido</strong> pon lo que necesitas (<code>2</code> o <code>610 g</code>). Marca con el círculo la tienda donde lo compraste y corrige ahí el precio y la presentación que te llevaste.
+                Si se vende a granel escribe el precio como <code>54/kg</code>.
                 Pega en una celda la dirección del artículo en esa tienda para consultar su precio en línea.
             </p>
             <p class="flex items-center gap-3 whitespace-nowrap">
@@ -82,39 +83,73 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="sheet w-full border-collapse text-sm" :style="`min-width: ${320 + providers.length * 180}px`">
+            <table class="sheet w-full border-collapse text-sm" :style="`min-width: ${290 + providers.length * 180}px`">
                 <thead class="bg-slate-50 text-xs text-slate-500">
                 <tr>
-                    <th class="sticky left-0 z-10 bg-slate-50 px-3 py-2 text-left font-semibold">Artículo</th>
-                    <th class="w-24 min-w-24 px-2 py-2 text-right font-semibold">Cant.</th>
+                    <th class="sticky left-0 z-10 bg-slate-50 px-3 py-2 text-left font-semibold">Artículo <span class="font-normal text-slate-400">· lo que pides y lo que compraste</span></th>
                     <template x-for="p in providers" :key="p.id">
-                        <th class="min-w-44 px-2 py-2 text-right font-semibold text-slate-700" x-text="p.name"></th>
+                        <th class="min-w-44 px-2 py-2 text-right font-semibold text-slate-700">
+                            <span x-text="p.name"></span>
+                            <span class="block font-normal text-slate-400" x-show="boughtCount(p.id)" x-text="boughtCount(p.id) + (boughtCount(p.id) === 1 ? ' comprado' : ' comprados')"></span>
+                        </th>
                     </template>
-                    <th class="w-8"></th>
                 </tr>
                 </thead>
 
                 <tbody>
                 <template x-for="(row, ri) in rows" :key="row.id">
                     <tr class="group align-top">
-                        <td class="sticky left-0 z-10 max-w-56 min-w-44 bg-surface px-3 py-2 group-hover:bg-slate-50">
+                        {{-- Artículo: lo que pides, lo que compraste (dónde, cuánto y cuánto pagaste) y sus acciones --}}
+                        <td class="sticky left-0 z-10 w-56 max-w-56 min-w-52 bg-surface px-3 py-2 group-hover:bg-slate-50 sm:w-72 sm:max-w-72 sm:min-w-64">
                             <div class="flex items-start gap-2">
                                 <span class="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full text-[10px]"
                                       :class="row.selected ? 'bg-brand text-on-brand' : 'border border-slate-300'"
+                                      :title="row.selected ? 'Comprado' : 'Pendiente: elige la tienda donde lo compraste'"
                                       x-text="row.selected ? '✓' : ''"></span>
-                                <div class="min-w-0">
-                                    <a :href="row.product.url" class="block truncate font-medium text-slate-900 hover:text-emerald-700" x-text="row.product.name"></a>
+                                <div class="min-w-0 flex-1">
+                                    <a :href="row.product.url" class="block truncate font-medium text-slate-900 hover:text-emerald-700" :title="row.product.name" x-text="row.product.name"></a>
                                     <div class="truncate text-xs text-slate-500" x-text="[row.product.label, row.product.brand].filter(Boolean).join(' · ')"></div>
                                 </div>
+                                <div class="-mt-1 -mr-1 flex shrink-0 items-center">
+                                    <button type="button" tabindex="-1" x-show="Object.keys(row.links).length" class="icon-btn size-7 text-slate-400 hover:text-emerald-700"
+                                            :disabled="rowFetching[row.id]" @click="fetchRow(row)"
+                                            title="Traer el precio de hoy de todas las tiendas con dirección" aria-label="Traer precios de todas las tiendas">
+                                        <x-icon name="refresh-cw" class="size-3.5" ::class="rowFetching[row.id] && 'animate-spin text-emerald-700'" />
+                                    </button>
+                                    <button type="button" tabindex="-1" class="icon-btn size-7 text-slate-400 hover:text-red-600"
+                                            title="Quitar de la lista" :aria-label="'Quitar ' + row.product.name + ' de la lista'" @click="removeRow(row)">
+                                        <x-icon name="trash" class="size-3.5" />
+                                    </button>
+                                </div>
                             </div>
-                        </td>
-
-                        <td class="px-1 py-1 transition-colors" :class="flashed[row.id + ':qty'] && 'bg-emerald-100'">
-                            <input type="text" class="cell-input" :data-cell="ri + '-0'"
-                                   :inputmode="units[row.product.unit].dimension === 'count' ? 'decimal' : 'text'"
-                                   title="Cuánto necesitas: presentaciones (2) o el contenido (610 g, 1.5 kg)"
-                                   x-model="qty[row.id]" @focus="$event.target.select()" @change="commitQty(row)"
-                                   @keydown="onCellKey($event, ri, 0, row, null)" aria-label="Cantidad">
+                            <div class="mt-1.5 flex items-center gap-2 pl-6 text-xs">
+                                <label class="text-slate-500" :for="'qty-' + row.id">Pedido</label>
+                                <input type="text" class="cell-input w-20 rounded-md bg-slate-50 px-1.5 py-0.5 ring-1 ring-slate-200 transition-colors"
+                                       :class="flashed[row.id + ':qty'] && 'bg-emerald-100'"
+                                       :id="'qty-' + row.id" :data-cell="ri + '-0'"
+                                       :inputmode="units[row.product.unit].dimension === 'count' ? 'decimal' : 'text'"
+                                       title="Cuánto necesitas: presentaciones (2) o el contenido (610 g, 1.5 kg)"
+                                       x-model="qty[row.id]" @focus="$event.target.select()" @change="commitQty(row)"
+                                       @keydown="onCellKey($event, ri, 0, row, null)" aria-label="Cantidad que necesitas">
+                                <span class="text-slate-400" x-text="needText(row)"></span>
+                            </div>
+                            <div class="mt-1 pl-6 text-xs">
+                                <template x-if="row.selected">
+                                    <div class="flex items-baseline justify-between gap-2">
+                                        <span class="min-w-0 text-slate-600">
+                                            Comprado <span class="font-medium text-slate-800" x-text="boughtText(row)"></span>
+                                            <span class="text-slate-400" x-text="'en ' + providerName(row.selected.provider_id)"></span>
+                                        </span>
+                                        <span class="shrink-0 text-sm font-semibold text-slate-900 tabular-nums" title="Lo que pagaste" x-text="money(subtotal(row))"></span>
+                                    </div>
+                                </template>
+                                <template x-if="!row.selected">
+                                    <span class="text-slate-400">
+                                        Sin comprar<span x-show="estimated(row) !== null"> · más barato: <span class="tabular-nums" x-text="money(estimated(row) ?? 0)"></span>
+                                        en <span x-text="providerName(bestBuy(row)?.pid)"></span></span>
+                                    </span>
+                                </template>
+                            </div>
                         </td>
 
                         <template x-for="(p, pi) in providers" :key="p.id">
@@ -165,11 +200,6 @@
                                 </div>
                             </td>
                         </template>
-
-                        <td class="px-1 py-2 text-center">
-                            <button type="button" tabindex="-1" class="rounded px-1 text-lg leading-none text-slate-300 hover:bg-red-50 hover:text-red-600"
-                                    title="Quitar de la lista" @click="removeRow(row)">×</button>
-                        </td>
                     </tr>
                 </template>
 
@@ -185,7 +215,7 @@
                             <x-scan-button for="grid-search" tabindex="-1" class="py-1" />
                         </div>
                     </td>
-                    <td :colspan="providers.length + 2" class="px-3 py-2 text-xs text-slate-500">
+                    <td :colspan="providers.length" class="px-3 py-2 text-xs text-slate-500">
                         <template x-if="!creating">
                             <span>↑↓ para elegir, <kbd class="rounded bg-slate-100 px-1">Enter</kbd> para agregar. Si no existe, se crea al momento. También puedes escanear o escribir el código de barras.</span>
                         </template>
@@ -218,30 +248,36 @@
                 </tbody>
 
                 <tfoot class="bg-slate-50 text-xs" x-show="rows.length">
+                {{-- Lo que compraste en cada tienda: el ticket, que es lo que va a los gastos --}}
+                <tr class="border-t-2 border-slate-200">
+                    <td class="sticky left-0 z-10 bg-slate-50 px-3 py-2">
+                        <div class="font-semibold text-slate-700">Ticket por tienda <span class="font-normal text-slate-400">· va a los gastos</span></div>
+                        <div class="mt-0.5 flex items-baseline justify-between gap-2">
+                            <span class="text-slate-500"><span x-text="purchasedCount"></span> de <span x-text="rows.length"></span> artículos comprados</span>
+                            <span class="font-display text-base font-semibold text-slate-900 tabular-nums" x-text="money(totalPurchased)"></span>
+                        </div>
+                    </td>
+                    <template x-for="p in providers" :key="p.id">
+                        <td class="px-2 py-2 text-right tabular-nums">
+                            <div class="text-sm font-semibold" :class="boughtCount(p.id) ? 'text-slate-900' : 'text-slate-300'" x-text="boughtCount(p.id) ? money(boughtAt(p.id)) : '—'"></div>
+                            <div class="text-slate-500" x-show="boughtCount(p.id)" x-text="boughtCount(p.id) + (boughtCount(p.id) === 1 ? ' artículo' : ' artículos')"></div>
+                        </td>
+                    </template>
+                </tr>
+                {{-- Lo que costaría llevarte todo lo que pides en una sola tienda --}}
                 <tr>
-                    <td colspan="2" class="sticky left-0 z-10 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
-                        Total por proveedor
-                        <div class="font-normal text-slate-400">suma de las tarjetas de cada tienda</div>
+                    <td class="sticky left-0 z-10 bg-slate-50 px-3 py-2">
+                        <div class="font-semibold text-slate-600">Si compras todo aquí</div>
+                        <div class="text-slate-400">lo que pides, con los paquetes que vende cada tienda</div>
                     </td>
                     <template x-for="p in providers" :key="p.id">
                         <td class="px-2 py-2 text-right tabular-nums" :class="isBestBasket(p.id) && 'bg-emerald-50'">
-                            <div class="text-sm font-semibold" :class="isBestBasket(p.id) ? 'text-emerald-700' : 'text-slate-800'"
+                            <div class="text-sm font-semibold" :class="isBestBasket(p.id) ? 'text-emerald-700' : 'text-slate-700'"
                                  x-text="basket(p.id).covered ? (isBestBasket(p.id) ? '★ ' : '') + money(basket(p.id).total) : '—'"></div>
                             <div :class="basket(p.id).covered === rows.length ? 'text-slate-400' : 'text-amber-600'"
-                                 x-text="basket(p.id).covered + ' de ' + rows.length + ' artículos'"></div>
+                                 x-text="basket(p.id).covered + ' de ' + rows.length + ' con precio'"></div>
                         </td>
                     </template>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td colspan="2" class="sticky left-0 z-10 bg-slate-50 px-3 py-2 font-semibold text-slate-600">
-                        Ticket: lo que compraste ahí
-                        <div class="font-normal text-slate-500">Total: <span class="font-semibold text-slate-900 tabular-nums" x-text="money(totalPurchased)"></span></div>
-                    </td>
-                    <template x-for="p in providers" :key="p.id">
-                        <td class="px-2 py-2 text-right text-sm tabular-nums" x-text="boughtAt(p.id) ? money(boughtAt(p.id)) : '—'"></td>
-                    </template>
-                    <td></td>
                 </tr>
                 </tfoot>
             </table>

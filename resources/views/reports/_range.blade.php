@@ -9,7 +9,7 @@
         '5 años' => [$today->copy()->subYears(5)->addDay(), $today],
     ];
 @endphp
-<form method="GET" class="card mb-6 flex flex-wrap items-end gap-3">
+<form method="GET" class="card mb-6 flex flex-wrap items-end gap-3" data-live-filter>
     <div>
         <label class="label" for="from">Desde</label>
         <input id="from" type="date" name="from" value="{{ $from->format('Y-m-d') }}" class="input">
@@ -18,7 +18,6 @@
         <label class="label" for="to">Hasta</label>
         <input id="to" type="date" name="to" value="{{ $to->format('Y-m-d') }}" class="input">
     </div>
-    <button class="btn btn-primary">Aplicar</button>
     <div class="flex flex-wrap gap-1 sm:ml-auto">
         @foreach ($presets as $label => [$f, $t])
             @php($active = $from->isSameDay($f) && $to->isSameDay($t))

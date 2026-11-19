@@ -52,38 +52,34 @@ export default function productPrices(config) {
     };
 }
 
-/** "Actualizar todos los precios" (Artículos): todas las direcciones guardadas, una por una. */
+/**
+ * "Actualizar todos los precios" (Artículos): pregunta antes las sucursales que falten y lo
+ * manda al servidor (POST price-runs), que lo corre en segundo plano; el avance lo pinta
+ * <x-price-run-status /> del layout aunque se recargue o se cambie de pantalla.
+ */
 export function bulkPrices(config) {
     return {
-        run: createRun(),
         empty: '',
+        starting: false,
 
         async start() {
-            if (this.run.active) return;
+            if (this.starting) return;
             this.empty = '';
-            let links;
+            this.starting = true;
             try {
-                links = (await requestJson('GET', config.plan)).links;
+                const links = (await requestJson('GET', config.plan)).links;
+                if (!links.length) {
+                    this.empty = 'Ningún artículo tiene dirección en alguna tienda. Pégala en la ficha del artículo («En cada tienda») o en una celda de la hoja.';
+                    return;
+                }
+                const skipped = await ensureBranches(links.map((l) => l.provider_id));
+                const res = await requestJson('POST', config.start, { skip_providers: skipped });
+                window.dispatchEvent(new CustomEvent('price-run-started', { detail: res.run }));
             } catch (e) {
                 this.empty = e.message;
-                return;
+            } finally {
+                this.starting = false;
             }
-            if (!links.length) {
-                this.empty = 'Ningún artículo tiene dirección en alguna tienda. Pégala en la ficha del artículo («En cada tienda») o en una celda de la hoja.';
-                return;
-            }
-            const skipped = await ensureBranches(links.map((l) => l.provider_id));
-            await runTasks(this.run, 'Actualizando todos los precios', links, async (link, signal) => {
-                if (skipped.includes(link.provider_id)) return { ok: false, message: 'Sin sucursal elegida: no se consultó.' };
-                return requestJson('POST', link.fetch, {}, { signal });
-            });
-            if (this.run.ok && !this.run.failures.length && !this.run.cancelled) {
-                flashAfterReload(`Precios en línea: ${this.run.ok} ${this.run.ok === 1 ? 'precio actualizado' : 'precios actualizados'}.`);
-                window.location.reload();
-            }
-        },
-        reload() {
-            window.location.reload();
         },
     };
 }

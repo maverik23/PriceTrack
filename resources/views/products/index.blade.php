@@ -16,28 +16,29 @@
     </div>
 </div>
 
-<div x-data="bulkPrices({{ Js::from(['plan' => route('products.online-links')]) }})" @bulk-prices.window="start()">
-    <x-progress-panel run="run" class="mb-4" />
-    <div x-show="run.finished && run.ok" x-cloak class="-mt-2 mb-4 text-right"><button type="button" class="btn btn-secondary btn-sm" @click="reload()">Ver los precios nuevos</button></div>
-    <p x-show="empty" x-cloak class="flash flash-success mb-4" x-text="empty"></p>
+{{-- Corre en el servidor; el avance lo muestra <x-price-run-status /> del layout --}}
+<div x-data="bulkPrices({{ Js::from(['plan' => route('products.online-links'), 'start' => route('price-runs.store')]) }})" @bulk-prices.window="start()">
+    <p x-show="empty" x-cloak class="flash flash-error mb-4" x-text="empty"></p>
 </div>
 
-<form method="GET" class="mb-4 flex flex-wrap gap-2" x-data @barcode-scanned="$el.requestSubmit()">
+<form method="GET" id="products-filter" class="mb-4 flex flex-wrap gap-2" data-live-filter data-live-links x-data @barcode-scanned="$el.requestSubmit()">
     <div class="flex w-full max-w-xs gap-2">
-        <input id="q" name="q" value="{{ request('q') }}" class="input" placeholder="Buscar por nombre, marca o código…">
+        <input id="q" name="q" type="search" value="{{ request('q') }}" class="input" placeholder="Buscar por nombre, marca o código…" autocomplete="off">
         <x-scan-button for="q" />
     </div>
-    <select name="category" class="input max-w-48" onchange="this.form.submit()">
+    <select name="category" class="input max-w-48" aria-label="Categoría">
         <option value="">Todas las categorías</option>
         @foreach ($categories as $category)
             <option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>
         @endforeach
     </select>
-    <button class="btn btn-secondary">Buscar</button>
-    @if (request()->hasAny(['q', 'category']))
-        <a href="{{ route('products.index') }}" class="btn btn-ghost">Limpiar</a>
-    @endif
+    <span id="products-clear" data-live-part>
+        @if (request()->hasAny(['q', 'category']))
+            <a href="{{ route('products.index') }}" class="btn btn-ghost">Limpiar</a>
+        @endif
+    </span>
 </form>
+<div id="products-results" data-live-results>
 
 <div class="card overflow-x-auto p-0">
     <table class="table">
@@ -99,5 +100,6 @@
         @endforelse
         </tbody>
     </table>
+</div>
 </div>
 @endsection

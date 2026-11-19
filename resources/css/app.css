@@ -403,6 +403,11 @@
         @apply pr-5;
     }
 
+    /* Resultados de un filtro en vivo mientras llegan los nuevos (resources/js/live-filter.js) */
+    [data-live-results][aria-busy='true'] {
+        @apply opacity-60 transition-opacity;
+    }
+
     /* Renglón terminado (lista comprada): lo marcado con .done-strike se tacha y se apaga */
     .is-done .done-strike {
         @apply text-slate-400 line-through decoration-slate-400/70;

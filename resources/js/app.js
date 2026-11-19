@@ -10,8 +10,9 @@ import recipeView from './recipe-show';
 import attachmentsField from './attachments-field';
 import themeToggle from './theme';
 import { pantryList, pantryToggle } from './pantry';
-import { branchPicker } from './online-prices';
+import { branchPicker, priceRunStatus } from './online-prices';
 import providerForm from './provider-form';
+import { initLiveFilters } from './live-filter';
 import productPrices, { bulkPrices, priceLink, takeFlash } from './product-prices';
 
 Alpine.data('listGrid', listGrid);
@@ -26,6 +27,7 @@ Alpine.data('themeToggle', themeToggle);
 Alpine.data('pantryList', pantryList);
 Alpine.data('pantryToggle', pantryToggle);
 Alpine.data('branchPicker', branchPicker);
+Alpine.data('priceRunStatus', priceRunStatus);
 Alpine.data('providerForm', providerForm);
 Alpine.data('productPrices', productPrices);
 Alpine.data('priceLink', priceLink);
@@ -210,7 +212,11 @@ function initBusyForms() {
 }
 initBusyForms();
 
+// Filtros que se aplican solos (resources/js/live-filter.js); al cambiar los resultados, las gráficas se redibujan
+window.addEventListener('live-filter:updated', initCharts);
+
 document.addEventListener('DOMContentLoaded', () => {
+    initLiveFilters();
     initCharts();
     initProductPrefill();
     initUnitPreview();

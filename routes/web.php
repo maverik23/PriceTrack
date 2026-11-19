@@ -12,6 +12,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\NetWorthController;
 use App\Http\Controllers\PantryController;
 use App\Http\Controllers\PriceController;
+use App\Http\Controllers\PriceRunController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductLinkController;
 use App\Http\Controllers\ProviderController;
@@ -30,6 +31,10 @@ Route::get('/', DashboardController::class)->name('dashboard');
 Route::resource('providers', ProviderController::class)->except(['create', 'show']);
 // Antes del resource para que "lookup" no se tome como {product}
 Route::get('products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
+Route::post('price-runs', [PriceRunController::class, 'store'])->name('price-runs.store');
+Route::get('price-runs/{run}', [PriceRunController::class, 'show'])->name('price-runs.show');
+Route::post('price-runs/{run}/cancel', [PriceRunController::class, 'cancel'])->name('price-runs.cancel');
+Route::post('price-runs/{run}/resume', [PriceRunController::class, 'resume'])->name('price-runs.resume');
 Route::get('products/online-links', [ProductLinkController::class, 'plan'])->name('products.online-links');
 Route::resource('products', ProductController::class);
 Route::put('products/{product}/links', [ProductLinkController::class, 'update'])->name('products.links.update');

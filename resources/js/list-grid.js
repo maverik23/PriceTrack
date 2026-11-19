@@ -142,6 +142,8 @@ export default function listGrid(config) {
         busy: false,
         fetching: false,
         fetchStatus: '',
+        // Renglones consultando todas sus tiendas (botón ⟳ del artículo)
+        rowFetching: {},
         run: createRun(),
         money,
 
@@ -337,6 +339,28 @@ export default function listGrid(config) {
         boughtAt(pid) {
             return this.rows.reduce((s, r) => s + (this.isBought(r, pid) ? this.subtotal(r) : 0), 0);
         },
+        /** Cuántos artículos se compraron en esa tienda. */
+        boughtCount(pid) {
+            return this.rows.filter((r) => this.isBought(r, pid)).length;
+        },
+        /** Lo que pides en contenido ("= 2 L"), si la cantidad está en presentaciones. */
+        needText(row) {
+            const text = amountText(this.need(row), this.units[row.product.unit].dimension);
+            return norm(this.qty[row.id]) === norm(text) ? '' : `= ${text}`;
+        },
+        /**
+         * Lo que te llevaste con el precio elegido: a granel, lo justo ("1.2 kg"); si no, los
+         * paquetes completos que cubren lo pedido ("2 × 1 L = 2 L"), como Price::packsFor().
+         */
+        boughtText(row) {
+            const v = this.selectedValue(row);
+            if (!v) return '';
+            const dimension = this.units[row.product.unit].dimension;
+            if (v.bulk) return `${amountText(this.need(row), dimension)} a granel`;
+            const n = packs(this.need(row), v.base);
+            const pres = row.selected.presentation;
+            return n === 1 ? pres : `${n} × ${pres} = ${amountText(n * v.base, dimension)}`;
+        },
 
         // ---------- guardar ----------
         commit(row, pid, force = false) {
@@ -467,6 +491,28 @@ export default function listGrid(config) {
             const k = this.key(row, pid);
             if (this.pending[k]) await this.pending[k];
             return this.track(k, this.request('POST', `${this.urls.items}/${row.id}/prices/fetch`, { provider_id: pid }).then((res) => this.applyFetched(row, res)));
+        },
+        /** Consulta todas las tiendas con dirección de un artículo (botón ⟳ del artículo). */
+        async fetchRow(row) {
+            if (this.rowFetching[row.id]) return;
+            const pids = Object.keys(row.links).map(Number);
+            const skipped = await ensureBranches(pids);
+            const ask = pids.filter((pid) => !skipped.includes(pid));
+            if (!ask.length) return;
+            this.rowFetching[row.id] = true;
+            ask.forEach((pid) => (this.saving[this.key(row, pid)] = true));
+            try {
+                for (const pid of ask) {
+                    try {
+                        await this.fetchOne(row, pid);
+                    } catch (e) {
+                        this.errors[this.key(row, pid)] = e.message;
+                    }
+                }
+            } finally {
+                ask.forEach((pid) => delete this.saving[this.key(row, pid)]);
+                delete this.rowFetching[row.id];
+            }
         },
         /**
          * Consulta, tienda por tienda, los artículos con dirección guardada: lleva el avance

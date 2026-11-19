@@ -35,8 +35,8 @@
     </a>
 </div>
 
-<form method="GET" class="mb-4 flex flex-wrap items-center gap-2">
-    <div class="flex flex-wrap gap-1 text-sm">
+<form method="GET" id="assets-filter" class="mb-4 flex flex-wrap items-center gap-2" data-live-filter data-live-links>
+    <div id="assets-status" data-live-part class="flex flex-wrap gap-1 text-sm">
         @foreach (\App\Models\Asset::STATUSES + ['all' => 'Todos'] as $value => $label)
             <a href="{{ route('assets.index', array_filter(['status' => $value, 'category' => request('category')])) }}"
                class="rounded-md px-3 py-1.5 {{ $status === $value ? 'bg-emerald-50 font-semibold text-emerald-700' : 'text-slate-600 hover:bg-slate-100' }}">{{ $label }}</a>
@@ -44,7 +44,7 @@
     </div>
     <input type="hidden" name="status" value="{{ $status }}">
     @if ($categories->isNotEmpty())
-        <select name="category" class="input max-w-56" onchange="this.form.submit()" aria-label="Categoría">
+        <select name="category" class="input max-w-56" aria-label="Categoría">
             <option value="">Todas las categorías</option>
             @foreach ($categories as $category)
                 <option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>
@@ -52,6 +52,7 @@
         </select>
     @endif
 </form>
+<div id="assets-results" data-live-results>
 
 <div class="card overflow-x-auto p-0">
     <table class="table">
@@ -110,5 +111,6 @@
         @endforelse
         </tbody>
     </table>
+</div>
 </div>
 @endsection
