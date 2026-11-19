@@ -75,6 +75,15 @@ class Recipe extends Model
         $query->with(self::TREE);
     }
 
+    /** Filtros del listado (web y app): texto en el nombre, categoría, etiqueta y calificación mínima. */
+    public function scopeFilter(Builder $query, ?string $q = null, ?string $category = null, ?string $tag = null, ?int $rating = null): void
+    {
+        $query->when(filled($q), fn ($w) => $w->where('name', 'like', '%'.trim($q).'%'))
+            ->when(filled($category), fn ($w) => $w->where('category', $category))
+            ->when(filled($tag), fn ($w) => $w->whereHas('tags', fn ($t) => $t->where('name', $tag)))
+            ->when($rating, fn ($w) => $w->where('rating', '>=', $rating));
+    }
+
     /** Carga lo necesario para costear y mandar a la lista (ingredientes, artículos y sub-recetas). */
     public function loadShoppingTree(): static
     {

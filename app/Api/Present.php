@@ -4,11 +4,17 @@ namespace App\Api;
 
 use App\Mcp\Present as Base;
 use App\Models\Attachment;
+use App\Models\MealPlanEntry;
 use App\Models\Price;
 use App\Models\Product;
 use App\Models\ProductLink;
 use App\Models\Provider;
+use App\Models\Recipe;
+use App\Models\RecipeIngredient;
+use App\Models\RecipeStep;
 use App\Models\ShoppingList;
+use App\Support\RecipeData;
+use App\Support\RecipeView;
 
 /**
  * Cómo se le entregan los datos a la app móvil (arreglos listos para JSON). Las direcciones
@@ -137,6 +143,91 @@ class Present
         return collect(Base::shoppingList($list))->except('url')->all() + [
             'completed_at' => $list->completed_at?->toIso8601String(),
             'bought_at' => $providers->all(),
+        ];
+    }
+
+    // ---------- Cocina ----------
+
+    /**
+     * Resumen de una receta. Necesita Recipe::TREE, `tags` y `attachments`.
+     *
+     * @param  array{ready: bool, missing: list<string>, unchecked: int}|null  $pantryCheck
+     * @return array<string, mixed>
+     */
+    public static function recipe(Recipe $recipe, ?array $pantryCheck = null): array
+    {
+        return Base::recipe($recipe) + [
+            'yield_qty' => $recipe->yield_qty,
+            'yield_unit' => $recipe->yield_unit,
+            'photo' => self::attachment($recipe->coverPhoto()),
+            'pantry_check' => $pantryCheck,
+        ];
+    }
+
+    /**
+     * Ficha de la receta **a factor 1** (tal como está escrita, para `servings` porciones):
+     * para otras porciones la app multiplica cantidades, costos y macros por
+     * porciones ÷ `servings` (lo mismo que resources/js/recipe-show.js). Necesita lo que carga
+     * Api\RecipeController::WITH.
+     *
+     * @return array<string, mixed>
+     */
+    public static function recipeDetail(Recipe $recipe): array
+    {
+        $view = RecipeView::data($recipe);
+        $nutrition = $recipe->nutrition();
+
+        return self::recipe($recipe, $recipe->ingredients->isEmpty() ? null : $recipe->pantryCheck()) + [
+            'notes' => $recipe->notes,
+            'source_url' => $recipe->source_url,
+            // Sin redondear, para escalar
+            'cost_exact' => $view['cost'],
+            'uncosted' => $view['uncosted'],
+            'nutrition' => $view['nutrition'],
+            'nutrition_per_serving' => $nutrition['perServing'] ?? null,
+            'grams_per_serving' => $recipe->gramsPerServing(),
+            'units' => $view['units'],
+            'sections' => array_map(fn (array $section) => [
+                'name' => $section['name'],
+                'items' => array_map(fn (array $item) => collect($item)->except('url')->all(), $section['items']),
+            ], $view['sections']),
+            // Todos los pasos en orden (modo cocinar) y agrupados por etapa
+            'steps' => $view['steps'],
+            'stages' => array_map(fn (array $stage) => [
+                'name' => $stage['stage'],
+                'steps' => array_map(fn (RecipeStep $s) => ['position' => $s->position, 'body' => $s->body, 'minutes' => $s->minutes], $stage['steps']),
+            ], $recipe->stepStages()),
+            'used_in' => $recipe->usedAsIngredient->map(fn (RecipeIngredient $i) => $i->recipe)->filter()->unique('id')
+                ->map(fn (Recipe $r) => ['id' => $r->id, 'name' => $r->name])->values()->all(),
+            'attachments' => $recipe->attachments->map(fn (Attachment $a) => self::attachment($a))->values()->all(),
+            // Lo que acepta PUT recipes/{id} (para el formulario de edición)
+            'input' => RecipeData::toInput($recipe),
+        ];
+    }
+
+    /**
+     * Un platillo del menú (de MenuWeek::summary()): costo de las porciones planeadas y
+     * macros de una porción.
+     *
+     * @param  array{entry: MealPlanEntry, cost: ?float, macros: ?array}  $cell
+     * @return array<string, mixed>
+     */
+    public static function mealEntry(array $cell): array
+    {
+        $entry = $cell['entry'];
+
+        return [
+            'id' => $entry->id,
+            'date' => $entry->planned_on->toDateString(),
+            'meal' => $entry->meal,
+            'meal_label' => $entry->mealLabel(),
+            'label' => $entry->label(),
+            'recipe_id' => $entry->recipe_id,
+            'title' => $entry->title,
+            'servings' => $entry->plannedServings(),
+            'cost' => $cell['cost'],
+            'macros' => $cell['macros'],
+            'photo' => self::attachment($entry->recipe?->coverPhoto()),
         ];
     }
 }

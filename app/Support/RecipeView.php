@@ -58,6 +58,8 @@ class RecipeView
                 (bool) $ingredient->subrecipe => 'recipe',
                 default => 'text',
             },
+            'product_id' => $ingredient->product_id,
+            'subrecipe_id' => $ingredient->subrecipe_id,
             'url' => match (true) {
                 (bool) $ingredient->product => route('products.show', $ingredient->product),
                 (bool) $ingredient->subrecipe => route('recipes.show', $ingredient->subrecipe),

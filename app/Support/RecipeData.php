@@ -231,6 +231,39 @@ class RecipeData
     }
 
     /**
+     * Lo que ofrece el formulario: los artículos (con su dimensión y conversiones, para
+     * mostrar solo las unidades que se pueden usar), las recetas que pueden ser sub-receta
+     * de esta (no ella misma ni las que ya la usan) y las unidades de ingrediente.
+     *
+     * @return array{products: array<int, array<string, mixed>>, recipes: array<int, array<string, mixed>>, units: array<string, array<string, mixed>>}
+     */
+    public static function formOptions(Recipe $recipe): array
+    {
+        $blocked = $recipe->exists ? RecipeIngredient::where('subrecipe_id', $recipe->id)->pluck('recipe_id')->all() : [];
+        $subrecipes = Recipe::when($recipe->exists, fn ($q) => $q->where('id', '!=', $recipe->id))->orderBy('name')->get()
+            ->reject(fn (Recipe $r) => $recipe->exists && (in_array($r->id, $blocked, true) || in_array($recipe->id, Recipe::descendantIds($r->id), true)));
+
+        return [
+            'products' => Product::orderBy('name')->get()->map(fn (Product $p) => [
+                'id' => $p->id,
+                'name' => $p->fullName(),
+                'unit' => $p->unit->value,
+                'dimension' => $p->unit->dimension(),
+                'piece' => $p->piece_weight,
+                'cup' => $p->cup_grams,
+            ])->all(),
+            'recipes' => $subrecipes->map(fn (Recipe $r) => [
+                'id' => $r->id,
+                'name' => $r->name,
+                'servings' => $r->servings,
+                'yield' => $r->yieldDimension(),
+                'yieldLabel' => $r->yieldLabel(),
+            ])->values()->all(),
+            'units' => IngredientUnit::meta(),
+        ];
+    }
+
+    /**
      * La receta como entrada de validate() (para editar solo algunos campos por MCP).
      *
      * @return array<string, mixed>

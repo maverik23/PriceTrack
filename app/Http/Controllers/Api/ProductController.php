@@ -7,6 +7,8 @@ use App\Enums\Unit;
 use App\Models\Product;
 use App\Models\ProductLink;
 use App\Models\Provider;
+use App\Models\Recipe;
+use App\Services\SubrecipeConverter;
 use App\Support\AttachmentForm;
 use App\Support\Barcode;
 use App\Support\ListGrid;
@@ -135,6 +137,26 @@ class ProductController extends Controller
         AttachmentForm::apply($product, $request);
 
         return response()->json(['data' => $this->detail($product)]);
+    }
+
+    /**
+     * Cambia este artículo casero por su receta (`recipe_id`) en todas las recetas que lo usan
+     * → `{converted[], skipped[], message}`. El artículo se conserva.
+     */
+    public function subrecipe(Request $request, Product $product, SubrecipeConverter $converter)
+    {
+        $data = $request->validate(['recipe_id' => ['required', 'exists:recipes,id']], [], ['recipe_id' => 'receta']);
+        $recipe = Recipe::findOrFail($data['recipe_id']);
+        $result = $converter->convert($product, $recipe);
+
+        $message = $result['converted']
+            ? "«{$recipe->name}» reemplaza a «{$product->name}» en: ".implode(', ', $result['converted']).'.'
+            : 'No se cambió ninguna receta.';
+        if ($result['skipped']) {
+            $message .= ' Sin cambiar: '.implode('; ', $result['skipped']).'.';
+        }
+
+        return response()->json($result + ['message' => $message]);
     }
 
     /** @return array<string, mixed> */

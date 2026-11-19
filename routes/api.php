@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Api;
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\MenuController;
 use App\Http\Controllers\PantryController;
 use App\Http\Controllers\PriceRunController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductLinkController;
+use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ShoppingListController;
 use App\Http\Controllers\ShoppingListItemController;
@@ -66,6 +68,23 @@ Route::middleware(ApiToken::class)->name('api.')->group(function () {
         Route::post('lists/{list}/items/{item}/links', [ShoppingListItemController::class, 'saveLink']);
         Route::delete('lists/{list}/items/{item}/prices/{price}', [ShoppingListItemController::class, 'destroyPrice'])->withoutScopedBindings();
     });
+
+    // Cocina: recetas (lo fijo antes del recurso para que no se tome como {recipe})
+    Route::get('recipes/options', [Api\RecipeController::class, 'options']);
+    Route::apiResource('recipes', Api\RecipeController::class);
+    Route::post('recipes/{recipe}/rating', [RecipeController::class, 'rate']);
+    Route::post('recipes/{recipe}/attachments', [Api\RecipeController::class, 'attachments']);
+    Route::get('recipes/{recipe}/shop', [Api\RecipeController::class, 'shopReview']);
+    Route::post('recipes/{recipe}/shop', [Api\RecipeController::class, 'shop']);
+    Route::post('products/{product}/subrecipe', [Api\ProductController::class, 'subrecipe']);
+
+    // Cocina: menú semanal
+    Route::get('menu', [Api\MenuController::class, 'index']);
+    Route::post('menu', [Api\MenuController::class, 'store']);
+    Route::get('menu/shop', [Api\MenuController::class, 'shopReview']);
+    Route::post('menu/shop', [Api\MenuController::class, 'shop']);
+    Route::put('menu/notes/{date}', [MenuController::class, 'note'])->where('date', '\d{4}-\d{2}-\d{2}');
+    Route::delete('menu/{entry}', [Api\MenuController::class, 'destroy']);
 
     // Fotos y documentos: el archivo (?thumb=1 la miniatura) y quitarlo
     Route::get('attachments/{attachment}', [AttachmentController::class, 'show']);

@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\IngredientUnit;
 use App\Models\MealPlanEntry;
-use App\Models\Product;
 use App\Models\Recipe;
 use App\Models\RecipeIngredient;
 use App\Models\RecipeStep;
@@ -21,10 +19,7 @@ class RecipeController extends Controller
     public function index(Request $request)
     {
         $recipes = Recipe::withTree()->with(['attachments', 'tags'])
-            ->when($request->filled('q'), fn ($q) => $q->where('name', 'like', '%'.$request->string('q')->trim().'%'))
-            ->when($request->filled('category'), fn ($q) => $q->where('category', $request->string('category')))
-            ->when($request->filled('tag'), fn ($q) => $q->whereHas('tags', fn ($t) => $t->where('name', $request->string('tag'))))
-            ->when($request->filled('rating'), fn ($q) => $q->where('rating', '>=', $request->integer('rating')))
+            ->filter($request->string('q')->toString(), $request->string('category')->toString(), $request->string('tag')->toString(), $request->integer('rating') ?: null)
             ->orderBy('name')
             ->get();
 
@@ -132,28 +127,16 @@ class RecipeController extends Controller
     /** Manda los ingredientes (para las porciones indicadas) a una lista de compras. */
     public function shop(Request $request, Recipe $recipe, MenuShopper $shopper)
     {
-        $data = $request->validate([
-            'servings' => ['nullable', 'integer', 'min:1', 'max:999'],
-            'list_id' => ['nullable', 'exists:shopping_lists,id'],
-            'buy' => ['nullable', 'array'],
-            'buy.*' => ['integer'],
-        ]);
+        $data = $request->validate(MenuShopper::RULES + ['servings' => ['nullable', 'integer', 'min:1', 'max:999']]);
 
-        $result = $shopper->needs([[$recipe->loadShoppingTree(), (float) ($data['servings'] ?? $recipe->servings)]]);
-        if (! $result['rows']) {
+        $portions = [[$recipe->loadShoppingTree(), (float) ($data['servings'] ?? $recipe->servings)]];
+        $sent = $shopper->send($portions, $data['list_id'] ?? null, $recipe->name, $request->boolean('reviewed') ? ($data['buy'] ?? []) : null);
+        if ($sent['empty']) {
             return back()->withErrors(['list_id' => 'Esta receta no tiene ingredientes ligados a artículos con cantidad.']);
         }
 
-        // Con revisión (reviewed=1) se agrega lo marcado; sin ella, lo que falta en la despensa
-        [$add, $skipped] = $shopper->chosen($result, $request->boolean('reviewed') ? ($data['buy'] ?? []) : null);
-        if (! $add) {
-            return redirect()->route('recipes.show', $recipe)->with('success', $shopper->summary(0, $skipped, $result['unlinked']));
-        }
-
-        $list = $shopper->resolveList($data['list_id'] ?? null, $recipe->name);
-        $count = $shopper->addToList($list, $add);
-
-        return redirect()->route('lists.show', $list)->with('success', $shopper->summary($count, $skipped, $result['unlinked']));
+        return ($sent['list'] ? redirect()->route('lists.show', $sent['list']) : redirect()->route('recipes.show', $recipe))
+            ->with('success', $sent['message']);
     }
 
     private function recentLists()
@@ -163,12 +146,6 @@ class RecipeController extends Controller
 
     private function formData(Recipe $recipe): array
     {
-        $products = Product::orderBy('name')->get();
-        // Recetas que se pueden usar como ingrediente: no ella misma ni las que ya la usan
-        $blocked = $recipe->exists ? RecipeIngredient::where('subrecipe_id', $recipe->id)->pluck('recipe_id')->all() : [];
-        $subrecipes = Recipe::when($recipe->exists, fn ($q) => $q->where('id', '!=', $recipe->id))->orderBy('name')->get()
-            ->reject(fn (Recipe $r) => $recipe->exists && (in_array($r->id, $blocked, true) || in_array($recipe->id, Recipe::descendantIds($r->id), true)));
-
         $old = old('ingredients');
         $ingredients = $old !== null ? $old : $recipe->ingredients->map(fn (RecipeIngredient $i) => [
             'product_id' => $i->product_id,
@@ -188,23 +165,7 @@ class RecipeController extends Controller
             'categories' => Recipe::categories(),
             'tagOptions' => Tag::names(),
             'tags' => old('tags', $recipe->tags->pluck('name')->all()),
-            'form' => [
-                'products' => $products->map(fn (Product $p) => [
-                    'id' => $p->id,
-                    'name' => $p->fullName(),
-                    'unit' => $p->unit->value,
-                    'dimension' => $p->unit->dimension(),
-                    'piece' => $p->piece_weight,
-                    'cup' => $p->cup_grams,
-                ])->all(),
-                'recipes' => $subrecipes->map(fn (Recipe $r) => [
-                    'id' => $r->id,
-                    'name' => $r->name,
-                    'servings' => $r->servings,
-                    'yield' => $r->yieldDimension(),
-                    'yieldLabel' => $r->yieldLabel(),
-                ])->values()->all(),
-                'units' => IngredientUnit::meta(),
+            'form' => RecipeData::formOptions($recipe) + [
                 'ingredients' => collect($ingredients)->map(fn ($row) => [
                     'product_id' => (string) ($row['product_id'] ?? ''),
                     'subrecipe_id' => (string) ($row['subrecipe_id'] ?? ''),

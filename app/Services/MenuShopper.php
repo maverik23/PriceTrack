@@ -13,6 +13,13 @@ use App\Models\ShoppingList;
  */
 class MenuShopper
 {
+    /** Lo que se manda para pasar ingredientes a una lista (con revisión: `reviewed=1` + `buy[]`). */
+    public const RULES = [
+        'list_id' => ['nullable', 'exists:shopping_lists,id'],
+        'buy' => ['nullable', 'array'],
+        'buy.*' => ['integer'],
+    ];
+
     /**
      * Lo que piden las recetas, por artículo, separado en lo que hay que comprar y lo
      * que cubre la despensa. `rows` trae, por artículo: lo que se necesita (`need`), lo que
@@ -158,6 +165,36 @@ class MenuShopper
         }
 
         return $count;
+    }
+
+    /**
+     * Manda a una lista (la elegida o una nueva con `$newName`) lo que falta o, con revisión
+     * (`$checked`), lo marcado. `empty` = ningún ingrediente ligado a artículos con cantidad;
+     * `list` es null si no se agregó nada (todo estaba en casa).
+     *
+     * @param  iterable<int, array{0: Recipe, 1: float}>  $portions
+     * @param  array<int, int|string>|null  $checked
+     * @return array{empty: bool, list: ?ShoppingList, count: int, skipped: array<int, string>, unlinked: array<int, string>, message: ?string}
+     */
+    public function send(iterable $portions, ?int $listId, string $newName, ?array $checked): array
+    {
+        $result = $this->needs($portions);
+        if (! $result['rows']) {
+            return ['empty' => true, 'list' => null, 'count' => 0, 'skipped' => [], 'unlinked' => $result['unlinked'], 'message' => null];
+        }
+
+        [$add, $skipped] = $this->chosen($result, $checked);
+        $list = $add ? $this->resolveList($listId, $newName) : null;
+        $count = $list ? $this->addToList($list, $add) : 0;
+
+        return [
+            'empty' => false,
+            'list' => $list,
+            'count' => $count,
+            'skipped' => $skipped,
+            'unlinked' => $result['unlinked'],
+            'message' => $this->summary($count, $skipped, $result['unlinked']),
+        ];
     }
 
     /** La lista elegida o una nueva con ese nombre, para hoy. */
