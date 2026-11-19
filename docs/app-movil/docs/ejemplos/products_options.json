@@ -1,0 +1,82 @@
+{
+  "units": {
+    "ml": {
+      "label": "ml",
+      "dimension": "volume",
+      "base": 1,
+      "compare": 1000,
+      "compare_label": "L"
+    },
+    "l": {
+      "label": "L",
+      "dimension": "volume",
+      "base": 1000,
+      "compare": 1000,
+      "compare_label": "L"
+    },
+    "g": {
+      "label": "g",
+      "dimension": "mass",
+      "base": 1,
+      "compare": 1000,
+      "compare_label": "kg"
+    },
+    "kg": {
+      "label": "kg",
+      "dimension": "mass",
+      "base": 1000,
+      "compare": 1000,
+      "compare_label": "kg"
+    },
+    "item": {
+      "label": "pza",
+      "dimension": "count",
+      "base": 1,
+      "compare": 1,
+      "compare_label": "pza"
+    }
+  },
+  "unit_names": {
+    "ml": "Mililitros (ml)",
+    "l": "Litros (L)",
+    "g": "Gramos (g)",
+    "kg": "Kilos (kg)",
+    "item": "Piezas (item)"
+  },
+  "categories": [
+    "Abarrotes",
+    "Frutas y verduras"
+  ],
+  "brands": [
+    "Ariel",
+    "Bimbo"
+  ],
+  "providers": [
+    {
+      "id": 4,
+      "name": "Amazon",
+      "notes": null,
+      "groceries": true,
+      "chain": null,
+      "chain_name": null,
+      "branch": null,
+      "branch_name": null,
+      "branch_label": null,
+      "prices_count": null,
+      "last_price_on": null
+    },
+    {
+      "id": 2,
+      "name": "Costco",
+      "notes": null,
+      "groceries": true,
+      "chain": null,
+      "chain_name": null,
+      "branch": null,
+      "branch_name": null,
+      "branch_label": null,
+      "prices_count": null,
+      "last_price_on": null
+    }
+  ]
+}

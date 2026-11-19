@@ -1,0 +1,48 @@
+{
+  "data": [
+    {
+      "id": 52,
+      "name": "Despensa 19 nov. 2026",
+      "shopped_on": "2026-11-19",
+      "notes": null,
+      "done": false,
+      "items": 7,
+      "purchased": 5,
+      "total_paid": 367,
+      "estimated_total": 513.27,
+      "completed_at": null,
+      "bought_at": [
+        "Walmart",
+        "Costco"
+      ]
+    },
+    {
+      "id": 51,
+      "name": "Despensa 07 nov. 2026",
+      "shopped_on": "2026-11-07",
+      "notes": null,
+      "done": true,
+      "items": 8,
+      "purchased": 8,
+      "total_paid": 888.16,
+      "estimated_total": 888.16,
+      "completed_at": "2026-11-19T15:42:37-06:00",
+      "bought_at": [
+        "Costco",
+        "Walmart"
+      ]
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "per_page": 3,
+    "last_page": 18,
+    "total": 52
+  },
+  "status": "all",
+  "counts": {
+    "pending": 1,
+    "done": 51,
+    "all": 52
+  }
+}

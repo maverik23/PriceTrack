@@ -1,0 +1,93 @@
+{
+  "data": [
+    {
+      "id": 6,
+      "name": "Aceite vegetal 946 ml",
+      "brand": "Nutrioli",
+      "category": "Abarrotes",
+      "presentation": "946 ml",
+      "size": 946,
+      "unit": "ml",
+      "barcode": null,
+      "pantry": {
+        "status": null,
+        "remaining": null
+      },
+      "latest_prices": [
+        {
+          "price_id": 1105,
+          "provider_id": 2,
+          "provider": "Costco",
+          "price": 126.6,
+          "presentation": "3 × 946 ml",
+          "bulk": false,
+          "unit_price": 44.61,
+          "unit_price_per": "L",
+          "observed_on": "2026-11-19"
+        },
+        {
+          "price_id": 1106,
+          "provider_id": 1,
+          "provider": "Sam's Club",
+          "price": 129.5,
+          "presentation": "3 × 946 ml",
+          "bulk": false,
+          "unit_price": 45.63,
+          "unit_price_per": "L",
+          "observed_on": "2026-11-19"
+        }
+      ],
+      "unit_label": "ml",
+      "notes": null,
+      "photo": null
+    },
+    {
+      "id": 5,
+      "name": "Arroz 1 kg",
+      "brand": "Verde Valle",
+      "category": "Abarrotes",
+      "presentation": "1 kg",
+      "size": 1,
+      "unit": "kg",
+      "barcode": null,
+      "pantry": {
+        "status": null,
+        "remaining": null
+      },
+      "latest_prices": [
+        {
+          "price_id": 993,
+          "provider_id": 2,
+          "provider": "Costco",
+          "price": 121.2,
+          "presentation": "4 × 1 kg",
+          "bulk": false,
+          "unit_price": 30.3,
+          "unit_price_per": "kg",
+          "observed_on": "2026-10-10"
+        },
+        {
+          "price_id": 1108,
+          "provider_id": 1,
+          "provider": "Sam's Club",
+          "price": 124.3,
+          "presentation": "4 × 1 kg",
+          "bulk": false,
+          "unit_price": 31.08,
+          "unit_price_per": "kg",
+          "observed_on": "2026-11-19"
+        }
+      ],
+      "unit_label": "kg",
+      "notes": null,
+      "photo": null
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "per_page": 2,
+    "last_page": 8,
+    "total": 15
+  },
+  "barcode": null
+}

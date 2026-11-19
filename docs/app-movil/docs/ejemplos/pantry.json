@@ -1,0 +1,47 @@
+{
+  "data": [
+    {
+      "id": 6,
+      "name": "Aceite vegetal 946 ml",
+      "brand": "Nutrioli",
+      "category": "Abarrotes",
+      "presentation": "946 ml",
+      "unit": "ml",
+      "pantry": null,
+      "qty": null,
+      "updated": null,
+      "value": null,
+      "estimated": false,
+      "in_list": null
+    },
+    {
+      "id": 5,
+      "name": "Arroz 1 kg",
+      "brand": "Verde Valle",
+      "category": "Abarrotes",
+      "presentation": "1 kg",
+      "unit": "kg",
+      "pantry": null,
+      "qty": null,
+      "updated": null,
+      "value": null,
+      "estimated": false,
+      "in_list": null
+    }
+  ],
+  "lists": [
+    {
+      "id": 52,
+      "name": "Despensa 19 nov. 2026"
+    }
+  ],
+  "categories": [
+    "Abarrotes",
+    "Frutas y verduras"
+  ],
+  "counts": {
+    "stocked": 0,
+    "out": 0
+  },
+  "value": 0
+}

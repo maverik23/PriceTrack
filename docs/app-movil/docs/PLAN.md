@@ -1,0 +1,51 @@
+# Plan
+
+Objetivo: una app Flutter (Android + iOS) con la misma información que la web de PriceTrack y sus altas, cambios y bajas. Decisiones del usuario y reglas en `AGENTS.md`; contrato de la API en `docs/API.md`.
+
+## Cómo trabajar
+
+- Una fase a la vez, en orden. Cada fase termina con `flutter analyze` limpio, `flutter test` en verde, docs al día y su commit.
+- Lo que requiere dispositivo (cámara, compilar iOS, verse bien) lo prueba el usuario: al cerrar cada fase, deja una lista corta de qué probar en el teléfono.
+- Las fases 2 a 4 empiezan por el servidor (`maverik23/PriceTrack`): agregar sus rutas a la API con tests, y solo después la app.
+
+## Fase 0. Servidor: API de Inicio y Súper ✅ hecha
+
+En `maverik23/PriceTrack`, rama `claude/friendly-mendel-2k6ot2`: `/api/v1` con token opcional (`API_ENABLED`, `API_TOKEN`), inicio, tiendas, artículos, despensa, precios, precios en línea y listas con la hoja calculada (`App\Api\ListSheet`). 8 tests en `tests/Feature/ApiTest.php`.
+
+- [ ] Confirmar con el usuario que esa rama ya está en `main` y desplegada en su servidor (si no, la app no tiene contra qué probar).
+
+## Fase 1. Esqueleto, conexión, Inicio y Súper
+
+1. **Proyecto**: `flutter create` (ver `AGENTS.md`), paquetes, fuentes en `assets/fonts`, `tokens.dart`, tema claro/oscuro, permisos de Android e iOS, nombre «PriceTrack» e icono (carrito/canasta sobre jade).
+2. **Núcleo** (`lib/core`): ajustes (dirección, token, tema), cliente de la API con traducción de errores (sin conexión / 401 / 404 / 422 por campo / 409), base local, repositorio con copia local, estado «en línea», sincronización (cola de listas + copia completa), formatos (`money`, `qty`, `pct`, fechas).
+3. **Conexión** y **Ajustes**.
+4. **Estructura**: cinco pestañas, franja de estado, «llega en la siguiente etapa» para Cocina, Hogar y Finanzas.
+5. **Inicio**.
+6. **Súper**: listas, hoja de la lista (con lo de sin conexión), artículos (lista, ficha con gráfica, formulario, fotos, escáner), despensa, precios, tiendas, precios en línea (por enlace y «Actualizar todos»).
+7. **Tests** (ver `AGENTS.md` y `docs/OFFLINE.md` §5).
+
+Terminado cuando: con un servidor con datos demo (`php artisan db:seed --class=DemoDataSeeder`) se puede hacer desde el teléfono todo lo que la web permite en Súper; en modo avión se ven Inicio y todo Súper, se agrega a una lista y al volver la conexión aparece en la web.
+
+Orden sugerido dentro de la fase (cada punto deja la app usable): 1–4 → Inicio → listas y hoja → artículos → despensa → precios y tiendas → precios en línea.
+
+## Fase 2. Cocina
+
+Servidor: API de recetas, menú y envío a la lista (`docs/API.md` «Por construir»). App: recetas (lista con filtros de despensa y etiquetas, ficha con porciones ajustables, costo y macros, calificación, fotos, formulario con secciones, sub-recetas y pasos por etapa), modo cocinar, menú semanal con notas, revisión y envío de ingredientes a una lista. Copia sin conexión: recetas completas y la semana actual y la siguiente.
+
+## Fase 3. Hogar
+
+Servidor: API de tareas y bienes. App: tareas (calendario y lista, alta rápida, repetición, completar/reabrir, mover, listas), bienes (ficha con valor y gráfica, lecturas, servicios, planes, fotos y documentos), reporte de bienes. El inicio ya puede completar tareas.
+
+## Fase 4. Finanzas y reportes
+
+Servidor: API de inversiones, patrimonio, deudas, pagos recurrentes, ingresos y reportes del súper. App: esas pantallas con sus gráficas y registros.
+
+## Fase 5. Pulido
+
+Notificaciones locales (tareas y pagos por vencer), acceso rápido a la lista pendiente, revisión de accesibilidad y tamaños de letra, preparar publicación (firma, iconos, capturas) si el usuario quiere distribuirla.
+
+## Preguntas abiertas para el usuario
+
+1. Sin conexión en la lista: ¿solo **agregar** (lo que pidió) o también cambiar cantidad y marcar comprado (propuesto en `docs/OFFLINE.md`)?
+2. ¿Identificador de la app? Propuesto `app.pricetrack.pricetrack`.
+3. ¿La distribuirá por tiendas (App Store / Play) o solo instalada en sus teléfonos? Cambia la fase 5.

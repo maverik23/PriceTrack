@@ -1,0 +1,49 @@
+{
+  "data": [
+    {
+      "id": 4,
+      "name": "Amazon",
+      "notes": null,
+      "groceries": true,
+      "chain": null,
+      "chain_name": null,
+      "branch": null,
+      "branch_name": null,
+      "branch_label": null,
+      "prices_count": 227,
+      "last_price_on": "2026-11-19"
+    },
+    {
+      "id": 2,
+      "name": "Costco",
+      "notes": null,
+      "groceries": true,
+      "chain": null,
+      "chain_name": null,
+      "branch": null,
+      "branch_name": null,
+      "branch_label": null,
+      "prices_count": 228,
+      "last_price_on": "2026-11-19"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "per_page": 50,
+    "last_page": 1,
+    "total": 4
+  },
+  "postal_code": null,
+  "chains": [
+    {
+      "id": "chedraui",
+      "name": "Chedraui",
+      "list": true
+    },
+    {
+      "id": "costco",
+      "name": "Costco",
+      "list": true
+    }
+  ]
+}

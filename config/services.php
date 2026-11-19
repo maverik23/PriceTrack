@@ -48,6 +48,14 @@ return [
         'browser_hosts' => ['walmart.com.mx', 'sams.com.mx', 'soriana.com', 'amazon.com.mx', 'bodegaaurrera.com.mx'],
     ],
 
+    // API REST para la app móvil (routes/api.php, App\Http\Controllers\Api), en /api/v1
+    'api' => [
+        // false quita /api/v1
+        'enabled' => (bool) env('API_ENABLED', true),
+        // Si se define, /api/v1 exige "Authorization: Bearer <token>"
+        'token' => env('API_TOKEN'),
+    ],
+
     // Servidor MCP para asistentes de IA (routes/ai.php, App\Mcp\PriceTrackServer)
     'mcp' => [
         // false quita la dirección /mcp (el servidor local por stdio sigue disponible)

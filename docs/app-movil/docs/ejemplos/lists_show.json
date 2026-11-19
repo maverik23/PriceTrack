@@ -1,0 +1,239 @@
+{
+  "data": {
+    "list": {
+      "id": 52,
+      "name": "Despensa 19 nov. 2026",
+      "shopped_on": "2026-11-19",
+      "notes": null,
+      "done": false,
+      "price_date": "2026-11-19"
+    },
+    "provider_columns": {
+      "added": [],
+      "hidden": []
+    },
+    "providers": [
+      {
+        "id": 4,
+        "name": "Amazon",
+        "visible": true,
+        "can_hide": true,
+        "bought_count": 0,
+        "bought_total": 0,
+        "ticket": null,
+        "paid": 0,
+        "basket": {
+          "covered": 7,
+          "total": 570.41
+        },
+        "best_basket": true
+      },
+      {
+        "id": 2,
+        "name": "Costco",
+        "visible": true,
+        "can_hide": false,
+        "bought_count": 1,
+        "bought_total": 126.6,
+        "ticket": null,
+        "paid": 126.6,
+        "basket": {
+          "covered": 7,
+          "total": 735.27
+        },
+        "best_basket": false
+      }
+    ],
+    "rows": [
+      {
+        "id": 441,
+        "product": {
+          "id": 3,
+          "name": "Leche entera 1 L",
+          "brand": "Lala",
+          "barcode": null,
+          "barcodes": [],
+          "category": "Lácteos",
+          "size": 1,
+          "unit": "l",
+          "label": "1 L",
+          "url": "/products/3",
+          "photo": null
+        },
+        "quantity": 1,
+        "need_base": 1000,
+        "need_label": "1 L",
+        "price_id": 1093,
+        "bought_qty": null,
+        "bought_units": 1,
+        "bought_label": "1 L",
+        "subtotal": 30.2,
+        "estimated": 30.2,
+        "best_buy": {
+          "provider_id": 3,
+          "cost": 30.2
+        },
+        "selected": {
+          "id": 1093,
+          "provider_id": 3,
+          "list_id": 52,
+          "price": 30.2,
+          "pack_qty": 1,
+          "size": 1,
+          "unit": "l",
+          "bulk": false,
+          "presentation": "1 L",
+          "base_qty": 1000,
+          "unit_price": 0.0302,
+          "observed_on": "2026-11-19",
+          "date_label": "19 nov. 26",
+          "current": true
+        },
+        "cells": [
+          {
+            "id": 1095,
+            "provider_id": 1,
+            "list_id": 52,
+            "price": 161.9,
+            "pack_qty": 6,
+            "size": 1,
+            "unit": "l",
+            "bulk": false,
+            "presentation": "6 × 1 L",
+            "base_qty": 6000,
+            "unit_price": 0.026983,
+            "observed_on": "2026-11-19",
+            "date_label": "19 nov. 26",
+            "current": true,
+            "cost_for_need": 161.9,
+            "packs": 1,
+            "compare_price": 26.98,
+            "compare_label": "L",
+            "cheapest": false,
+            "best_buy": false,
+            "diff": 21,
+            "bought": false
+          },
+          {
+            "id": 1007,
+            "provider_id": 2,
+            "list_id": 48,
+            "price": 133.7,
+            "pack_qty": 6,
+            "size": 1,
+            "unit": "l",
+            "bulk": false,
+            "presentation": "6 × 1 L",
+            "base_qty": 6000,
+            "unit_price": 0.022283,
+            "observed_on": "2026-10-17",
+            "date_label": "17 oct. 26",
+            "current": false,
+            "cost_for_need": 133.7,
+            "packs": 1,
+            "compare_price": 22.28,
+            "compare_label": "L",
+            "cheapest": true,
+            "best_buy": false,
+            "diff": null,
+            "bought": false
+          }
+        ],
+        "links": {},
+        "stores": {}
+      },
+      {
+        "id": 442,
+        "product": {
+          "id": 4,
+          "name": "Huevo blanco 30 pzas",
+          "brand": null,
+          "barcode": null,
+          "barcodes": [],
+          "category": "Abarrotes",
+          "size": 30,
+          "unit": "item",
+          "label": "30 pza",
+          "url": "/products/4",
+          "photo": null
+        },
+        "quantity": 2,
+        "need_base": 60,
+        "need_label": "60 pza",
+        "price_id": null,
+        "bought_qty": null,
+        "bought_units": null,
+        "bought_label": null,
+        "subtotal": null,
+        "estimated": 130.1,
+        "best_buy": {
+          "provider_id": 2,
+          "cost": 130.1
+        },
+        "selected": null,
+        "cells": [
+          {
+            "id": 1078,
+            "provider_id": 1,
+            "list_id": 51,
+            "price": 133.1,
+            "pack_qty": 2,
+            "size": 30,
+            "unit": "item",
+            "bulk": false,
+            "presentation": "2 × 30 pza",
+            "base_qty": 60,
+            "unit_price": 2.218333,
+            "observed_on": "2026-11-07",
+            "date_label": "07 nov. 26",
+            "current": false,
+            "cost_for_need": 133.1,
+            "packs": 1,
+            "compare_price": 2.22,
+            "compare_label": "pza",
+            "cheapest": false,
+            "best_buy": false,
+            "diff": 2,
+            "bought": false
+          },
+          {
+            "id": 1097,
+            "provider_id": 2,
+            "list_id": 52,
+            "price": 130.1,
+            "pack_qty": 2,
+            "size": 30,
+            "unit": "item",
+            "bulk": false,
+            "presentation": "2 × 30 pza",
+            "base_qty": 60,
+            "unit_price": 2.168333,
+            "observed_on": "2026-11-19",
+            "date_label": "19 nov. 26",
+            "current": true,
+            "cost_for_need": 130.1,
+            "packs": 1,
+            "compare_price": 2.17,
+            "compare_label": "pza",
+            "cheapest": true,
+            "best_buy": true,
+            "diff": null,
+            "bought": false
+          }
+        ],
+        "links": {},
+        "stores": {}
+      }
+    ],
+    "summary": {
+      "items": 7,
+      "purchased": 5,
+      "total_paid": 367,
+      "total_marked": 367,
+      "total_estimated": 513.27,
+      "real_savings": 281.6,
+      "cheapest_total": 367,
+      "possible_savings": 0
+    }
+  }
+}

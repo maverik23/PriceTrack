@@ -1,0 +1,91 @@
+{
+  "data": {
+    "id": 6,
+    "name": "Aceite vegetal 946 ml",
+    "brand": "Nutrioli",
+    "category": "Abarrotes",
+    "presentation": "946 ml",
+    "size": 946,
+    "unit": "ml",
+    "barcode": null,
+    "pantry": {
+      "status": null,
+      "remaining": null
+    },
+    "latest_prices": [
+      {
+        "price_id": 1105,
+        "provider_id": 2,
+        "provider": "Costco",
+        "price": 126.6,
+        "presentation": "3 × 946 ml",
+        "bulk": false,
+        "unit_price": 44.61,
+        "unit_price_per": "L",
+        "observed_on": "2026-11-19"
+      },
+      {
+        "price_id": 1106,
+        "provider_id": 1,
+        "provider": "Sam's Club",
+        "price": 129.5,
+        "presentation": "3 × 946 ml",
+        "bulk": false,
+        "unit_price": 45.63,
+        "unit_price_per": "L",
+        "observed_on": "2026-11-19"
+      }
+    ],
+    "unit_label": "ml",
+    "notes": null,
+    "photo": null,
+    "piece_weight": null,
+    "cup_grams": 218,
+    "kcal": 828,
+    "protein": 0,
+    "carbs": 0,
+    "fat": 92,
+    "compare_label": "L",
+    "savings": 0.1543,
+    "prices": [
+      {
+        "price_id": 1106,
+        "provider_id": 1,
+        "provider": "Sam's Club",
+        "price": 129.5,
+        "presentation": "3 × 946 ml",
+        "bulk": false,
+        "unit_price": 45.63,
+        "unit_price_per": "L",
+        "observed_on": "2026-11-19",
+        "id": 1106,
+        "product_id": 6,
+        "pack_qty": 3,
+        "size": 946,
+        "unit": "ml",
+        "notes": null,
+        "list_id": 52
+      },
+      {
+        "price_id": 1105,
+        "provider_id": 2,
+        "provider": "Costco",
+        "price": 126.6,
+        "presentation": "3 × 946 ml",
+        "bulk": false,
+        "unit_price": 44.61,
+        "unit_price_per": "L",
+        "observed_on": "2026-11-19",
+        "id": 1105,
+        "product_id": 6,
+        "pack_qty": 3,
+        "size": 946,
+        "unit": "ml",
+        "notes": null,
+        "list_id": 52
+      }
+    ],
+    "links": [],
+    "attachments": []
+  }
+}

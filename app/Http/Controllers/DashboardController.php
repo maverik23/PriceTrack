@@ -20,6 +20,16 @@ class DashboardController extends Controller
 {
     public function __invoke(ReportService $reports, AssetReport $assetReport, FinanceReport $finance)
     {
+        return view('dashboard', self::data($reports, $assetReport, $finance));
+    }
+
+    /**
+     * Lo que resume el inicio (también lo usa la app móvil: Api\DashboardController).
+     *
+     * @return array<string, mixed>
+     */
+    public static function data(ReportService $reports, AssetReport $assetReport, FinanceReport $finance): array
+    {
         $today = CarbonImmutable::today();
 
         // Súper
@@ -55,7 +65,7 @@ class DashboardController extends Controller
             ->where('next_due_on', '<', $today->addDays(RecurringPayment::SOON_DAYS + 1)->toDateString())
             ->orderBy('next_due_on')->get();
 
-        return view('dashboard', [
+        return [
             'counts' => [
                 'products' => Product::count(),
                 'providers' => Provider::count(),
@@ -85,6 +95,6 @@ class DashboardController extends Controller
             'hasFinance' => $accounts->isNotEmpty() || $assets->isNotEmpty() || $debts->isNotEmpty(),
             'duePayments' => $duePayments,
             'hasRecurring' => RecurringPayment::exists(),
-        ]);
+        ];
     }
 }

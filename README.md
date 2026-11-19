@@ -85,6 +85,8 @@ Variables opcionales (en un `.env` junto al compose, o en Portainer):
 | `PRICE_FETCH_BROWSER_URL` | `http://browser:3000` | Navegador para Walmart, Sam's, Amazon; vacío para no usarlo |
 | `MCP_ENABLED` | `true` | `false` para quitar la dirección `/mcp` del servidor para asistentes de IA |
 | `MCP_TOKEN` | *(vacío)* | Si la defines, `/mcp` solo responde a quien manda ese token |
+| `API_ENABLED` | `true` | `false` para quitar `/api/v1`, la API REST que usa la app móvil |
+| `API_TOKEN` | *(vacío)* | Si la defines, `/api/v1` solo responde a quien manda ese token (se escribe en la app al conectarla) |
 
 ### Portainer
 
@@ -181,6 +183,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 ## Código
 
 - `app/Enums/Unit.php`: unidades y conversiones.
+- `app/Api/`, `app/Http/Controllers/Api/` y `routes/api.php`: API REST (`/api/v1`) para la app móvil ([PriceTrack-App](https://github.com/maverik23/PriceTrack-App)); el plan de la app y el contrato de la API están en `docs/app-movil/`.
 - `app/Mcp/`: servidor MCP (`PriceTrackServer`) y sus herramientas (`Tools/`); rutas en `routes/ai.php`.
 - `app/Models/Price.php`: normaliza `base_qty` y `unit_price` al guardar.
 - `app/Services/ReportService.php`: gasto, inflación y cambios de precio.

@@ -47,9 +47,13 @@ class AttachmentController extends Controller
         return back()->with('success', 'Archivo actualizado.');
     }
 
-    public function destroy(Attachment $attachment)
+    public function destroy(Request $request, Attachment $attachment)
     {
         $attachment->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => "«{$attachment->label()}» eliminado."]);
+        }
 
         return back()->with('success', "«{$attachment->label()}» eliminado.");
     }

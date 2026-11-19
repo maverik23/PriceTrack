@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "id": 6,
+      "name": "Aceite vegetal 946 ml",
+      "brand": "Nutrioli",
+      "barcode": null,
+      "barcodes": [],
+      "category": "Abarrotes",
+      "size": 946,
+      "unit": "ml",
+      "label": "946 ml",
+      "url": "/products/6"
+    },
+    {
+      "id": 5,
+      "name": "Arroz 1 kg",
+      "brand": "Verde Valle",
+      "barcode": null,
+      "barcodes": [],
+      "category": "Abarrotes",
+      "size": 1,
+      "unit": "kg",
+      "label": "1 kg",
+      "url": "/products/5"
+    }
+  ]
+}

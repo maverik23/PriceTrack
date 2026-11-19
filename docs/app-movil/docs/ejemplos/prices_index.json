@@ -1,0 +1,50 @@
+{
+  "data": [
+    {
+      "price_id": 1108,
+      "provider_id": 1,
+      "provider": "Sam's Club",
+      "price": 124.3,
+      "presentation": "4 × 1 kg",
+      "bulk": false,
+      "unit_price": 31.08,
+      "unit_price_per": "kg",
+      "observed_on": "2026-11-19",
+      "id": 1108,
+      "product_id": 5,
+      "pack_qty": 4,
+      "size": 1,
+      "unit": "kg",
+      "notes": null,
+      "list_id": 52,
+      "product": "Arroz 1 kg · Verde Valle",
+      "list": "Despensa 19 nov. 2026"
+    },
+    {
+      "price_id": 1107,
+      "provider_id": 3,
+      "provider": "Walmart",
+      "price": 34.8,
+      "presentation": "1 kg",
+      "bulk": false,
+      "unit_price": 34.8,
+      "unit_price_per": "kg",
+      "observed_on": "2026-11-19",
+      "id": 1107,
+      "product_id": 5,
+      "pack_qty": 1,
+      "size": 1,
+      "unit": "kg",
+      "notes": null,
+      "list_id": 52,
+      "product": "Arroz 1 kg · Verde Valle",
+      "list": "Despensa 19 nov. 2026"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "per_page": 2,
+    "last_page": 554,
+    "total": 1108
+  }
+}

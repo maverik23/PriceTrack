@@ -1,0 +1,211 @@
+{
+  "data": {
+    "today": "2026-11-19",
+    "counts": {
+      "products": 15,
+      "providers": 4,
+      "prices": 1108,
+      "lists": 52
+    },
+    "groceries": {
+      "spent_this_month": 888.16,
+      "spent_last_month": 4305.98,
+      "monthly_average": 4212.97,
+      "inflation": 0.04862058667804514,
+      "inflation_annualized": 0.04862058667804514,
+      "recent_lists": [
+        {
+          "id": 52,
+          "name": "Despensa 19 nov. 2026",
+          "shopped_on": "2026-11-19",
+          "notes": null,
+          "done": false,
+          "items": 7,
+          "purchased": 5,
+          "total_paid": 367,
+          "estimated_total": 513.27,
+          "completed_at": null,
+          "bought_at": [
+            "Walmart",
+            "Costco"
+          ]
+        },
+        {
+          "id": 51,
+          "name": "Despensa 07 nov. 2026",
+          "shopped_on": "2026-11-07",
+          "notes": null,
+          "done": true,
+          "items": 8,
+          "purchased": 8,
+          "total_paid": 888.16,
+          "estimated_total": 888.16,
+          "completed_at": "2026-11-19T15:42:37-06:00",
+          "bought_at": [
+            "Costco",
+            "Walmart"
+          ]
+        }
+      ],
+      "price_changes": [
+        {
+          "product_id": 10,
+          "product": "Frijol negro 900 g · Verde Valle",
+          "provider": "Amazon",
+          "compare_label": "kg",
+          "previous": {
+            "price": 43.4,
+            "presentation": "900 g",
+            "observed_on": "2026-10-17",
+            "compare_price": 48.22
+          },
+          "current": {
+            "price": 36.9,
+            "presentation": "900 g",
+            "observed_on": "2026-11-07",
+            "compare_price": 41
+          },
+          "change": -0.1498
+        },
+        {
+          "product_id": 10,
+          "product": "Frijol negro 900 g · Verde Valle",
+          "provider": "Walmart",
+          "compare_label": "kg",
+          "previous": {
+            "price": 42.1,
+            "presentation": "900 g",
+            "observed_on": "2026-10-17",
+            "compare_price": 46.78
+          },
+          "current": {
+            "price": 35.8,
+            "presentation": "900 g",
+            "observed_on": "2026-11-07",
+            "compare_price": 39.78
+          },
+          "change": -0.1496
+        }
+      ]
+    },
+    "kitchen": {
+      "today": [
+        {
+          "entry_id": 6,
+          "date": "2026-11-19",
+          "meal": "breakfast",
+          "meal_label": "Desayuno",
+          "what": "Molletes",
+          "recipe_id": 4,
+          "servings": 4,
+          "cost": 50.01
+        }
+      ],
+      "week_meals": 10,
+      "week_cost": 207.86
+    },
+    "home": {
+      "due_tasks": [
+        {
+          "id": 15,
+          "title": "Limpiar el condensador · Refrigerador",
+          "notes": null,
+          "list_id": 3,
+          "list": "Mantenimiento",
+          "due_on": "2026-06-29",
+          "status": "overdue",
+          "priority": "Normal",
+          "repeats": null,
+          "completed_at": null
+        },
+        {
+          "id": 11,
+          "title": "Afinación · Auto",
+          "notes": "Toca a los 35,500 km (lo que pase primero).",
+          "list_id": 3,
+          "list": "Mantenimiento",
+          "due_on": "2026-10-19",
+          "status": "overdue",
+          "priority": "Normal",
+          "repeats": null,
+          "completed_at": null
+        }
+      ],
+      "overdue": 5,
+      "upcoming": 2,
+      "has_assets": true,
+      "assets_value": 3830190.3,
+      "maintenance_overdue": [
+        {
+          "asset_id": 3,
+          "asset": "Refrigerador",
+          "plan": "Limpiar el condensador",
+          "due": "29 jun. 2026",
+          "status": "overdue",
+          "task_id": 15
+        },
+        {
+          "asset_id": 1,
+          "asset": "Auto",
+          "plan": "Afinación",
+          "due": "19 oct. 2026 o a los 35,500 km",
+          "status": "overdue",
+          "task_id": 11
+        }
+      ],
+      "maintenance_soon": [
+        {
+          "asset_id": 2,
+          "asset": "Casa",
+          "plan": "Impermeabilizar",
+          "due": "03 dic. 2026",
+          "status": "soon",
+          "task_id": 13
+        },
+        {
+          "asset_id": 1,
+          "asset": "Auto",
+          "plan": "Cambio de aceite",
+          "due": "19 dic. 2026 o a los 36,400 km",
+          "status": "soon",
+          "task_id": 12
+        }
+      ],
+      "warranties": [
+        {
+          "asset_id": 3,
+          "asset": "Refrigerador",
+          "warranty_until": "2026-12-29"
+        }
+      ]
+    },
+    "finance": {
+      "has_data": true,
+      "net_worth": {
+        "investments": 218847.26,
+        "assets": 3830190.3,
+        "debts": 1623685.54,
+        "total": 2425352.02
+      },
+      "net_worth_change": 0.0109,
+      "net_worth_delta": 26260.5,
+      "has_recurring": true,
+      "due_payments": [
+        {
+          "id": 4,
+          "name": "Agua",
+          "amount": 280,
+          "next_due_on": "2026-11-17",
+          "status": "overdue"
+        },
+        {
+          "id": 5,
+          "name": "Internet",
+          "amount": 499,
+          "next_due_on": "2026-11-22",
+          "status": "soon"
+        }
+      ]
+    }
+  }
+}
