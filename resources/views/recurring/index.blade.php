@@ -4,7 +4,7 @@
 @section('content')
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">Pagos recurrentes</h1>
+        <h1 class="text-3xl font-bold text-slate-900">Pagos recurrentes</h1>
         <p class="text-sm text-slate-500">Luz, internet, suscripciones, mensualidades. Al marcar "Pagado" la fecha pasa al siguiente periodo.</p>
     </div>
     <a href="{{ route('debts.index') }}" class="btn btn-secondary">Deudas</a>

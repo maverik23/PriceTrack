@@ -2,7 +2,7 @@
 @section('title', 'Gasto promedio')
 
 @section('content')
-<h1 class="text-2xl font-semibold text-slate-900">Gasto promedio</h1>
+<h1 class="text-3xl font-bold text-slate-900">Gasto promedio</h1>
 <p class="mb-4 text-sm text-slate-500">Basado en los artículos marcados como comprados en tus listas (fecha de la lista × precio elegido).</p>
 
 @include('reports._range')

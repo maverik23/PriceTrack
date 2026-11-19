@@ -78,10 +78,24 @@ App del hogar: comparador de precios del súper (el origen), y además cocina (r
   - Límites: `Attachment::MAX_KB` (20 MB por archivo), 10 por subida; `docker/php.ini` (`upload_max_filesize = 20M`, `post_max_size = 64M`). En tests: `Storage::fake('local')`.
 - **Hoja de la lista** (`lists/show`): tabla tipo Excel en Alpine (`resources/js/list-grid.js`) alimentada por `App\Support\ListGrid`. Filas = artículos, columnas = proveedores, celdas = último precio. Editar una celda hace `POST lists/{list}/items/{item}/prices`, que registra el precio con `ShoppingList::priceDate()` (la fecha de la lista, nunca futura). Si ese día ya se capturó desde la misma lista, corrige ese registro; si no, crea uno nuevo y conserva el historial. Si la compra estaba en ese proveedor, pasa al precio nuevo. Los cálculos en vivo del JS replican los de los modelos: si cambias uno, cambia el otro. Un precio a granel se escribe en la celda como `54/kg` o con la presentación `por kg` / `por 100 g`.
 
+## Diseño ("papel y jade")
+
+Todo el sistema vive en `resources/css/app.css`; las vistas no llevan clases `dark:`.
+
+- **Colores**: las vistas solo usan cuatro familias de Tailwind, redefinidas en `@theme`: `slate` (papel y tinta, neutros cálidos), `emerald` (jade: marca y "lo bueno/barato"), `red` (chile: alertas, subidas) y `amber` (cempasúchil: avisos). No uses otras familias (`blue-*`, `gray-*`…): no cambian con el tema.
+- **Superficies y rellenos**: tarjetas, campos y menús flotantes usan `bg-surface`, nunca `bg-white`. Un relleno sólido con texto encima es `bg-brand text-on-brand` (hover `bg-brand-strong`), nunca `bg-emerald-600 text-white`: en oscuro la escala se invierte y el texto blanco dejaría de leerse.
+- **Tema claro/oscuro**: `<html data-theme>` (lo pone un script en el `<head>` antes de pintar; `resources/js/theme.js` y `<x-theme-toggle />` cambian entre automático, claro y oscuro, guardado en `localStorage`). El oscuro redefine las mismas variables, así que una vista que respete lo anterior funciona en los dos sin tocarla. Revisa las pantallas nuevas en ambos.
+- **Secciones**: Súper (jade), Cocina (chile), Hogar (azul talavera), Finanzas (ciruela) e Inicio (cempasúchil). `<body data-section>` da el color de la pantalla (lavado de fondo, enlace activo) y `data-nav="cocina"` en cualquier elemento le da las variables `--sec`, `--sec-soft` y `--sec-ink` de esa sección; las usan `.icon-tile`, `.eyebrow`, `.nav-dot` y `.stat-card`.
+- **Navegación** (`layouts/app.blade.php`, arreglo `$sections`): barra lateral en escritorio (`lg`), y en móvil barra superior + pestañas abajo; cada pestaña abre una hoja con las pantallas de su sección. Una pantalla nueva se agrega a ese arreglo con su icono.
+- **Tipografía**: Figtree (`font-sans`) para texto y Bricolage Grotesque (`font-display`) para `h1`, `.card-title` y `.stat-value`.
+- **Formas**: botones y campos redondeados (`.btn` es píldora), tarjetas `rounded-2xl` con `--shadow-card`. Usa las clases de componente antes que utilidades sueltas.
+- **Iconos**: `<x-icon name="shopping-cart" class="size-5" />` (trazos de Lucide en línea, en `components/icon.blade.php`; para uno nuevo, copia ahí sus trazos). Logotipo: `<x-logo />` y `public/favicon.svg`.
+- **Gráficas**: los colores salen de `palettes` en `resources/js/app.js` según el tema y se redibujan al cambiarlo. No pases colores hexadecimales desde la vista; si una serie necesita un color fijo usa `'color' => 'chile'` (`jade`, `talavera`, `sol`, `chile`, `ciruela`).
+- **Paginación**: `resources/views/vendor/pagination/tailwind.blade.php`.
+
 ## Convenciones
 
 - Modelos con atributos de Laravel 13 (`#[Fillable([...])]`) y `casts()`.
-- **Menú de navegación** por secciones en `layouts/app.blade.php` (`$sections`): cada sección es un desplegable en escritorio (clic, flechas, Escape) y un grupo en el menú móvil. Una pantalla nueva se agrega ahí con su patrón de rutas activas.
 - Helpers globales en `app/helpers.php`: `money()`, `qty()`, `num()` (valores para inputs) y `pct()`.
 - Vistas: `@extends('layouts.app')` + `@section('content')`. Clases de componentes (`.btn`, `.card`, `.input`, `.table`, `.badge-*`) en `resources/css/app.css`.
 - Gráficas: `<canvas data-chart="{{ json_encode([...]) }}">`; las inicializa `resources/js/app.js`. **No uses `@json([...])` con arrays de varios elementos**: Blade separa sus argumentos por comas y la vista se rompe.
@@ -103,4 +117,4 @@ App del hogar: comparador de precios del súper (el origen), y además cocina (r
 - Al terminar un guardado, la respuesta no debe pisar lo que el usuario siguió escribiendo en esa celda (se compara contra lo que se envió).
 - Junto a `x-show`, usa `:style` con un objeto, no con texto: un texto reemplaza todo el atributo `style` y borra el `display: none`.
 - En `:disabled="algo.prop"` (expresión con punto) Alpine convierte `undefined` en `""` y el campo queda deshabilitado. Inicializa la propiedad en `false`.
-- `npm run build` descarga la fuente de fonts.bunny.net; sin internet falla aunque el código esté bien.
+- Las fuentes (Figtree y Bricolage Grotesque) vienen de `@fontsource-variable/*` y se compilan con Vite: `npm run build` ya no necesita internet ni un CDN.

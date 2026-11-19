@@ -7,7 +7,7 @@
     $labels = $series->map(fn ($p) => $p['date']->translatedFormat('M y'))->all();
 @endphp
 <div class="mb-6">
-    <h1 class="text-2xl font-semibold text-slate-900">Patrimonio neto</h1>
+    <h1 class="text-3xl font-bold text-slate-900">Patrimonio neto</h1>
     <p class="text-sm text-slate-500">Tus inversiones más el valor de tus bienes, menos tus deudas. En pesos.</p>
 </div>
 
@@ -46,7 +46,7 @@
             ['label' => 'Patrimonio', 'data' => $series->pluck('total')->all(), 'borderWidth' => 3],
             ['label' => 'Bienes', 'data' => $series->pluck('assets')->all()],
             ['label' => 'Inversiones', 'data' => $series->pluck('investments')->all()],
-            ...($series->max('debts') > 0 ? [['label' => 'Deudas', 'data' => $series->pluck('debts')->all(), 'borderColor' => '#dc2626', 'backgroundColor' => '#dc262622']] : []),
+            ...($series->max('debts') > 0 ? [['label' => 'Deudas', 'data' => $series->pluck('debts')->all(), 'color' => 'chile']] : []),
         ]]) }}"></canvas>
     </div>
 </section>

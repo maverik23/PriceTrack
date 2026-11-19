@@ -3,7 +3,7 @@
 
 @section('content')
 <a href="{{ route('recurring.index') }}" class="link text-sm">← Pagos recurrentes</a>
-<h1 class="mt-2 mb-6 text-2xl font-semibold text-slate-900">{{ $payment->name }}</h1>
+<h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">{{ $payment->name }}</h1>
 
 <form method="POST" action="{{ route('recurring.update', $payment) }}" class="card max-w-3xl space-y-4">
     @csrf @method('PUT')

@@ -9,7 +9,7 @@
 <a href="{{ route('debts.index') }}" class="link text-sm">← Deudas</a>
 <div class="mt-2 mb-6 flex flex-wrap items-start justify-between gap-3">
     <div class="min-w-0">
-        <h1 class="text-2xl font-semibold break-words text-slate-900">{{ $debt->name }}</h1>
+        <h1 class="text-3xl font-bold break-words text-slate-900">{{ $debt->name }}</h1>
         <p class="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
             <span class="badge badge-muted">{{ $debt->typeLabel() }}</span>
             {{ collect([$debt->lender, $debt->annual_rate ? num($debt->annual_rate).' % anual' : 'sin intereses', $debt->started_on ? 'desde '.$debt->started_on->translatedFormat('d M Y') : null])->filter()->join(' · ') }}
@@ -54,7 +54,7 @@
             <h2 class="card-title mb-3">Saldo en el tiempo</h2>
             @if (count($series) > 1)
                 <div class="h-64">
-                    <canvas data-chart="{{ json_encode(['type' => 'line', 'timeAxis' => true, 'format' => 'money', 'beginAtZero' => true, 'datasets' => [['label' => 'Saldo', 'data' => $series, 'fill' => true, 'pointRadius' => 0, 'borderColor' => '#dc2626', 'backgroundColor' => '#dc262622']]]) }}"></canvas>
+                    <canvas data-chart="{{ json_encode(['type' => 'line', 'timeAxis' => true, 'format' => 'money', 'beginAtZero' => true, 'datasets' => [['label' => 'Saldo', 'data' => $series, 'fill' => true, 'pointRadius' => 0, 'color' => 'chile']]]) }}"></canvas>
                 </div>
             @else
                 <p class="py-10 text-center text-sm text-slate-400">Pon la fecha de inicio o registra pagos para ver la gráfica.</p>

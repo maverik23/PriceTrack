@@ -14,7 +14,7 @@
            @focus="show()" @click="show()" @input="show()" @keydown="onKey($event)" @blur="settle()">
 
     <div id="{{ $name }}-options" role="listbox" x-show="open && options.length" x-cloak @mousedown.prevent
-         class="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-slate-200">
+         class="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg bg-surface py-1 shadow-lg ring-1 ring-slate-200">
         <template x-for="(opt, i) in options" :key="opt.key">
             <button type="button" tabindex="-1" role="option" :aria-selected="i === hi"
                     class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm"

@@ -3,7 +3,7 @@
 
 @section('content')
 <a href="{{ route('providers.index') }}" class="link text-sm">← Proveedores</a>
-<h1 class="mt-2 mb-6 text-2xl font-semibold text-slate-900">Editar {{ $provider->name }}</h1>
+<h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">Editar {{ $provider->name }}</h1>
 
 <form method="POST" action="{{ route('providers.update', $provider) }}" class="card max-w-lg space-y-3">
     @csrf @method('PUT')

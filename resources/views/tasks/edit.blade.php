@@ -3,7 +3,7 @@
 
 @section('content')
 <a href="{{ route('tasks.index', $task->task_list_id ? ['list' => $task->task_list_id] : []) }}" class="link text-sm">← Tareas</a>
-<h1 class="mt-2 mb-6 text-2xl font-semibold text-slate-900">Editar tarea</h1>
+<h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">Editar tarea</h1>
 
 <form method="POST" action="{{ route('tasks.update', $task) }}" class="card max-w-3xl space-y-5">
     @csrf @method('PUT')

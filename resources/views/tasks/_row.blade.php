@@ -3,7 +3,7 @@
 <li class="flex items-start gap-3 px-4 py-3">
     <form method="POST" action="{{ route('tasks.toggle', $task) }}" class="pt-0.5">
         @csrf
-        <button class="grid size-5 place-items-center rounded-full ring-2 {{ $task->isDone() ? 'bg-emerald-600 text-white ring-emerald-600' : 'ring-slate-300 hover:ring-emerald-500' }}"
+        <button class="grid size-5 place-items-center rounded-full ring-2 {{ $task->isDone() ? 'bg-brand text-on-brand ring-brand' : 'ring-slate-300 hover:ring-emerald-500' }}"
                 title="{{ $task->isDone() ? 'Marcar como pendiente' : 'Marcar como hecha' }}"
                 aria-label="{{ $task->isDone() ? 'Marcar como pendiente' : 'Marcar como hecha' }}: {{ $task->title }}">
             @if ($task->isDone())

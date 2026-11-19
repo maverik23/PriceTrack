@@ -4,7 +4,7 @@
 @section('content')
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">Historial de precios</h1>
+        <h1 class="text-3xl font-bold text-slate-900">Historial de precios</h1>
         <p class="text-sm text-slate-500">Cada precio queda guardado con su fecha y proveedor.</p>
     </div>
     <a href="{{ route('prices.create') }}" class="btn btn-primary">+ Capturar precio</a>

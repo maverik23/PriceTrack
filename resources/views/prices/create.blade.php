@@ -2,7 +2,7 @@
 @section('title', 'Capturar precio')
 
 @section('content')
-<h1 class="mb-6 text-2xl font-semibold text-slate-900">Capturar precio</h1>
+<h1 class="mb-6 text-3xl font-bold text-slate-900">Capturar precio</h1>
 
 <form method="POST" action="{{ route('prices.store') }}" class="card max-w-2xl space-y-4">
     @include('prices._form')

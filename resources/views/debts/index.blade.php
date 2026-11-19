@@ -4,7 +4,7 @@
 @section('content')
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">Deudas</h1>
+        <h1 class="text-3xl font-bold text-slate-900">Deudas</h1>
         <p class="text-sm text-slate-500">Lo que debes, cuánto pagas al mes y cuánto te falta. Se resta en tu patrimonio.</p>
     </div>
     <div class="flex gap-2">

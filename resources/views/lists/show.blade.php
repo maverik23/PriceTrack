@@ -10,7 +10,7 @@
     <a href="{{ route('lists.index') }}" class="link text-sm">← Listas</a>
     <div class="mt-2 mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-            <h1 class="text-2xl font-semibold text-slate-900">{{ $list->name }}</h1>
+            <h1 class="text-3xl font-bold text-slate-900">{{ $list->name }}</h1>
             <p class="text-sm text-slate-500">{{ ucfirst($list->shopped_on->translatedFormat('l d \d\e F Y')) }} @if ($list->notes) · {{ $list->notes }} @endif</p>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-2">
@@ -63,7 +63,7 @@
                 Pega en una celda la dirección del artículo en esa tienda para consultar su precio en línea.
             </p>
             <p class="flex items-center gap-3 whitespace-nowrap">
-                <span class="flex items-center gap-1"><span class="size-3 rounded-full bg-emerald-600"></span> comprado aquí</span>
+                <span class="flex items-center gap-1"><span class="size-3 rounded-full bg-brand"></span> comprado aquí</span>
                 <span class="font-semibold text-emerald-700">★ más barato</span>
                 <span class="text-slate-400">gris = precio anterior</span>
             </p>
@@ -85,10 +85,10 @@
                 <tbody>
                 <template x-for="(row, ri) in rows" :key="row.id">
                     <tr class="group align-top">
-                        <td class="sticky left-0 z-10 max-w-56 min-w-44 bg-white px-3 py-2 group-hover:bg-slate-50">
+                        <td class="sticky left-0 z-10 max-w-56 min-w-44 bg-surface px-3 py-2 group-hover:bg-slate-50">
                             <div class="flex items-start gap-2">
                                 <span class="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full text-[10px]"
-                                      :class="row.selected ? 'bg-emerald-600 text-white' : 'border border-slate-300'"
+                                      :class="row.selected ? 'bg-brand text-on-brand' : 'border border-slate-300'"
                                       x-text="row.selected ? '✓' : ''"></span>
                                 <div class="min-w-0">
                                     <a :href="row.product.url" class="block truncate font-medium text-slate-900 hover:text-emerald-700" x-text="row.product.name"></a>
@@ -109,7 +109,7 @@
                             <td class="min-w-44 px-1 py-1 transition-colors" :class="cellClass(row, p.id)">
                                 <div class="flex items-center gap-1">
                                     <button type="button" tabindex="-1" class="size-4 shrink-0 rounded-full border transition"
-                                            :class="isBought(row, p.id) ? 'border-emerald-600 bg-emerald-600' : (row.cells[p.id] ? 'border-slate-300 bg-white hover:border-emerald-500' : 'invisible')"
+                                            :class="isBought(row, p.id) ? 'border-brand bg-brand' : (row.cells[p.id] ? 'border-slate-300 bg-surface hover:border-emerald-500' : 'invisible')"
                                             :title="isBought(row, p.id) ? 'Comprado aquí (clic para desmarcar)' : 'Marcar como comprado aquí'"
                                             @click="toggleBuy(row, p.id)"></button>
                                     <a x-show="row.links[p.id]" :href="row.links[p.id]" target="_blank" rel="noopener" tabindex="-1"
@@ -232,7 +232,7 @@
 
     {{-- Sugerencias del autocompletar (fijas para no quedar recortadas por el scroll de la tabla) --}}
     <div x-show="open && options.length" x-cloak :style="dropStyle" @mousedown.prevent
-         class="fixed z-50 max-h-80 overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-slate-200">
+         class="fixed z-50 max-h-80 overflow-auto rounded-lg bg-surface py-1 shadow-lg ring-1 ring-slate-200">
         <template x-for="(opt, i) in options" :key="opt.create ? 'new' : opt.id">
             <button type="button" tabindex="-1" class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm"
                     :class="i === hi ? 'bg-emerald-50' : 'hover:bg-slate-50'" @mouseenter="hi = i" @click="pick(opt)">

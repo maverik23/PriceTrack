@@ -7,7 +7,7 @@
                pick(day, meal) { this.day = day; this.meal = meal; const el = document.getElementById('menu-recipe'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.focus({ preventScroll: true }); } }">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h1 class="text-2xl font-semibold text-slate-900">Menú de la semana</h1>
+            <h1 class="text-3xl font-bold text-slate-900">Menú de la semana</h1>
             <p class="text-sm text-slate-500">Del {{ $start->translatedFormat('d \d\e F') }} al {{ $end->translatedFormat('d \d\e F Y') }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">

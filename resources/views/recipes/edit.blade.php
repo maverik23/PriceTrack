@@ -3,7 +3,7 @@
 
 @section('content')
 <a href="{{ route('recipes.show', $recipe) }}" class="link text-sm">← {{ $recipe->name }}</a>
-<h1 class="mt-2 mb-6 text-2xl font-semibold text-slate-900">Editar receta</h1>
+<h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">Editar receta</h1>
 
 <form method="POST" action="{{ route('recipes.update', $recipe) }}" class="card max-w-4xl space-y-5">
     @method('PUT')

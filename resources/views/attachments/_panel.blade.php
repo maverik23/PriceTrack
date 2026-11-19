@@ -26,7 +26,7 @@
                     @if ($loop->first)<span class="badge badge-cheap absolute bottom-1 left-1">Portada</span>@endif
                     <form method="POST" action="{{ route('attachments.destroy', $photo) }}" class="absolute top-1 right-1" onsubmit="return confirm('¿Eliminar la foto?')">
                         @csrf @method('DELETE')
-                        <button class="grid size-7 place-items-center rounded-full bg-white/90 text-red-600 shadow ring-1 ring-slate-200 hover:bg-white" title="Eliminar foto" aria-label="Eliminar foto {{ $photo->label() }}">✕</button>
+                        <button class="grid size-7 place-items-center rounded-full bg-surface/90 text-red-600 shadow ring-1 ring-slate-200 hover:bg-surface" title="Eliminar foto" aria-label="Eliminar foto {{ $photo->label() }}">✕</button>
                     </form>
                 </li>
             @endforeach

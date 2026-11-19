@@ -4,7 +4,7 @@
 @section('content')
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">Artículos</h1>
+        <h1 class="text-3xl font-bold text-slate-900">Artículos</h1>
         <p class="text-sm text-slate-500">El más barato se calcula por unidad ($/L, $/kg, $/pza) con el último precio de cada proveedor.</p>
     </div>
     <a href="{{ route('products.create') }}" class="btn btn-primary">+ Nuevo artículo</a>

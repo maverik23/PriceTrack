@@ -5,7 +5,7 @@
 <a href="{{ route('products.index') }}" class="link text-sm">← Artículos</a>
 <div class="mt-2 mb-6 flex flex-wrap items-start justify-between gap-3">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">{{ $product->name }}</h1>
+        <h1 class="text-3xl font-bold text-slate-900">{{ $product->name }}</h1>
         <p class="text-sm text-slate-500">
             {{ $product->sizeLabel() }}
             @if ($product->brand) · {{ $product->brand }} @endif

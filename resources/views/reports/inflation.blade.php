@@ -2,7 +2,7 @@
 @section('title', 'Inflación')
 
 @section('content')
-<h1 class="text-2xl font-semibold text-slate-900">Inflación de tu canasta</h1>
+<h1 class="text-3xl font-bold text-slate-900">Inflación de tu canasta</h1>
 <p class="mb-4 text-sm text-slate-500">Calculada con tus propios precios por unidad, comparando cada artículo contra sí mismo en el mismo proveedor.</p>
 
 @include('reports._range')

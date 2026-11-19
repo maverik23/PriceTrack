@@ -12,7 +12,7 @@
 <a href="{{ route('investments.index') }}" class="link text-sm">← Inversiones</a>
 <div class="mt-2 mb-6 flex flex-wrap items-start justify-between gap-3">
     <div class="min-w-0">
-        <h1 class="text-2xl font-semibold break-words text-slate-900">{{ $account->name }}</h1>
+        <h1 class="text-3xl font-bold break-words text-slate-900">{{ $account->name }}</h1>
         <p class="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
             <span class="badge badge-muted">{{ $account->typeLabel() }}</span>
             {{ collect([$account->institution, $foreign ? 'en '.$account->currency : null])->filter()->join(' · ') }}

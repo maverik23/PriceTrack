@@ -4,7 +4,7 @@
 @section('content')
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">Proveedores</h1>
+        <h1 class="text-3xl font-bold text-slate-900">Proveedores</h1>
         <p class="text-sm text-slate-500">Tiendas donde comparas precios: Sam's, Costco, Walmart, Amazon…</p>
     </div>
 </div>

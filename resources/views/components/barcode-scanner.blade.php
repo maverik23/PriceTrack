@@ -1,9 +1,9 @@
 {{-- Ventana del escáner de códigos de barras (una sola, en el layout). Ver resources/js/barcode-scanner.js --}}
 <div x-data="barcodeScanner" x-show="open" x-cloak @scan-barcode.window="start($event.detail)"
      @keydown.escape.window="open && close()" @click.self="close()"
-     class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/70 p-4 sm:items-center"
+     class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
      role="dialog" aria-modal="true" aria-labelledby="scanner-title">
-    <div class="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl">
+    <div class="w-full max-w-md overflow-hidden rounded-xl bg-surface shadow-xl">
         <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <h2 id="scanner-title" class="card-title">Escanear código de barras</h2>
             <button type="button" class="rounded px-2 text-xl leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700"

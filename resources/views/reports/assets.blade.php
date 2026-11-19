@@ -3,7 +3,7 @@
 
 @section('content')
 <div class="mb-6">
-    <h1 class="text-2xl font-semibold text-slate-900">Reporte de bienes</h1>
+    <h1 class="text-3xl font-bold text-slate-900">Reporte de bienes</h1>
     <p class="text-sm text-slate-500">Mantenimiento por año, lo que cuesta tener cada bien, servicios próximos y garantías.</p>
 </div>
 

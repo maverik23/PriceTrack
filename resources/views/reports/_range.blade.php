@@ -23,7 +23,7 @@
         @foreach ($presets as $label => [$f, $t])
             @php($active = $from->isSameDay($f) && $to->isSameDay($t))
             <a href="{{ request()->url() }}?from={{ $f->format('Y-m-d') }}&to={{ $t->format('Y-m-d') }}"
-               class="btn btn-sm {{ $active ? 'bg-emerald-600 text-white' : 'btn-secondary' }}">{{ $label }}</a>
+               class="btn btn-sm {{ $active ? 'bg-brand text-on-brand' : 'btn-secondary' }}">{{ $label }}</a>
         @endforeach
     </div>
 </form>

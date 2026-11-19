@@ -8,7 +8,7 @@
     $empty = collect($groups)->every(fn ($group) => $group[1]->isEmpty());
 @endphp
 <div class="mb-6">
-    <h1 class="text-2xl font-semibold text-slate-900">{{ $list?->name ?? ($general ? 'General' : 'Tareas') }}</h1>
+    <h1 class="text-3xl font-bold text-slate-900">{{ $list?->name ?? ($general ? 'General' : 'Tareas') }}</h1>
     <p class="text-sm text-slate-500">Las repetitivas crean la siguiente al completarlas, contando desde ese día.</p>
 </div>
 

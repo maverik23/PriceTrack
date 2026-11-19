@@ -2,7 +2,7 @@
 @section('title', 'Cambios de precio')
 
 @section('content')
-<h1 class="text-2xl font-semibold text-slate-900">Cambios de precio</h1>
+<h1 class="text-3xl font-bold text-slate-900">Cambios de precio</h1>
 <p class="mb-4 text-sm text-slate-500">Cada vez que un artículo cambió de precio por unidad en el mismo proveedor, contra su registro anterior.</p>
 
 @include('reports._range')

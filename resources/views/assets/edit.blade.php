@@ -3,7 +3,7 @@
 
 @section('content')
 <a href="{{ route('assets.show', $asset) }}" class="link text-sm">← {{ $asset->name }}</a>
-<h1 class="mt-2 mb-6 text-2xl font-semibold text-slate-900">Editar bien</h1>
+<h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">Editar bien</h1>
 
 <form method="POST" action="{{ route('assets.update', $asset) }}" class="card max-w-4xl space-y-5">
     @method('PUT')

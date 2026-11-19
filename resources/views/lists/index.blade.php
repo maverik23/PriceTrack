@@ -4,7 +4,7 @@
 @section('content')
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">Listas de compra</h1>
+        <h1 class="text-3xl font-bold text-slate-900">Listas de compra</h1>
         <p class="text-sm text-slate-500">Agrega artículos, captura precios por proveedor y marca dónde compraste.</p>
     </div>
     <a href="{{ route('lists.create') }}" class="btn btn-primary">+ Nueva lista</a>

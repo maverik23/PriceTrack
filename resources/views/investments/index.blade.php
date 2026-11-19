@@ -4,7 +4,7 @@
 @section('content')
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">Inversiones</h1>
+        <h1 class="text-3xl font-bold text-slate-900">Inversiones</h1>
         <p class="text-sm text-slate-500">Captura tus aportaciones y, de vez en cuando, cuánto vale cada cuenta. Todo en pesos.</p>
     </div>
     <div class="flex gap-2">

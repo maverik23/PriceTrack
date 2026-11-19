@@ -11,7 +11,7 @@
 <a href="{{ route('recipes.index') }}" class="link text-sm">← Recetas</a>
 <div class="mt-2 mb-6 flex flex-wrap items-start justify-between gap-3">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">{{ $recipe->name }}</h1>
+        <h1 class="text-3xl font-bold text-slate-900">{{ $recipe->name }}</h1>
         <p class="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
             @if ($recipe->category)<span class="badge badge-muted">{{ $recipe->category }}</span>@endif
             <span>Rinde {{ $recipe->servings }} {{ $recipe->servings === 1 ? 'porción' : 'porciones' }}@if ($portion) de unos {{ number_format($portion) }} g en crudo @endif</span>

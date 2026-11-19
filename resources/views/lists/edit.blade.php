@@ -3,7 +3,7 @@
 
 @section('content')
 <a href="{{ route('lists.show', $list) }}" class="link text-sm">← {{ $list->name }}</a>
-<h1 class="mt-2 mb-6 text-2xl font-semibold text-slate-900">Editar lista</h1>
+<h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">Editar lista</h1>
 
 <form method="POST" action="{{ route('lists.update', $list) }}" class="card max-w-xl space-y-4">
     @csrf @method('PUT')

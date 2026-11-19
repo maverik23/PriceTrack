@@ -1,51 +1,97 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+@php
+    $hour = now()->hour;
+    $greeting = $hour < 12 ? 'Buenos días' : ($hour < 19 ? 'Buenas tardes' : 'Buenas noches');
+    // Una frase con lo de hoy: tareas, pagos y qué se come
+    $today = collect([
+        $dueTasks->count() ? $dueTasks->count().' '.($dueTasks->count() === 1 ? 'tarea' : 'tareas') : null,
+        $duePayments->count() ? $duePayments->count().' '.($duePayments->count() === 1 ? 'pago' : 'pagos').' esta semana' : null,
+        $todayMeals->count() ? $todayMeals->count().' '.($todayMeals->count() === 1 ? 'comida planeada' : 'comidas planeadas') : null,
+    ])->filter()->values();
+@endphp
+<div class="mb-7 flex flex-wrap items-end justify-between gap-4">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">Hola 👋</h1>
-        <p class="text-sm text-slate-500">{{ ucfirst(today()->translatedFormat('l d \d\e F Y')) }}</p>
+        <p class="eyebrow">{{ today()->translatedFormat('l d \d\e F') }}</p>
+        <h1 class="mt-1 text-4xl font-bold text-slate-900 sm:text-[2.75rem] sm:leading-[1.05]">{{ $greeting }}</h1>
+        <p class="mt-2 text-sm text-slate-500">
+            @if ($today->isEmpty())
+                Hoy no tienes nada pendiente.
+            @else
+                Para hoy: {{ $today->join(', ', ' y ') }}.
+            @endif
+        </p>
     </div>
     <div class="flex flex-wrap gap-2">
-        <a href="{{ route('lists.create') }}" class="btn btn-primary">+ Nueva lista</a>
-        <a href="{{ route('tasks.index') }}" class="btn btn-secondary">+ Tarea</a>
-        <a href="{{ route('menu.index') }}" class="btn btn-secondary">Menú semanal</a>
+        <a href="{{ route('lists.create') }}" class="btn btn-primary"><x-icon name="shopping-cart" class="size-4" /> Nueva lista</a>
+        <a href="{{ route('tasks.index') }}" class="btn btn-secondary"><x-icon name="plus" class="size-4" /> Tarea</a>
+        <a href="{{ route('menu.index') }}" class="btn btn-secondary"><x-icon name="calendar-days" class="size-4" /> Menú semanal</a>
     </div>
 </div>
 
 @if ($counts['products'] === 0 && ! $hasFinance)
-    <div class="card mb-6 border-l-4 border-emerald-500">
+    <div class="card mb-6">
         <h2 class="card-title">Empieza por donde quieras</h2>
-        <ul class="mt-2 list-inside list-disc space-y-1 text-sm text-slate-600">
-            <li><strong>Súper:</strong> revisa tus <a class="link" href="{{ route('providers.index') }}">proveedores</a>, da de alta tus <a class="link" href="{{ route('products.create') }}">artículos</a> y crea una <a class="link" href="{{ route('lists.create') }}">lista de compra</a>.</li>
-            <li><strong>Cocina:</strong> guarda tus <a class="link" href="{{ route('recipes.create') }}">recetas</a> y arma el <a class="link" href="{{ route('menu.index') }}">menú de la semana</a>.</li>
-            <li><strong>Hogar:</strong> anota tus <a class="link" href="{{ route('tasks.index') }}">tareas</a> y tus <a class="link" href="{{ route('assets.create') }}">bienes</a> con su mantenimiento.</li>
-            <li><strong>Finanzas:</strong> registra tus <a class="link" href="{{ route('investments.create') }}">inversiones</a>, <a class="link" href="{{ route('debts.create') }}">deudas</a> y <a class="link" href="{{ route('recurring.index') }}">pagos recurrentes</a> para ver tu patrimonio y lo que toca pagar.</li>
-        </ul>
+        <p class="mt-1 text-sm text-slate-500">Cada sección funciona por su cuenta; llena la que te sirva primero.</p>
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="flex gap-3" data-nav="super">
+                <span class="icon-tile"><x-icon name="shopping-basket" class="size-5" /></span>
+                <p class="text-sm text-slate-600"><strong class="text-slate-900">Súper.</strong> Revisa tus <a class="link" href="{{ route('providers.index') }}">proveedores</a>, da de alta tus <a class="link" href="{{ route('products.create') }}">artículos</a> y crea una <a class="link" href="{{ route('lists.create') }}">lista de compra</a>.</p>
+            </div>
+            <div class="flex gap-3" data-nav="cocina">
+                <span class="icon-tile"><x-icon name="chef-hat" class="size-5" /></span>
+                <p class="text-sm text-slate-600"><strong class="text-slate-900">Cocina.</strong> Guarda tus <a class="link" href="{{ route('recipes.create') }}">recetas</a> y arma el <a class="link" href="{{ route('menu.index') }}">menú de la semana</a>.</p>
+            </div>
+            <div class="flex gap-3" data-nav="hogar">
+                <span class="icon-tile"><x-icon name="house" class="size-5" /></span>
+                <p class="text-sm text-slate-600"><strong class="text-slate-900">Hogar.</strong> Anota tus <a class="link" href="{{ route('tasks.index') }}">tareas</a> y tus <a class="link" href="{{ route('assets.create') }}">bienes</a> con su mantenimiento.</p>
+            </div>
+            <div class="flex gap-3" data-nav="finanzas">
+                <span class="icon-tile"><x-icon name="wallet" class="size-5" /></span>
+                <p class="text-sm text-slate-600"><strong class="text-slate-900">Finanzas.</strong> Registra tus <a class="link" href="{{ route('investments.create') }}">inversiones</a>, <a class="link" href="{{ route('debts.create') }}">deudas</a> y <a class="link" href="{{ route('recurring.index') }}">pagos recurrentes</a> para ver tu patrimonio y lo que toca pagar.</p>
+            </div>
+        </div>
     </div>
 @endif
 
-{{-- Lo más importante de cada sección --}}
-<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <a href="{{ route('reports.spending') }}" class="card hover:ring-emerald-300">
-        <div class="stat-label">Súper · gasto este mes</div>
+{{-- Lo más importante de cada sección, con su color --}}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <a href="{{ route('reports.spending') }}" class="card stat-card" data-nav="super">
+        <div class="flex items-start justify-between gap-2">
+            <div class="eyebrow">Súper</div>
+            <span class="icon-tile"><x-icon name="shopping-basket" class="size-5" /></span>
+        </div>
+        <div class="stat-label">Gasto este mes</div>
         <div class="stat-value">{{ money($thisMonth['total']) }}</div>
         <div class="mt-1 text-xs text-slate-500">Mes pasado: {{ money($lastMonth['total']) }} · Promedio: {{ money($monthlyAvg) }}</div>
     </a>
-    <a href="{{ route('menu.index') }}" class="card hover:ring-emerald-300">
-        <div class="stat-label">Cocina · costo de la semana</div>
+    <a href="{{ route('menu.index') }}" class="card stat-card" data-nav="cocina">
+        <div class="flex items-start justify-between gap-2">
+            <div class="eyebrow">Cocina</div>
+            <span class="icon-tile"><x-icon name="chef-hat" class="size-5" /></span>
+        </div>
+        <div class="stat-label">Costo de la semana</div>
         <div class="stat-value">{{ money($weekCost) }}</div>
         <div class="mt-1 text-xs text-slate-500">{{ $weekMeals }} {{ $weekMeals === 1 ? 'comida planeada' : 'comidas planeadas' }}</div>
     </a>
-    <a href="{{ route('tasks.index') }}" class="card hover:ring-emerald-300">
-        <div class="stat-label">Hogar · tareas para hoy</div>
+    <a href="{{ route('tasks.index') }}" class="card stat-card" data-nav="hogar">
+        <div class="flex items-start justify-between gap-2">
+            <div class="eyebrow">Hogar</div>
+            <span class="icon-tile"><x-icon name="list-checks" class="size-5" /></span>
+        </div>
+        <div class="stat-label">Tareas para hoy</div>
         <div class="stat-value">{{ $dueTasks->count() }}
-            @if ($overdueCount)<span class="text-base font-semibold text-red-600">· {{ $overdueCount }} {{ $overdueCount === 1 ? 'vencida' : 'vencidas' }}</span>@endif
+            @if ($overdueCount)<span class="font-sans text-sm font-semibold tracking-normal text-red-600">{{ $overdueCount }} {{ $overdueCount === 1 ? 'vencida' : 'vencidas' }}</span>@endif
         </div>
         <div class="mt-1 text-xs text-slate-500">{{ $upcomingTasks }} en los próximos 7 días</div>
     </a>
-    <a href="{{ route('net-worth') }}" class="card hover:ring-emerald-300">
-        <div class="stat-label">Finanzas · patrimonio neto</div>
+    <a href="{{ route('net-worth') }}" class="card stat-card" data-nav="finanzas">
+        <div class="flex items-start justify-between gap-2">
+            <div class="eyebrow">Finanzas</div>
+            <span class="icon-tile"><x-icon name="wallet" class="size-5" /></span>
+        </div>
+        <div class="stat-label">Patrimonio neto</div>
         <div class="stat-value">{{ money($netWorth['total'], 0) }}</div>
         <div class="mt-1 text-xs text-slate-500">
             @if ($netWorth['debts'] > 0)<span class="text-red-600">Deudas −{{ money($netWorth['debts'], 0) }}</span> · @endif
@@ -62,11 +108,11 @@
     {{-- Hogar: tareas de hoy y vencidas --}}
     <section class="card p-0">
         <div class="flex items-center justify-between px-4 pt-4 pb-2">
-            <h2 class="card-title">Tareas de hoy y vencidas</h2>
+            <h2 class="card-title flex items-center gap-2" data-nav="hogar"><span class="nav-dot"></span>Tareas de hoy y vencidas</h2>
             <a href="{{ route('tasks.index') }}" class="link text-xs">Ver todas</a>
         </div>
         @if ($dueTasks->isEmpty())
-            <p class="px-4 pb-5 text-sm text-slate-500">Nada pendiente para hoy. 🎉</p>
+            <p class="px-4 pb-5 text-sm text-slate-500">Nada pendiente para hoy.</p>
         @else
             <ul class="divide-y divide-slate-100 border-t border-slate-100">
                 @foreach ($dueTasks->take(6) as $task)
@@ -82,7 +128,7 @@
     {{-- Finanzas: pagos por hacer --}}
     <section class="card p-0">
         <div class="flex items-center justify-between px-4 pt-4 pb-2">
-            <h2 class="card-title">Pagos por hacer ({{ \App\Models\RecurringPayment::SOON_DAYS }} días)</h2>
+            <h2 class="card-title flex items-center gap-2" data-nav="finanzas"><span class="nav-dot"></span>Pagos por hacer ({{ \App\Models\RecurringPayment::SOON_DAYS }} días)</h2>
             <a href="{{ route('recurring.index') }}" class="link text-xs">Pagos recurrentes</a>
         </div>
         @if ($duePayments->isEmpty())
@@ -105,7 +151,7 @@
     {{-- Cocina --}}
     <section class="card">
         <div class="flex items-center justify-between">
-            <h2 class="card-title">Hoy se come</h2>
+            <h2 class="card-title flex items-center gap-2" data-nav="cocina"><span class="nav-dot"></span>Hoy se come</h2>
             <a href="{{ route('menu.index') }}" class="link text-xs">Menú de la semana</a>
         </div>
         @if ($todayMeals->isEmpty())
@@ -113,7 +159,7 @@
         @else
             <ul class="mt-2 space-y-2 text-sm">
                 @foreach ($todayMeals as $entry)
-                    <li class="rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-slate-200">
+                    <li class="rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-200">
                         <div class="text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ $entry->mealLabel() }}</div>
                         @if ($entry->recipe)
                             <a href="{{ route('recipes.show', ['recipe' => $entry->recipe, 'servings' => $entry->plannedServings()]) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $entry->recipe->name }}</a>
@@ -130,7 +176,7 @@
     {{-- Hogar: bienes --}}
     <section class="card">
         <div class="flex items-center justify-between">
-            <h2 class="card-title">Mantenimiento y garantías</h2>
+            <h2 class="card-title flex items-center gap-2" data-nav="hogar"><span class="nav-dot"></span>Mantenimiento y garantías</h2>
             <a href="{{ route('reports.assets') }}" class="link text-xs">Reporte</a>
         </div>
         @php($plans = $assetSummary['overdue']->merge($assetSummary['soon']))
@@ -165,8 +211,12 @@
 
 {{-- Súper --}}
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-    <a href="{{ route('reports.inflation') }}" class="card hover:ring-emerald-300">
-        <div class="stat-label">Súper · inflación de tu canasta (12 meses)</div>
+    <a href="{{ route('reports.inflation') }}" class="card stat-card" data-nav="super">
+        <div class="flex items-start justify-between gap-2">
+            <div class="eyebrow">Súper</div>
+            <span class="icon-tile"><x-icon name="trending-up" class="size-5" /></span>
+        </div>
+        <div class="stat-label">Inflación de tu canasta (12 meses)</div>
         <div class="stat-value {{ ($inflation['overall'] ?? 0) > 0 ? 'text-red-600' : 'text-emerald-700' }}">{{ pct($inflation['overall']) }}</div>
         <div class="mt-1 text-xs text-slate-500">{{ $inflation['up'] }} artículos subieron · {{ $inflation['down'] }} bajaron</div>
         <div class="mt-4 text-xs text-slate-500">{{ $counts['products'] }} artículos · {{ $counts['providers'] }} proveedores · {{ number_format($counts['prices']) }} precios en {{ $counts['lists'] }} listas</div>
@@ -174,7 +224,7 @@
 
     <div class="card overflow-x-auto p-0">
         <div class="flex items-center justify-between px-5 pt-5 pb-2">
-            <h2 class="card-title">Últimas listas</h2>
+            <h2 class="card-title flex items-center gap-2" data-nav="super"><span class="nav-dot"></span>Últimas listas</h2>
             <a href="{{ route('lists.index') }}" class="link text-xs">Ver todas</a>
         </div>
         <table class="table">
@@ -195,7 +245,7 @@
 
     <div class="card overflow-x-auto p-0">
         <div class="flex items-center justify-between px-5 pt-5 pb-2">
-            <h2 class="card-title">Cambios de precio (60 días)</h2>
+            <h2 class="card-title flex items-center gap-2" data-nav="super"><span class="nav-dot"></span>Cambios de precio (60 días)</h2>
             <a href="{{ route('reports.changes') }}" class="link text-xs">Ver todos</a>
         </div>
         <table class="table">
