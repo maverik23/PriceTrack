@@ -6,72 +6,148 @@
         <h1 class="text-2xl font-semibold text-slate-900">Hola 👋</h1>
         <p class="text-sm text-slate-500">{{ ucfirst(today()->translatedFormat('l d \d\e F Y')) }}</p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
         <a href="{{ route('lists.create') }}" class="btn btn-primary">+ Nueva lista</a>
-        <a href="{{ route('products.create') }}" class="btn btn-secondary">+ Artículo</a>
+        <a href="{{ route('tasks.index') }}" class="btn btn-secondary">+ Tarea</a>
+        <a href="{{ route('menu.index') }}" class="btn btn-secondary">Menú semanal</a>
     </div>
 </div>
 
-@if ($counts['products'] === 0)
+@if ($counts['products'] === 0 && ! $hasFinance)
     <div class="card mb-6 border-l-4 border-emerald-500">
-        <h2 class="card-title">Empieza en 3 pasos</h2>
-        <ol class="mt-2 list-inside list-decimal space-y-1 text-sm text-slate-600">
-            <li>Revisa tus <a class="link" href="{{ route('providers.index') }}">proveedores</a> (Sam's, Costco, Walmart, Amazon…).</li>
-            <li>Da de alta tus <a class="link" href="{{ route('products.create') }}">artículos</a> con su presentación (345 ml, 1 L, 680 g, 1 pza).</li>
-            <li>Crea una <a class="link" href="{{ route('lists.create') }}">lista de compra</a>, captura precios y marca dónde compraste.</li>
-        </ol>
+        <h2 class="card-title">Empieza por donde quieras</h2>
+        <ul class="mt-2 list-inside list-disc space-y-1 text-sm text-slate-600">
+            <li><strong>Súper:</strong> revisa tus <a class="link" href="{{ route('providers.index') }}">proveedores</a>, da de alta tus <a class="link" href="{{ route('products.create') }}">artículos</a> y crea una <a class="link" href="{{ route('lists.create') }}">lista de compra</a>.</li>
+            <li><strong>Cocina:</strong> guarda tus <a class="link" href="{{ route('recipes.create') }}">recetas</a> y arma el <a class="link" href="{{ route('menu.index') }}">menú de la semana</a>.</li>
+            <li><strong>Hogar:</strong> anota tus <a class="link" href="{{ route('tasks.index') }}">tareas</a> y tus <a class="link" href="{{ route('assets.create') }}">bienes</a> con su mantenimiento.</li>
+            <li><strong>Finanzas:</strong> registra tus <a class="link" href="{{ route('investments.create') }}">inversiones</a> para ver tu patrimonio.</li>
+        </ul>
     </div>
 @endif
 
-<div class="card mb-6">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="card-title">Hoy se come</h2>
-        <a href="{{ route('menu.index') }}" class="link text-xs">Menú de la semana</a>
-    </div>
-    @if ($todayMeals->isEmpty())
-        <p class="mt-2 text-sm text-slate-500">No hay nada planeado para hoy. <a class="link" href="{{ route('menu.index') }}">Arma el menú</a>.</p>
-    @else
-        <ul class="mt-2 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            @foreach ($todayMeals as $entry)
-                <li class="rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-slate-200">
-                    <div class="text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ $entry->mealLabel() }}</div>
-                    @if ($entry->recipe)
-                        <a href="{{ route('recipes.show', ['recipe' => $entry->recipe, 'servings' => $entry->plannedServings()]) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $entry->recipe->name }}</a>
-                        <span class="text-xs text-slate-500">· {{ $entry->plannedServings() }} porc.</span>
-                    @else
-                        <span class="text-slate-700">{{ $entry->title }}</span>
-                    @endif
-                </li>
-            @endforeach
-        </ul>
-    @endif
-</div>
-
+{{-- Lo más importante de cada sección --}}
 <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <a href="{{ route('reports.spending') }}" class="card hover:ring-emerald-300">
-        <div class="stat-label">Gasto este mes</div>
+        <div class="stat-label">Súper · gasto este mes</div>
         <div class="stat-value">{{ money($thisMonth['total']) }}</div>
-        <div class="mt-1 text-xs text-slate-500">
-            Mes pasado: {{ money($lastMonth['total']) }} · Promedio mensual: {{ money($monthlyAvg) }}
+        <div class="mt-1 text-xs text-slate-500">Mes pasado: {{ money($lastMonth['total']) }} · Promedio: {{ money($monthlyAvg) }}</div>
+    </a>
+    <a href="{{ route('menu.index') }}" class="card hover:ring-emerald-300">
+        <div class="stat-label">Cocina · costo de la semana</div>
+        <div class="stat-value">{{ money($weekCost) }}</div>
+        <div class="mt-1 text-xs text-slate-500">{{ $weekMeals }} {{ $weekMeals === 1 ? 'comida planeada' : 'comidas planeadas' }}</div>
+    </a>
+    <a href="{{ route('tasks.index') }}" class="card hover:ring-emerald-300">
+        <div class="stat-label">Hogar · tareas para hoy</div>
+        <div class="stat-value">{{ $dueTasks->count() }}
+            @if ($overdueCount)<span class="text-base font-semibold text-red-600">· {{ $overdueCount }} {{ $overdueCount === 1 ? 'vencida' : 'vencidas' }}</span>@endif
         </div>
+        <div class="mt-1 text-xs text-slate-500">{{ $upcomingTasks }} en los próximos 7 días</div>
     </a>
-    <a href="{{ route('reports.inflation') }}" class="card hover:ring-emerald-300">
-        <div class="stat-label">Inflación de tu canasta (12 meses)</div>
-        <div class="stat-value {{ ($inflation['overall'] ?? 0) > 0 ? 'text-red-600' : 'text-emerald-700' }}">{{ pct($inflation['overall']) }}</div>
-        <div class="mt-1 text-xs text-slate-500">{{ $inflation['up'] }} artículos subieron · {{ $inflation['down'] }} bajaron</div>
-    </a>
-    <a href="{{ route('products.index') }}" class="card hover:ring-emerald-300">
-        <div class="stat-label">Artículos / proveedores</div>
-        <div class="stat-value">{{ $counts['products'] }} <span class="text-base font-normal text-slate-400">/ {{ $counts['providers'] }}</span></div>
-    </a>
-    <a href="{{ route('prices.index') }}" class="card hover:ring-emerald-300">
-        <div class="stat-label">Precios registrados</div>
-        <div class="stat-value">{{ number_format($counts['prices']) }}</div>
-        <div class="mt-1 text-xs text-slate-500">en {{ $counts['lists'] }} listas</div>
+    <a href="{{ route('net-worth') }}" class="card hover:ring-emerald-300">
+        <div class="stat-label">Finanzas · patrimonio neto</div>
+        <div class="stat-value">{{ money($netWorth['total'], 0) }}</div>
+        <div class="mt-1 text-xs text-slate-500">
+            @if ($netWorthChange !== null)
+                <span class="{{ $netWorthDelta >= 0 ? 'text-emerald-700' : 'text-red-600' }}">{{ $netWorthDelta >= 0 ? '+' : '' }}{{ money($netWorthDelta, 0) }} ({{ pct($netWorthChange) }})</span> en el mes
+            @else
+                Inversiones + bienes
+            @endif
+        </div>
     </a>
 </div>
 
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+<div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+    {{-- Hogar: tareas de hoy y vencidas --}}
+    <section class="card p-0">
+        <div class="flex items-center justify-between px-4 pt-4 pb-2">
+            <h2 class="card-title">Tareas de hoy y vencidas</h2>
+            <a href="{{ route('tasks.index') }}" class="link text-xs">Ver todas</a>
+        </div>
+        @if ($dueTasks->isEmpty())
+            <p class="px-4 pb-5 text-sm text-slate-500">Nada pendiente para hoy. 🎉</p>
+        @else
+            <ul class="divide-y divide-slate-100 border-t border-slate-100">
+                @foreach ($dueTasks->take(6) as $task)
+                    @include('tasks._row', ['showList' => true])
+                @endforeach
+            </ul>
+            @if ($dueTasks->count() > 6)
+                <a href="{{ route('tasks.index') }}" class="block border-t border-slate-100 px-4 py-2 text-xs link">y {{ $dueTasks->count() - 6 }} más…</a>
+            @endif
+        @endif
+    </section>
+
+    {{-- Cocina --}}
+    <section class="card">
+        <div class="flex items-center justify-between">
+            <h2 class="card-title">Hoy se come</h2>
+            <a href="{{ route('menu.index') }}" class="link text-xs">Menú de la semana</a>
+        </div>
+        @if ($todayMeals->isEmpty())
+            <p class="mt-2 text-sm text-slate-500">No hay nada planeado para hoy. <a class="link" href="{{ route('menu.index') }}">Arma el menú</a>.</p>
+        @else
+            <ul class="mt-2 space-y-2 text-sm">
+                @foreach ($todayMeals as $entry)
+                    <li class="rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-slate-200">
+                        <div class="text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ $entry->mealLabel() }}</div>
+                        @if ($entry->recipe)
+                            <a href="{{ route('recipes.show', ['recipe' => $entry->recipe, 'servings' => $entry->plannedServings()]) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $entry->recipe->name }}</a>
+                            <span class="text-xs text-slate-500">· {{ $entry->plannedServings() }} porc.</span>
+                        @else
+                            <span class="text-slate-700">{{ $entry->title }}</span>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </section>
+
+    {{-- Hogar: bienes --}}
+    <section class="card">
+        <div class="flex items-center justify-between">
+            <h2 class="card-title">Mantenimiento y garantías</h2>
+            <a href="{{ route('reports.assets') }}" class="link text-xs">Reporte</a>
+        </div>
+        @php($plans = $assetSummary['overdue']->merge($assetSummary['soon']))
+        @if (! $hasAssets)
+            <p class="mt-2 text-sm text-slate-500">Agrega tus <a class="link" href="{{ route('assets.create') }}">bienes</a> para llevar su mantenimiento, garantías y valor.</p>
+        @elseif ($plans->isEmpty() && $assetSummary['warranties']->isEmpty())
+            <p class="mt-2 text-sm text-slate-500">Todo al día: ningún servicio ni garantía en los próximos días.</p>
+        @else
+            <ul class="mt-2 divide-y divide-slate-100 text-sm">
+                @foreach ($plans->take(5) as $plan)
+                    <li class="flex items-start justify-between gap-2 py-2">
+                        <div class="min-w-0">
+                            <a href="{{ route('assets.show', $plan->asset) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $plan->name }}</a>
+                            <div class="text-xs text-slate-500">{{ $plan->asset->name }} · {{ $plan->dueLabel() }}</div>
+                        </div>
+                        @include('assets._plan-status')
+                    </li>
+                @endforeach
+                @foreach ($assetSummary['warranties'] as $asset)
+                    <li class="flex items-start justify-between gap-2 py-2">
+                        <div class="min-w-0">
+                            <a href="{{ route('assets.show', $asset) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $asset->name }}</a>
+                            <div class="text-xs text-slate-500">Garantía hasta el {{ $asset->warranty_until->translatedFormat('d M Y') }}</div>
+                        </div>
+                        <span class="badge bg-amber-50 text-amber-800">Garantía</span>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </section>
+</div>
+
+{{-- Súper --}}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <a href="{{ route('reports.inflation') }}" class="card hover:ring-emerald-300">
+        <div class="stat-label">Súper · inflación de tu canasta (12 meses)</div>
+        <div class="stat-value {{ ($inflation['overall'] ?? 0) > 0 ? 'text-red-600' : 'text-emerald-700' }}">{{ pct($inflation['overall']) }}</div>
+        <div class="mt-1 text-xs text-slate-500">{{ $inflation['up'] }} artículos subieron · {{ $inflation['down'] }} bajaron</div>
+        <div class="mt-4 text-xs text-slate-500">{{ $counts['products'] }} artículos · {{ $counts['providers'] }} proveedores · {{ number_format($counts['prices']) }} precios en {{ $counts['lists'] }} listas</div>
+    </a>
+
     <div class="card overflow-x-auto p-0">
         <div class="flex items-center justify-between px-5 pt-5 pb-2">
             <h2 class="card-title">Últimas listas</h2>
@@ -82,8 +158,8 @@
             @forelse ($lists as $list)
                 <tr>
                     <td class="whitespace-nowrap text-slate-500">{{ $list->shopped_on->translatedFormat('d M') }}</td>
-                    <td><a class="font-medium hover:text-emerald-700" href="{{ route('lists.show', $list) }}">{{ $list->name }}</a></td>
-                    <td class="text-right text-xs text-slate-500">{{ $list->purchasedCount() }}/{{ $list->items->count() }}</td>
+                    <td><a class="font-medium hover:text-emerald-700" href="{{ route('lists.show', $list) }}">{{ $list->name }}</a>
+                        <div class="text-xs text-slate-500">{{ $list->purchasedCount() }}/{{ $list->items->count() }} comprados</div></td>
                     <td class="text-right font-semibold tabular-nums">{{ money($list->total()) }}</td>
                 </tr>
             @empty
@@ -95,17 +171,15 @@
 
     <div class="card overflow-x-auto p-0">
         <div class="flex items-center justify-between px-5 pt-5 pb-2">
-            <h2 class="card-title">Cambios de precio recientes (60 días)</h2>
+            <h2 class="card-title">Cambios de precio (60 días)</h2>
             <a href="{{ route('reports.changes') }}" class="link text-xs">Ver todos</a>
         </div>
         <table class="table">
             <tbody>
             @forelse ($changes as $c)
                 <tr>
-                    <td class="whitespace-nowrap text-slate-500">{{ $c->current->observed_on->translatedFormat('d M') }}</td>
                     <td><a class="font-medium hover:text-emerald-700" href="{{ route('products.show', $c->product) }}">{{ $c->product->name }}</a>
-                        <div class="text-xs text-slate-500">{{ $c->provider->name }}</div></td>
-                    <td class="text-right tabular-nums text-sm">{{ money($c->current->comparePrice()) }}{{ $c->current->compareLabel() }}</td>
+                        <div class="text-xs text-slate-500">{{ $c->provider->name }} · {{ $c->current->observed_on->translatedFormat('d M') }}</div></td>
                     <td class="text-right"><span class="badge {{ $c->change > 0 ? 'badge-up' : 'badge-down' }}">{{ pct($c->change) }}</span></td>
                 </tr>
             @empty

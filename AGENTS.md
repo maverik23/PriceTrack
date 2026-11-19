@@ -1,6 +1,6 @@
 # PriceTrack: notas para agentes
 
-Comparador personal de precios del súper. Laravel 13 + Sail (PHP 8.5, MySQL 8.4), Blade + Tailwind v4 + Chart.js. Sin login. La interfaz está en español (México).
+App del hogar: comparador de precios del súper (el origen), y además cocina (recetas y menú), hogar (tareas, bienes y mantenimiento) y finanzas (inversiones y patrimonio). El inicio resume las cuatro secciones (`DashboardController`). Laravel 13 + Sail (PHP 8.5, MySQL 8.4), Blade + Tailwind v4 + Chart.js. Sin login. La interfaz está en español (México).
 
 ## Entorno
 

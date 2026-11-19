@@ -1,12 +1,12 @@
-# PriceTrack: comparador de precios del súper y lista de compras
+# PriceTrack: precios del súper, recetas, tareas, bienes e inversiones de tu casa
 
 **PriceTrack** es una app web *self-hosted* para **comparar precios del supermercado** entre tiendas (Sam's Club, Costco, Walmart, Amazon, Soriana, Chedraui o las que agregues), calcular el **precio por unidad** ($/L, $/kg, $/pza) y saber **dónde conviene comprar**. Llevas tu **lista de compras como una hoja de Excel**, cada precio queda guardado con su fecha y su tienda, y con ese historial ves tu **inflación personal** y tu **gasto promedio semanal, mensual y anual**.
 
-Además lleva tus **recetas y el menú de la semana** (y manda los ingredientes a la lista) las **tareas de la casa** tus **bienes** (valor, depreciación o plusvalía, mantenimiento y garantías) y tus **inversiones**, con tu patrimonio neto.
+Además es la app de tu casa: **recetas y menú de la semana** (los ingredientes van a tu lista de compras), **tareas** con repetición, **bienes** con su valor (depreciación o plusvalía), mantenimiento y garantías, e **inversiones** con su rendimiento y tu **patrimonio neto**. El inicio resume todo: qué se come hoy, qué tareas tocan, qué servicio está vencido y cuánto vale lo que tienes.
 
 Hecha con Laravel 13, Alpine.js y Tailwind CSS. Corre en Docker (Portainer, servidor casero o VPS), sin cuentas ni login, y tus datos se quedan en tu servidor.
 
-> 🇬🇧 **English:** self-hosted **grocery price tracker** and **shopping list**. Compare supermarket prices across stores by **unit price** (per liter, kilo or piece), log every price with its date and store, and get your **personal inflation** and **average grocery spending** (weekly, monthly, yearly). Spreadsheet-like shopping list, no login, runs on Docker. The UI is in Spanish (Mexico).
+> 🇬🇧 **English:** self-hosted **grocery price tracker** and **shopping list**. Compare supermarket prices across stores by **unit price** (per liter, kilo or piece), log every price with its date and store, and get your **personal inflation** and **average grocery spending** (weekly, monthly, yearly). Spreadsheet-like shopping list, no login, runs on Docker. Also a home organizer: recipes and weekly meal plan, recurring tasks, home assets with depreciation/appreciation and maintenance, investments with money-weighted returns (XIRR) and net worth. The UI is in Spanish (Mexico).
 
 ## Funciones
 

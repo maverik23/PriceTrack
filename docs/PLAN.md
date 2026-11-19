@@ -177,17 +177,36 @@ valor y ganancia en pesos), patrimonio con gráfica, sin desbordes en móvil. Al
 subió el formulario de movimientos arriba de la lista (quedaba al final de 30 renglones) y las
 cuentas cerradas muestran su fecha de cierre.
 
-## Fase 5. Inicio como resumen
+## Fase 5. Inicio como resumen ✅ terminada
 
-- Tarjetas por sección: gasto del mes e inflación (ya existen), qué se come hoy y costo de la
-  semana, tareas de hoy y vencidas, mantenimientos próximos y garantías por vencer,
-  patrimonio neto y su cambio.
-- Completar el menú por secciones con Hogar y Finanzas, y actualizar el pie de página, el
-  texto de bienvenida, `README.md` y `AGENTS.md`.
+- `DashboardController` y `dashboard.blade.php`: cuatro tarjetas (gasto del mes, costo de la
+  semana del menú, tareas de hoy y vencidas, patrimonio neto y su cambio en el mes); tareas de
+  hoy y vencidas que se completan ahí mismo; qué se come hoy; servicios vencidos o próximos y
+  garantías por vencer; y la parte del súper (inflación, últimas listas, cambios de precio).
+- Sin datos, el inicio invita a empezar por cualquiera de las cuatro secciones.
+- Menú completo: Inicio · Súper · Cocina · Hogar · Finanzas. Pie de página, `README.md` y
+  `AGENTS.md` al día. `tests/Feature/DashboardTest.php`.
+- Verificado con Playwright en escritorio y móvil (completar una tarea desde el inicio vuelve
+  al inicio con el mensaje; sin desbordes). El botón "Menú" del inicio se renombró a
+  "Menú semanal" porque en móvil se confundía con el botón del menú de navegación.
 
-## Pendientes de decidir con el usuario (no bloquean la fase 1)
+## Pendientes de decidir con el usuario
 
-- ~~Tareas repetitivas: ¿desde el vencimiento o desde que se completan?~~ Se eligió desde que se completan (fase 2).
-- ¿Deudas dentro de Finanzas?
-- ¿Avisos fuera de la app (correo, notificación) para tareas y mantenimientos, o basta con verlos en el inicio?
+- ~~Tareas repetitivas: ¿desde el vencimiento o desde que se completan?~~ Se eligió desde que
+  se completan (fase 2). Si hacen falta fechas fijas (pagos), sería un campo por tarea.
+- ¿Deudas dentro de Finanzas (hipoteca, crédito del auto)? No se construyeron; el patrimonio
+  dice "Sin deudas" y `FinanceReport::netWorthOn()` es donde se restarían.
+- ¿Avisos fuera de la app (correo, notificación) para tareas y mantenimientos? Por ahora se
+  ven en el inicio y en Tareas.
 - ¿Fotos y documentos adjuntos (facturas, pólizas, manuales) en los bienes?
+- Las decisiones "más simples" de las fases 3 y 4 (lo que pase primero en planes por tiempo y
+  uso, servicio sin costo al completar el recordatorio, dividendos informativos, etc.) están
+  anotadas en cada fase por si se quieren cambiar.
+
+## Notas para quien siga
+
+- Con SQLite siguen fallando solo los 4 tests de siempre (todos por fechas guardadas con hora
+  en SQLite); por la misma razón, en una copia local con SQLite el "gasto este mes" del inicio
+  puede no contar la lista de hoy. En MySQL no pasa.
+- Todo lo nuevo se probó con SQLite en la nube; conviene correr `sail artisan test` con MySQL
+  antes de desplegar (las migraciones nuevas no usan nada específico de un motor).
