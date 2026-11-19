@@ -42,10 +42,13 @@ Servidor: API de inversiones, patrimonio, deudas, pagos recurrentes, ingresos y 
 
 ## Fase 5. Pulido
 
-Notificaciones locales (tareas y pagos por vencer), acceso rápido a la lista pendiente, revisión de accesibilidad y tamaños de letra, preparar publicación (firma, iconos, capturas) si el usuario quiere distribuirla.
+Notificaciones locales (tareas y pagos por vencer), acceso rápido a la lista pendiente, revisión de accesibilidad y tamaños de letra. **No se publica en tiendas**: el usuario la instala directo en sus teléfonos (Android: `flutter build apk --release` e instalar el APK; iOS: desde Xcode en su Mac con su cuenta de Apple), así que no hacen falta fichas de tienda ni capturas. Dejar en el `README.md` los pasos para compilar e instalar en cada plataforma.
+
+## Decisiones confirmadas por el usuario (2026-11-19)
+
+- Sin conexión, en una lista de compras se puede **agregar, cambiar la cantidad y marcar o desmarcar lo comprado** (`docs/OFFLINE.md` §4).
+- Distribución: **solo instalada en sus teléfonos**, sin tiendas.
 
 ## Preguntas abiertas para el usuario
 
-1. Sin conexión en la lista: ¿solo **agregar** (lo que pidió) o también cambiar cantidad y marcar comprado (propuesto en `docs/OFFLINE.md`)?
-2. ¿Identificador de la app? Propuesto `app.pricetrack.pricetrack`.
-3. ¿La distribuirá por tiendas (App Store / Play) o solo instalada en sus teléfonos? Cambia la fase 5.
+1. ¿Identificador de la app? Propuesto `app.pricetrack.pricetrack`.

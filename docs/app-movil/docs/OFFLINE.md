@@ -42,7 +42,7 @@ Sin conexión, en la hoja de una lista se permite:
 | Cambiar la **cantidad** | `PATCH …/items/{item}` `quantity` | Deja el mismo valor |
 | **Marcar o desmarcar** dónde se compró (con un precio ya guardado en la copia) | `PATCH …/items/{item}` `price_id` | Deja el mismo valor |
 
-Agregar es lo que pidió el usuario; cantidad y marcar comprado se incluyen porque son lo que se hace en la tienda y son igual de seguras. **Confirmar con el usuario** si prefiere dejar solo «agregar». Todo lo demás de la hoja (capturar precios, ticket, quitar, «Compré», tiendas visibles) pide conexión.
+Las tres están confirmadas por el usuario (pidió agregar y aceptó también cantidad y marcar comprado, que es lo que se hace en la tienda). Todo lo demás de la hoja (capturar precios, ticket, quitar, «Compré», tiendas visibles) pide conexión.
 
 Cola: tabla `outbox(id INTEGER PRIMARY KEY AUTOINCREMENT, list_id, kind, payload JSON, error, created_at)`, `kind` = `add` | `qty` | `buy`.
 

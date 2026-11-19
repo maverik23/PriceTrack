@@ -7,7 +7,8 @@ App Flutter (Android + iOS) de PriceTrack. El servidor es el repo `maverik23/Pri
 - **API REST** (no MCP, no WebView). Ya existe en el servidor para Inicio y Súper; las de Cocina, Hogar y Finanzas se agregan en el repo del servidor cuando toque su fase.
 - **Android e iOS.** El usuario compila iOS en su Mac.
 - **Dirección del servidor configurable** (usa Tailscale) y token opcional. Nada de direcciones fijas en el código.
-- **Sin conexión, toda la app se puede ver** (copia local). **Agregar, editar y borrar necesita conexión**, con una sola excepción: en una **lista de compras** se puede agregar sin conexión y se sincroniza al volver. Detalle en `docs/OFFLINE.md`.
+- **Sin conexión, toda la app se puede ver** (copia local). **Agregar, editar y borrar necesita conexión**, con una sola excepción: en una **lista de compras** se puede agregar, cambiar la cantidad y marcar lo comprado sin conexión, y se sincroniza al volver. Detalle en `docs/OFFLINE.md`.
+- **No se publica en tiendas**: se instala directo en los teléfonos del usuario.
 - Mismo alcance que la web: las cinco secciones (Inicio, Súper, Cocina, Hogar, Finanzas) con sus altas, cambios y bajas.
 
 ## Reglas de arquitectura
