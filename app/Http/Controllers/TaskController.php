@@ -6,9 +6,9 @@ use App\Models\Task;
 use App\Models\TaskList;
 use App\Support\Paginate;
 use App\Support\TaskCalendar;
+use App\Support\TaskData;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
@@ -27,10 +27,7 @@ class TaskController extends Controller
         $general = $request->query('list') === 'none';
 
         $search = $request->string('q')->trim()->toString();
-        $scope = fn ($query) => $query
-            ->when($list, fn ($q) => $q->where('task_list_id', $list->id))
-            ->when($general, fn ($q) => $q->whereNull('task_list_id'))
-            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->where('title', 'like', "%{$search}%")->orWhere('notes', 'like', "%{$search}%")));
+        $scope = fn ($query) => $query->filter($list, $general, $search);
 
         $view = $request->query('view') === 'list' ? 'list' : 'calendar';
         $month = rescue(fn () => preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month'))
@@ -151,29 +148,6 @@ class TaskController extends Controller
 
     private function validated(Request $request): array
     {
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:200'],
-            'notes' => ['nullable', 'string', 'max:5000'],
-            'task_list_id' => ['nullable', 'exists:task_lists,id'],
-            'due_on' => ['nullable', 'date'],
-            'priority' => ['nullable', Rule::in(array_keys(Task::PRIORITIES))],
-            'repeat_every' => ['nullable', 'integer', 'min:1', 'max:999', 'required_with:repeat_unit'],
-            'repeat_unit' => ['nullable', Rule::in(array_keys(Task::REPEAT_UNITS)), 'required_with:repeat_every'],
-        ], [], [
-            'title' => 'tarea',
-            'task_list_id' => 'lista',
-            'due_on' => 'fecha',
-            'priority' => 'prioridad',
-            'repeat_every' => 'cada cuánto',
-            'repeat_unit' => 'unidad de repetición',
-        ]);
-
-        $data['priority'] = (int) ($data['priority'] ?? 2);
-        if (empty($data['repeat_every']) || empty($data['repeat_unit'])) {
-            $data['repeat_every'] = null;
-            $data['repeat_unit'] = null;
-        }
-
-        return $data;
+        return TaskData::validate($request->all());
     }
 }

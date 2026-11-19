@@ -11,6 +11,7 @@ use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ShoppingListController;
 use App\Http\Controllers\ShoppingListItemController;
+use App\Http\Controllers\TaskController;
 use App\Http\Middleware\ApiToken;
 use Illuminate\Support\Facades\Route;
 
@@ -85,6 +86,30 @@ Route::middleware(ApiToken::class)->name('api.')->group(function () {
     Route::post('menu/shop', [Api\MenuController::class, 'shop']);
     Route::put('menu/notes/{date}', [MenuController::class, 'note'])->where('date', '\d{4}-\d{2}-\d{2}');
     Route::delete('menu/{entry}', [Api\MenuController::class, 'destroy']);
+
+    // Hogar: tareas y sus listas
+    Route::get('tasks/calendar', [Api\TaskController::class, 'calendar']);
+    Route::apiResource('tasks', Api\TaskController::class);
+    Route::post('tasks/{task}/toggle', [Api\TaskController::class, 'toggle']);
+    Route::patch('tasks/{task}/move', [TaskController::class, 'move']);
+    Route::apiResource('task-lists', Api\TaskListController::class)->except(['show']);
+
+    // Hogar: bienes, sus capturas y sus planes de mantenimiento
+    Route::get('assets/options', [Api\AssetController::class, 'options']);
+    Route::apiResource('assets', Api\AssetController::class);
+    Route::scopeBindings()->prefix('assets/{asset}')->controller(Api\AssetController::class)->group(function () {
+        Route::post('attachments', 'attachments');
+        Route::post('valuations', 'storeValuation');
+        Route::delete('valuations/{valuation}', 'destroyValuation');
+        Route::post('readings', 'storeReading');
+        Route::delete('readings/{meterReading}', 'destroyReading');
+        Route::post('logs', 'storeLog');
+        Route::delete('logs/{maintenanceLog}', 'destroyLog');
+        Route::post('plans', 'storePlan');
+        Route::put('plans/{maintenancePlan}', 'updatePlan');
+        Route::delete('plans/{maintenancePlan}', 'destroyPlan');
+    });
+    Route::get('reports/assets', [Api\ReportController::class, 'assets']);
 
     // Fotos y documentos: el archivo (?thumb=1 la miniatura) y quitarlo
     Route::get('attachments/{attachment}', [AttachmentController::class, 'show']);

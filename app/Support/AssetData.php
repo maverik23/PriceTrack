@@ -3,6 +3,9 @@
 namespace App\Support;
 
 use App\Models\Asset;
+use App\Models\AssetValuation;
+use App\Models\MaintenanceLog;
+use App\Models\MeterReading;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -84,5 +87,52 @@ class AssetData
         }
 
         return $input;
+    }
+
+    /** Un valor capturado (uno por día: corrige el de ese día si ya había). */
+    public static function saveValuation(Asset $asset, array $input): AssetValuation
+    {
+        $data = Validator::validate($input, [
+            'valued_on' => ['required', 'date', 'before_or_equal:today'],
+            'value' => ['required', 'numeric', 'min:0', 'max:999999999999'],
+            'notes' => ['nullable', 'string', 'max:255'],
+        ], [], ['valued_on' => 'fecha', 'value' => 'valor']);
+
+        $existing = $asset->valuations()->whereDate('valued_on', $data['valued_on'])->first();
+
+        return $existing ? tap($existing)->update($data) : $asset->valuations()->create($data);
+    }
+
+    /** Una lectura del medidor (mueve las tareas de los planes por uso). */
+    public static function saveReading(Asset $asset, array $input): MeterReading
+    {
+        $data = Validator::validate($input, [
+            'read_on' => ['required', 'date', 'before_or_equal:today'],
+            'reading' => ['required', 'numeric', 'min:0', 'max:99999999999'],
+        ], [], ['read_on' => 'fecha', 'reading' => 'lectura']);
+
+        $reading = $asset->meterReadings()->create($data);
+        $asset->syncMaintenanceTasks();
+
+        return $reading;
+    }
+
+    /** Un servicio hecho, opcionalmente de uno de sus planes (mueve la tarea del plan). */
+    public static function saveLog(Asset $asset, array $input): MaintenanceLog
+    {
+        $data = Validator::validate($input, [
+            'maintenance_plan_id' => ['nullable', 'exists:maintenance_plans,id'],
+            'done_on' => ['required', 'date', 'before_or_equal:today'],
+            'meter_reading' => ['nullable', 'numeric', 'min:0', 'max:99999999999'],
+            'cost' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
+            'provider' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:255'],
+        ], [], [
+            'maintenance_plan_id' => 'plan', 'done_on' => 'fecha', 'meter_reading' => 'lectura',
+            'cost' => 'costo', 'provider' => 'quién lo hizo',
+        ]);
+        abort_if(! empty($data['maintenance_plan_id']) && ! $asset->maintenancePlans()->whereKey($data['maintenance_plan_id'])->exists(), 404);
+
+        return $asset->maintenanceLogs()->create($data);
     }
 }

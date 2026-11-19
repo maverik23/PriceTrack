@@ -3,8 +3,13 @@
 namespace App\Api;
 
 use App\Mcp\Present as Base;
+use App\Models\Asset;
+use App\Models\AssetValuation;
 use App\Models\Attachment;
+use App\Models\MaintenanceLog;
+use App\Models\MaintenancePlan;
 use App\Models\MealPlanEntry;
+use App\Models\MeterReading;
 use App\Models\Price;
 use App\Models\Product;
 use App\Models\ProductLink;
@@ -13,6 +18,9 @@ use App\Models\Recipe;
 use App\Models\RecipeIngredient;
 use App\Models\RecipeStep;
 use App\Models\ShoppingList;
+use App\Models\Task;
+use App\Models\TaskList;
+use App\Support\AssetData;
 use App\Support\RecipeData;
 use App\Support\RecipeView;
 
@@ -228,6 +236,119 @@ class Present
             'cost' => $cell['cost'],
             'macros' => $cell['macros'],
             'photo' => self::attachment($entry->recipe?->coverPhoto()),
+        ];
+    }
+
+    // ---------- Hogar ----------
+
+    /**
+     * Una tarea. `taskable` dice a qué está ligada (un bien, por su mantenimiento).
+     * Necesita `list` y `taskable`.
+     *
+     * @return array<string, mixed>
+     */
+    public static function task(Task $task): array
+    {
+        return Base::task($task) + [
+            'priority_value' => $task->priority,
+            'repeat_every' => $task->repeat_every,
+            'repeat_unit' => $task->repeat_unit,
+            'repeated_from_id' => $task->repeated_from_id,
+            'taskable' => $task->taskable ? [
+                'type' => $task->taskable instanceof Asset ? 'asset' : class_basename($task->taskable),
+                'id' => $task->taskable->getKey(),
+                'name' => $task->taskable->name ?? null,
+            ] : null,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function taskList(TaskList $list): array
+    {
+        return ['id' => $list->id, 'name' => $list->name, 'pending' => $list->tasks_count ?? null];
+    }
+
+    /**
+     * Un plan de mantenimiento: cada cuánto, cuándo toca (fecha y/o lectura) y su estado
+     * (`overdue`, `soon`, `ok`, `none` = sin intervalo). Necesita `logs` y `asset`.
+     *
+     * @return array<string, mixed>
+     */
+    public static function plan(MaintenancePlan $plan): array
+    {
+        return [
+            'id' => $plan->id,
+            'asset_id' => $plan->asset_id,
+            'asset' => $plan->asset?->name,
+            'name' => $plan->name,
+            'every' => $plan->every,
+            'every_unit' => $plan->every_unit,
+            'every_meter' => $plan->every_meter,
+            'interval' => $plan->intervalLabel(),
+            'estimated_cost' => $plan->estimated_cost,
+            'notes' => $plan->notes,
+            'status' => $plan->status(),
+            'next_due_on' => $plan->nextDueOn()?->toDateString(),
+            'next_meter' => $plan->nextMeter(),
+            'due_label' => $plan->dueLabel() ?: null,
+            'last_done_on' => $plan->lastLog()?->done_on?->toDateString(),
+            'task_id' => $plan->task_id,
+        ];
+    }
+
+    /**
+     * Un bien en la lista: datos, valor de hoy, ganancia contra la compra, medidor, garantía y
+     * sus planes. Necesita lo de AssetReport::assets() y `attachments`.
+     *
+     * @return array<string, mixed>
+     */
+    public static function asset(Asset $asset): array
+    {
+        return [
+            ...$asset->only(['id', 'name', 'category', 'brand', 'model', 'serial_number', 'location', 'purchase_price', 'status',
+                'disposal_amount', 'valuation_method', 'useful_life_years', 'salvage_value', 'annual_rate', 'meter_unit', 'notes']),
+            'status_label' => $asset->statusLabel(),
+            'purchased_on' => $asset->purchased_on?->toDateString(),
+            'warranty_until' => $asset->warranty_until?->toDateString(),
+            'warranty_active' => $asset->warrantyActive(),
+            'disposed_on' => $asset->disposed_on?->toDateString(),
+            'current_value' => $asset->isActive() ? $asset->currentValue() : null,
+            'gain' => $asset->gain(),
+            'current_meter' => $asset->currentMeter(),
+            'maintenance_cost_year' => $asset->maintenanceCost(today()->year),
+            'maintenance_cost_total' => $asset->maintenanceCost(),
+            'ownership_cost' => $asset->ownershipCost(),
+            'photo' => self::attachment($asset->coverPhoto()),
+            'plans' => $asset->maintenancePlans->map(fn (MaintenancePlan $p) => self::plan($p->setRelation('asset', $asset)))->values()->all(),
+        ];
+    }
+
+    /**
+     * Ficha de un bien: además, todo su historial (valores, lecturas, servicios, con su `id`
+     * para borrarlos), la serie de su valor para la gráfica, sus tareas pendientes y sus fotos
+     * y documentos. Necesita lo de Api\AssetController::WITH.
+     *
+     * @return array<string, mixed>
+     */
+    public static function assetDetail(Asset $asset): array
+    {
+        return self::asset($asset) + [
+            'valuations' => $asset->valuations->sortByDesc('valued_on')->map(fn (AssetValuation $v) => [
+                'id' => $v->id, 'valued_on' => $v->valued_on->toDateString(), 'value' => $v->value, 'notes' => $v->notes,
+            ])->values()->all(),
+            'readings' => $asset->meterReadings->sortByDesc('read_on')->map(fn (MeterReading $r) => [
+                'id' => $r->id, 'read_on' => $r->read_on->toDateString(), 'reading' => $r->reading,
+            ])->values()->all(),
+            'services' => $asset->maintenanceLogs->sortByDesc('done_on')->map(fn (MaintenanceLog $l) => [
+                'id' => $l->id, 'done_on' => $l->done_on->toDateString(), 'plan_id' => $l->maintenance_plan_id, 'plan' => $l->plan?->name,
+                'meter_reading' => $l->meter_reading, 'cost' => $l->cost, 'provider' => $l->provider, 'notes' => $l->notes, 'task_id' => $l->task_id,
+            ])->values()->all(),
+            'series' => $asset->valueSeries(),
+            'tasks' => $asset->tasks()->with('list')->pending()->orderByRaw('due_on is null')->orderBy('due_on')->get()
+                ->map(fn (Task $t) => Base::task($t))->all(),
+            'attachments' => $asset->attachments->map(fn (Attachment $a) => self::attachment($a))->values()->all(),
+            // Lo que acepta PUT assets/{id} (para el formulario de edición)
+            'input' => AssetData::toInput($asset),
         ];
     }
 }

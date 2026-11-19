@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\TaskList;
+use App\Support\TaskData;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class TaskListController extends Controller
 {
     public function store(Request $request)
     {
-        $data = $request->validate(['name' => ['required', 'string', 'max:80', 'unique:task_lists,name']], [], ['name' => 'nombre de la lista']);
+        $data = TaskData::validateList($request->all());
         $list = TaskList::create($data);
 
         return redirect()->route('tasks.index', ['list' => $list->id])->with('success', "Lista «{$list->name}» creada.");
@@ -18,9 +18,7 @@ class TaskListController extends Controller
 
     public function update(Request $request, TaskList $taskList)
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:80', Rule::unique('task_lists', 'name')->ignore($taskList)],
-        ], [], ['name' => 'nombre de la lista']);
+        $data = TaskData::validateList($request->all(), $taskList);
         $taskList->update($data);
 
         return redirect()->route('tasks.index', ['list' => $taskList->id])->with('success', 'Lista renombrada.');

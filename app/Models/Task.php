@@ -56,6 +56,14 @@ class Task extends Model
         return $this->hasMany(self::class, 'repeated_from_id');
     }
 
+    /** La lista elegida (o "General", sin lista) y texto en el título o las notas. */
+    public function scopeFilter(Builder $query, ?TaskList $list = null, bool $general = false, string $search = ''): void
+    {
+        $query->when($list, fn ($q) => $q->where('task_list_id', $list->id))
+            ->when($general, fn ($q) => $q->whereNull('task_list_id'))
+            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->where('title', 'like', "%{$search}%")->orWhere('notes', 'like', "%{$search}%")));
+    }
+
     public function scopePending(Builder $query): void
     {
         $query->whereNull('completed_at');
