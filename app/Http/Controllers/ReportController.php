@@ -35,9 +35,10 @@ class ReportController extends Controller
     public function spending(Request $request)
     {
         [$from, $to] = ReportService::range($request);
+        $stores = array_key_exists((string) $request->query('stores'), ReportService::STORES) ? $request->query('stores') : 'super';
 
-        return view('reports.spending', ['from' => $from, 'to' => $to, 'gaps' => $this->reports->spendingGaps($from, $to)]
-            + $this->reports->spending($from, $to));
+        return view('reports.spending', ['from' => $from, 'to' => $to, 'gaps' => $this->reports->spendingGaps($from, $to), 'storeOptions' => ReportService::STORES]
+            + $this->reports->spending($from, $to, $stores));
     }
 
     /** Mantenimiento por año, costo de tener cada bien, servicios próximos y garantías por vencer. */

@@ -1,7 +1,8 @@
 /**
  * Formulario de proveedor (providers/_form): cadena y sucursal.
  *
- * - Al escribir el nombre de un proveedor nuevo se adivina la cadena (mismos patrones que
+ * - Al escribir el nombre de un proveedor nuevo se adivina si es súper (Provider::guessGroceries())
+ *   y la cadena (mismos patrones que
  *   StoreBranches::guess(), los manda la vista), mientras no se haya elegido a mano.
  * - Las cadenas que listan sus sucursales (Chedraui, Costco) las piden al servidor con el código
  *   postal (GET settings/branches) y se elige de la lista; las demás se escriben (número y nombre).
@@ -16,6 +17,8 @@ export default function providerForm(config) {
         branch: config.branch || '',
         branchName: config.branchName || '',
         touched: !!config.chain || !config.isNew,
+        groceries: config.groceries !== false,
+        groceriesTouched: !config.isNew,
         branches: [],
         loading: false,
         error: '',
@@ -35,6 +38,8 @@ export default function providerForm(config) {
             return !!this.info?.list;
         },
         guess(name) {
+            // Home Depot, una ferretería…: no es súper (mismo patrón que Provider::guessGroceries())
+            if (!this.groceriesTouched) this.groceries = !new RegExp(config.notGroceries, 'iu').test(name || '');
             if (this.touched) return;
             const found = Object.entries(this.chains).find(([, c]) => new RegExp(c.match, 'iu').test(name || ''));
             const key = found ? found[0] : '';

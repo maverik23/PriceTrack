@@ -18,10 +18,20 @@
         <label class="label" for="to">Hasta</label>
         <input id="to" type="date" name="to" value="{{ $to->format('Y-m-d') }}" class="input">
     </div>
+    @isset($storeOptions)
+        <div>
+            <label class="label" for="stores">Tiendas</label>
+            <select id="stores" name="stores" class="input">
+                @foreach ($storeOptions as $value => $label)
+                    <option value="{{ $value }}" @selected($stores === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+    @endisset
     <div class="flex flex-wrap gap-1 sm:ml-auto">
         @foreach ($presets as $label => [$f, $t])
             @php($active = $from->isSameDay($f) && $to->isSameDay($t))
-            <a href="{{ request()->url() }}?from={{ $f->format('Y-m-d') }}&to={{ $t->format('Y-m-d') }}"
+            <a href="{{ request()->url() }}?{{ http_build_query(['from' => $f->format('Y-m-d'), 'to' => $t->format('Y-m-d')] + request()->except(['from', 'to'])) }}"
                class="btn btn-sm {{ $active ? 'bg-brand text-on-brand' : 'btn-secondary' }}">{{ $label }}</a>
         @endforeach
     </div>

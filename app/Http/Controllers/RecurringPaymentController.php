@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Debt;
 use App\Models\Payment;
 use App\Models\RecurringPayment;
-use App\Models\Task;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -26,7 +25,7 @@ class RecurringPaymentController extends Controller
             'recent' => Payment::with('recurringPayment', 'debt')->orderByDesc('paid_on')->orderByDesc('id')->take(15)->get(),
             'categories' => RecurringPayment::categories(),
             'debts' => Debt::orderBy('name')->get()->reject->isPaidOff(),
-            'units' => Task::REPEAT_UNITS,
+            'units' => RecurringPayment::scheduleUnits(true),
             'payment' => new RecurringPayment(['next_due_on' => today()]),
         ]);
     }
@@ -44,7 +43,7 @@ class RecurringPaymentController extends Controller
             'payment' => $recurringPayment->load('payments'),
             'categories' => RecurringPayment::categories(),
             'debts' => Debt::orderBy('name')->get(),
-            'units' => Task::REPEAT_UNITS,
+            'units' => RecurringPayment::scheduleUnits(true),
         ]);
     }
 
@@ -120,7 +119,7 @@ class RecurringPaymentController extends Controller
             'amount' => ['required', 'numeric', 'gt:0', 'max:99999999999'],
             'meter_unit' => ['nullable', 'string', 'max:12'],
             'every' => ['required', 'integer', 'min:1', 'max:999'],
-            'every_unit' => ['required', Rule::in(array_keys(Task::REPEAT_UNITS))],
+            'every_unit' => ['required', Rule::in(array_keys(RecurringPayment::scheduleUnits(true)))],
             'next_due_on' => ['required', 'date'],
             'debt_id' => ['nullable', 'exists:debts,id'],
             'active' => ['nullable', 'boolean'],

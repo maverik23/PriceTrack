@@ -38,16 +38,14 @@ class FinanceReport
         $value = $this->investmentsOn($today, $accounts);
         $contributed = round($accounts->sum(fn (InvestmentAccount $a) => $a->netContributed($today)), 2);
 
-        $flows = $accounts->flatMap(fn (InvestmentAccount $a) => $a->transactions
-            ->filter(fn ($t) => $t->contribution() != 0)
-            ->map(fn ($t) => [CarbonImmutable::parse($t->occurred_on->toDateString()), -$t->contribution()]))
-            ->values()->all();
-        $flows[] = [$today, $value];
+        // Cada cuenta se mide a la fecha de su última captura, como en su renglón: así, con una
+        // sola cuenta el total es el de ella (medir a hoy contaba días sin rendimiento capturado)
+        $flows = $accounts->flatMap(fn (InvestmentAccount $a) => $a->cashFlows())->values()->all();
 
         return [
             'value' => $value,
             'contributed' => $contributed,
-            'gain' => round($value - $contributed, 2),
+            'gain' => round($accounts->sum(fn (InvestmentAccount $a) => $a->gain()), 2),
             'annualized' => Xirr::calculate($flows),
             'stale' => $accounts->filter->isStale()->values(),
         ];

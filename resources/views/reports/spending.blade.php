@@ -23,6 +23,24 @@
     </div>
 @endif
 
+@if ($excluded['amount'] > 0)
+    <p class="mb-4 text-sm text-slate-500">
+        @if ($stores === 'super')
+            No cuenta {{ money($excluded['amount']) }} en tiendas que no son súper ({{ implode(', ', $excluded['stores']) }}).
+        @else
+            No cuenta {{ money($excluded['amount']) }} del súper.
+        @endif
+        <a class="link" href="{{ request()->fullUrlWithQuery(['stores' => 'all']) }}">Ver todas</a> · Se cambia al editar la tienda («Es súper»).
+    </p>
+@endif
+
+@if ($total > 0 && $shortMonthly)
+    <div class="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+        Solo hay {{ $span }} {{ $span === 1 ? 'día' : 'días' }} con compras (desde el {{ $start->translatedFormat('d M Y') }}): el promedio mensual y el anual multiplican esos días y todavía no dicen mucho.
+        Con al menos {{ \App\Services\ReportService::MIN_DAYS_MONTHLY }} días el mensual ya es un promedio real.
+    </div>
+@endif
+
 @if ($total <= 0)
     <div class="card py-12 text-center text-slate-500">No hay compras registradas en este periodo. Marca artículos como «Comprado aquí» en tus listas.</div>
 @else
@@ -37,7 +55,7 @@
             <div class="stat-value">{{ money($weekly) }}</div>
         </div>
         <div class="card">
-            <div class="stat-label">Promedio mensual</div>
+            <div class="stat-label">Promedio mensual {{ $shortMonthly ? '(proyectado)' : '' }}</div>
             <div class="stat-value">{{ money($monthly) }}</div>
         </div>
         <div class="card">

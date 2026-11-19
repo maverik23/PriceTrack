@@ -7,6 +7,7 @@ use App\Mcp\Present;
 use App\Mcp\Tool;
 use App\Models\Product;
 use App\Support\Barcode;
+use App\Support\Categories;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
@@ -36,7 +37,9 @@ class CreateProduct extends Tool
             'category' => Product::canonicalValue('category', $data['category'] ?? null),
         ]);
 
-        return $this->json(['created' => Present::product($product->load('prices.provider'))]);
+        return $this->json(['created' => Present::product($product->load('prices.provider'))], Categories::notices($data, [
+            'brand' => [$product->brand, 'product_brand'], 'category' => [$product->category, 'product_category'],
+        ]));
     }
 
     public function schema(JsonSchema $schema): array

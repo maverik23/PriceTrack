@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Mcp\Tool;
 use App\Models\Income;
 use App\Models\IncomeSource;
+use App\Support\Categories;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
@@ -48,7 +49,7 @@ class SaveIncomeSource extends Tool
                 'every' => $source->intervalLabel(), 'next_on' => $source->next_on->toDateString(), 'active' => $source->active,
                 'monthly' => $source->monthlyAmount(),
             ],
-        ]);
+        ], Categories::notices($request->all(), ['category' => [$source->category, 'income_category']]));
     }
 
     public function schema(JsonSchema $schema): array

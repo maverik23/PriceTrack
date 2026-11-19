@@ -220,7 +220,18 @@ class ReportService
         ];
     }
 
-    public function spending(CarbonImmutable $from, CarbonImmutable $to): array
+    /** Qué tiendas cuentan en el gasto: el súper (por defecto), las demás (Home Depot…) o todas. */
+    public const STORES = ['super' => 'Súper', 'other' => 'Otras tiendas', 'all' => 'Todas'];
+
+    /** Días con compras para que el promedio mensual (y el anual) no sea solo una proyección. */
+    public const MIN_DAYS_MONTHLY = 28;
+
+    public const MIN_DAYS_ANNUAL = 90;
+
+    /**
+     * @param  string  $stores  super | other | all (Provider::$groceries)
+     */
+    public function spending(CarbonImmutable $from, CarbonImmutable $to, string $stores = 'super'): array
     {
         $items = ShoppingListItem::with(['price.provider', 'product', 'shoppingList'])
             ->whereNotNull('price_id')
@@ -247,6 +258,7 @@ class ReportService
                     'provider' => $item->price->provider->name,
                     'category' => $item->product->category ?: 'Sin categoría',
                     'list_id' => $item->shopping_list_id,
+                    'groceries' => (bool) $item->price->provider->groceries,
                 ]);
             }
         }
@@ -259,15 +271,27 @@ class ReportService
                     'provider' => $ticket->provider->name,
                     'category' => 'Sin desglose',
                     'list_id' => $ticket->shopping_list_id,
+                    'groceries' => (bool) $ticket->provider->groceries,
                 ]);
             }
         }
         $rows = $rows->sortBy(fn ($r) => $r->date->timestamp)->values();
 
+        // Lo de las tiendas que no entran (p. ej. Home Depot al ver el súper), para avisarlo
+        $keep = fn ($r) => match ($stores) {
+            'other' => ! $r->groceries,
+            'all' => true,
+            default => $r->groceries,
+        };
+        $left = $rows->reject($keep);
+        $excluded = ['amount' => round((float) $left->sum('amount'), 2), 'stores' => $left->pluck('provider')->unique()->sort()->values()->all()];
+        $rows = $rows->filter($keep)->values();
+
         $total = (float) $rows->sum('amount');
 
         if ($rows->isEmpty()) {
             return [
+                'stores' => $stores, 'excluded' => $excluded, 'shortMonthly' => false, 'shortAnnual' => false,
                 'total' => 0.0, 'days' => 0, 'span' => 0, 'start' => null, 'end' => null,
                 'daily' => 0.0, 'weekly' => 0.0, 'monthly' => 0.0, 'annual' => 0.0,
                 'lists' => 0, 'perList' => 0.0,
@@ -327,6 +351,11 @@ class ReportService
             ->values();
 
         return [
+            'stores' => $stores,
+            'excluded' => $excluded,
+            // Con pocos días, el mensual y el anual solo multiplican esos días: se avisa
+            'shortMonthly' => $span < self::MIN_DAYS_MONTHLY,
+            'shortAnnual' => $span < self::MIN_DAYS_ANNUAL,
             'total' => $total,
             'days' => $days,
             'span' => $span,

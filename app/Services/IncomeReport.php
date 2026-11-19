@@ -28,7 +28,7 @@ class IncomeReport
         $inKind = (float) $incomes->where('kind', 'in_kind')->sum('amount');
 
         // Lo gastado en el mes: súper (lo comprado en las listas, con sus tickets) y pagos
-        $super = (float) $this->reports->spending($from, $until->subDay())['total'];
+        $super = (float) $this->reports->spending($from, $until->subDay(), 'all')['total'];
         $payments = (float) Payment::where('paid_on', '>=', $from->toDateString())->where('paid_on', '<', $until->toDateString())->sum('amount');
 
         return [

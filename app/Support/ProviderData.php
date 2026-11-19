@@ -10,8 +10,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Campos de un proveedor (ProviderController y el MCP save-provider): nombre, notas, cadena y
- * sucursal. La sucursal es el id de la tienda ("auto" = la más cercana o la que asigne la tienda);
+ * Campos de un proveedor (ProviderController y el MCP save-provider): nombre, notas, si es súper
+ * (`groceries`: cuenta en el gasto del súper), cadena y sucursal. La sucursal es el id de la tienda ("auto" = la más cercana o la que asigne la tienda);
  * sin cadena no hay sucursal.
  */
 class ProviderData
@@ -21,6 +21,7 @@ class ProviderData
         $data = Validator::make($input, [
             'name' => ['required', 'string', 'max:100', Rule::unique('providers', 'name')->ignore($provider)],
             'notes' => ['nullable', 'string', 'max:255'],
+            'groceries' => ['nullable', 'boolean'],
             'chain' => ['nullable', Rule::in(array_keys(StoreBranches::CHAINS))],
             'branch' => ['nullable', 'string', 'max:60'],
             'branch_name' => ['nullable', 'string', 'max:150'],
@@ -37,6 +38,8 @@ class ProviderData
         return [
             'name' => $data['name'],
             'notes' => $data['notes'] ?? null,
+            // Sin decirlo: el que tenía o, si es nuevo, lo que parece por el nombre
+            'groceries' => isset($data['groceries']) ? (bool) $data['groceries'] : ($provider?->groceries ?? Provider::guessGroceries($data['name'])),
             'chain' => $chain,
             'branch' => $branch,
             'branch_name' => $branch && $branch !== StoreBranches::AUTO && filled($data['branch_name'] ?? null)
@@ -47,6 +50,6 @@ class ProviderData
 
     public static function toInput(Provider $provider): array
     {
-        return $provider->only(['name', 'notes', 'chain', 'branch', 'branch_name']);
+        return $provider->only(['name', 'notes', 'groceries', 'chain', 'branch', 'branch_name']);
     }
 }

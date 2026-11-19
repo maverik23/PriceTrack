@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Mcp\Tool;
 use App\Models\Asset;
 use App\Support\AssetData;
+use App\Support\Categories;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -31,7 +32,7 @@ class SaveAsset extends Tool
         return $this->json([
             'saved' => $creating ? 'created' : 'updated',
             'asset' => ['id' => $asset->id, 'name' => $asset->name, 'status' => $asset->status, 'current_value' => $asset->currentValue(), 'url' => route('assets.show', $asset)],
-        ]);
+        ], Categories::notices($given, ['category' => [$asset->category, 'asset_category']]));
     }
 
     public function schema(JsonSchema $schema): array

@@ -27,7 +27,7 @@ class SaveProvider extends Tool
         $creating = ! $provider->exists;
         $provider->fill($data)->save();
 
-        return $this->json(['saved' => $creating ? 'created' : 'updated', 'provider' => $provider->only(['id', 'name', 'chain', 'branch']) + ['branch_label' => $provider->branchLabel()]]);
+        return $this->json(['saved' => $creating ? 'created' : 'updated', 'provider' => $provider->only(['id', 'name', 'groceries', 'chain', 'branch']) + ['branch_label' => $provider->branchLabel()]]);
     }
 
     public function schema(JsonSchema $schema): array
@@ -36,6 +36,7 @@ class SaveProvider extends Tool
             'id' => $schema->integer()->description('Para cambiar una existente (de list-providers). Sin él se crea.'),
             'name' => $schema->string()->description('Nombre de la tienda.'),
             'notes' => $schema->string(),
+            'groceries' => $schema->boolean()->description('false = no es súper (Home Depot, ferretería): su gasto no cuenta en el del súper. Al crear se adivina por el nombre.'),
             'chain' => $schema->string()->enum(array_keys(StoreBranches::CHAINS))->description('Cadena (se adivina por el nombre al crear).'),
             'branch' => $schema->string()->description('Id de la sucursal o "auto".'),
             'branch_name' => $schema->string()->description('Nombre de la sucursal.'),

@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Mcp\Tool;
 use App\Models\Income;
 use App\Models\IncomeSource;
+use App\Support\Categories;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
@@ -45,7 +46,7 @@ class RecordIncome extends Tool
             'notes' => $data['notes'] ?? null,
         ]);
 
-        return $this->json(['income' => $this->present($income)]);
+        return $this->json(['income' => $this->present($income)], Categories::notices($data, ['category' => [$income->category, 'income_category']]));
     }
 
     private function present(Income $income): array

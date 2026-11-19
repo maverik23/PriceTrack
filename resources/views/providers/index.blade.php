@@ -25,7 +25,7 @@
             <tbody>
             @forelse ($providers as $provider)
                 <tr>
-                    <td class="font-medium text-slate-900">{{ $provider->name }}</td>
+                    <td class="font-medium text-slate-900">{{ $provider->name }} @if (! $provider->groceries)<span class="badge-muted ml-1" title="Su gasto no cuenta en el del súper">No es súper</span>@endif</td>
                     <td class="text-sm">
                         @if ($provider->chain)
                             <span class="text-slate-700">{{ $provider->branchLabel() ?? 'Sin elegir' }}</span>

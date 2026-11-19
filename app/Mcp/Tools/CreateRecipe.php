@@ -6,6 +6,7 @@ use App\Mcp\Present;
 use App\Mcp\Tool;
 use App\Mcp\Tools\Concerns\RecipeSchema;
 use App\Models\Recipe;
+use App\Support\Categories;
 use App\Support\RecipeData;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -26,7 +27,7 @@ class CreateRecipe extends Tool
             'ingredients_without_cost' => $recipe->uncostedCount(),
             'steps' => $recipe->steps()->count(),
             'url' => route('recipes.show', $recipe),
-        ]);
+        ], Categories::notices($request->all(), ['category' => [$recipe->category, 'recipe_category']]));
     }
 
     public function schema(JsonSchema $schema): array

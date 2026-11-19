@@ -6,6 +6,7 @@ use App\Enums\Unit;
 use App\Mcp\Present;
 use App\Mcp\Tool;
 use App\Models\Product;
+use App\Support\Categories;
 use App\Support\ProductData;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -22,7 +23,9 @@ class UpdateProduct extends Tool
         $data = ProductData::validate(array_merge(ProductData::toInput($product), collect($request->all())->except('product_id')->all()), $product);
         $product->update($data);
 
-        return $this->json(['product' => Present::product($product->fresh(['prices.provider']))]);
+        return $this->json(['product' => Present::product($product->fresh(['prices.provider']))], Categories::notices($request->all(), [
+            'brand' => [$product->brand, 'product_brand'], 'category' => [$product->category, 'product_category'],
+        ]));
     }
 
     public function schema(JsonSchema $schema): array

@@ -35,9 +35,12 @@ abstract class Tool extends BaseTool
         return filled($value) ? CarbonImmutable::parse($value)->startOfDay() : $default;
     }
 
-    /** @param  array<string, mixed>  $data */
-    protected function json(array $data): Response
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $notices  avisos para el asistente (p. ej. se reusó una categoría existente)
+     */
+    protected function json(array $data, array $notices = []): Response
     {
-        return Response::json($data);
+        return Response::json($notices ? $data + ['notices' => $notices] : $data);
     }
 }

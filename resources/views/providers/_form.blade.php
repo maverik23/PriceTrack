@@ -19,6 +19,8 @@
         'branchesUrl' => route('settings.branches'),
         'providerId' => $provider->id,
         'isNew' => ! $provider->exists,
+        'groceries' => (bool) old('groceries', $provider->exists ? $provider->groceries : true),
+        'notGroceries' => substr(\App\Models\Provider::NOT_GROCERIES, 1, strrpos(\App\Models\Provider::NOT_GROCERIES, '/') - 1),
         'chain' => old('chain', $provider->chain),
         'branch' => old('branch', $provider->branch),
         'branchName' => old('branch_name', $provider->branch_name),
@@ -31,6 +33,13 @@
     <div>
         <label class="label" for="{{ $idPrefix }}-notes">Notas</label>
         <input id="{{ $idPrefix }}-notes" name="notes" value="{{ old('notes', $provider->notes) }}" class="input" placeholder="Membresía, horario…">
+    </div>
+    <div>
+        <input type="hidden" name="groceries" value="0">
+        <label class="flex items-start gap-2 text-sm text-slate-700">
+            <input type="checkbox" name="groceries" value="1" class="mt-0.5" x-model="groceries" @change="groceriesTouched = true">
+            <span>Es súper <span class="block text-xs text-slate-500">Lo comprado aquí cuenta en el gasto del súper. Quítalo en una ferretería o departamental (Home Depot): su gasto se ve aparte.</span></span>
+        </label>
     </div>
     <div>
         <label class="label" for="{{ $idPrefix }}-chain">Cadena</label>

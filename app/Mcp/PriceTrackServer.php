@@ -43,6 +43,7 @@ use App\Mcp\Tools\RecordInvestment;
 use App\Mcp\Tools\RecordPrice;
 use App\Mcp\Tools\RemoveListItem;
 use App\Mcp\Tools\RemoveMeal;
+use App\Mcp\Tools\RenameCategory;
 use App\Mcp\Tools\SaveAsset;
 use App\Mcp\Tools\SaveDebt;
 use App\Mcp\Tools\SaveIncomeSource;
@@ -101,6 +102,7 @@ class PriceTrackServer extends Server
         'general' => ['General', [
             GetHelp::class,
             GetSummary::class,
+            RenameCategory::class,
         ]],
         'super' => ['Súper', [
             SearchProducts::class,

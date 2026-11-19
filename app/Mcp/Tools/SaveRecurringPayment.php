@@ -4,14 +4,14 @@ namespace App\Mcp\Tools;
 
 use App\Mcp\Tool;
 use App\Models\RecurringPayment;
-use App\Models\Task;
+use App\Support\Categories;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Crea un pago recurrente (luz, agua, internet, una suscripción, la mensualidad de una deuda) o, con `id`, cambia uno existente (solo lo que se manda; `active: false` lo pausa). `meter_unit` (m³, kWh) si el recibo trae lectura de medidor. Para registrar que se pagó un recibo usa mark-payment-paid.')]
+#[Description('Crea un pago recurrente (luz, agua, internet, una suscripción, la mensualidad de una deuda) o, con `id`, cambia uno existente (solo lo que se manda; `active: false` lo pausa). `every_unit: fortnight` = quincenal (el 15 y el último día del mes). `meter_unit` (m³, kWh) si el recibo trae lectura de medidor. Para registrar que se pagó un recibo usa mark-payment-paid.')]
 class SaveRecurringPayment extends Tool
 {
     public function handle(Request $request): Response
@@ -24,7 +24,7 @@ class SaveRecurringPayment extends Tool
             'amount' => [$req, 'numeric', 'gt:0', 'max:99999999999'],
             'next_due_on' => [$req, 'date'],
             'every' => ['sometimes', 'integer', 'min:1', 'max:999'],
-            'every_unit' => ['sometimes', Rule::in(array_keys(Task::REPEAT_UNITS))],
+            'every_unit' => ['sometimes', Rule::in(array_keys(RecurringPayment::scheduleUnits(true)))],
             'category' => ['sometimes', 'nullable', 'string', 'max:60'],
             'meter_unit' => ['sometimes', 'nullable', 'string', 'max:12'],
             'debt_id' => ['sometimes', 'nullable', 'exists:debts,id'],
@@ -48,7 +48,7 @@ class SaveRecurringPayment extends Tool
                 'id' => $payment->id, 'name' => $payment->name, 'amount' => $payment->amount, 'every' => $payment->intervalLabel(),
                 'next_due_on' => $payment->next_due_on->toDateString(), 'meter_unit' => $payment->meter_unit, 'active' => $payment->active,
             ],
-        ]);
+        ], Categories::notices($request->all(), ['category' => [$payment->category, 'payment_category']]));
     }
 
     public function schema(JsonSchema $schema): array
@@ -59,7 +59,7 @@ class SaveRecurringPayment extends Tool
             'amount' => $schema->number()->description('Monto de referencia.'),
             'next_due_on' => $schema->string()->description('Fecha del próximo recibo, AAAA-MM-DD.'),
             'every' => $schema->integer()->description('Cada cuánto (1 por defecto).'),
-            'every_unit' => $schema->string()->enum(array_keys(Task::REPEAT_UNITS))->description('day, week, month (por defecto) o year.'),
+            'every_unit' => $schema->string()->enum(array_keys(RecurringPayment::scheduleUnits(true)))->description('day, week, fortnight (quincena: el 15 y el último día del mes), month (por defecto) o year.'),
             'category' => $schema->string()->description('Ej. Servicios, Suscripciones.'),
             'meter_unit' => $schema->string()->description('Unidad de la lectura del medidor si el recibo la trae: m³, kWh.'),
             'debt_id' => $schema->integer()->description('Si es la mensualidad de una deuda.'),
