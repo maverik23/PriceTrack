@@ -16,12 +16,15 @@
         <div class="flex flex-wrap items-center justify-end gap-2">
             <span class="text-xs text-slate-500" x-text="fetchStatus"></span>
             <button type="button" class="btn btn-primary" :disabled="fetching" @click="fetchAll()"
-                    title="Consulta en línea las tiendas donde el artículo tiene enlace y guarda los precios de hoy">
-                <span x-text="fetching ? 'Consultando…' : 'Obtener precios'"></span>
+                    title="Consulta en línea las tiendas donde el artículo tiene dirección y guarda los precios de hoy">
+                <x-icon name="refresh-cw" class="size-4" ::class="fetching && 'animate-spin'" />
+                <span x-text="fetching ? 'Consultando…' : 'Obtener precios'">Obtener precios</span>
             </button>
             <a href="{{ route('lists.edit', $list) }}" class="btn btn-secondary">Editar lista</a>
         </div>
     </div>
+
+    <x-progress-panel run="run" class="mb-6" />
 
     {{-- Resumen (se recalcula en vivo) --}}
     <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -114,6 +117,12 @@
                                             @click="toggleBuy(row, p.id)"></button>
                                     <a x-show="row.links[p.id]" :href="row.links[p.id]" target="_blank" rel="noopener" tabindex="-1"
                                        class="shrink-0 text-xs text-slate-300 hover:text-emerald-600" title="Abrir el artículo en la tienda">↗</a>
+                                    {{-- Traer el precio de hoy de la dirección guardada --}}
+                                    <button type="button" x-show="row.links[p.id]" tabindex="-1" @click="fetchOne(row, p.id)" :disabled="!!saving[key(row, p.id)]"
+                                            class="shrink-0 text-slate-300 hover:text-emerald-600 disabled:text-emerald-600" :title="'Traer el precio de hoy en ' + p.name"
+                                            :aria-label="'Traer el precio de hoy en ' + p.name">
+                                        <x-icon name="refresh-cw" class="size-3" ::class="saving[key(row, p.id)] && 'animate-spin'" />
+                                    </button>
                                     {{-- Marca que vende esa tienda (cada una puede tener otra) --}}
                                     <span x-show="row.stores[p.id]?.brand" class="max-w-[5.5rem] shrink-0 truncate text-[10px] text-slate-500"
                                           :title="row.stores[p.id]?.name || row.stores[p.id]?.brand" x-text="row.stores[p.id]?.brand"></span>

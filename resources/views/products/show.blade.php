@@ -74,9 +74,24 @@
                 Código postal: <a class="link" href="{{ route('providers.index') }}">{{ $postalCode ?: 'sin definir' }}</a>.
             </p>
         </div>
-        <form method="POST" action="{{ route('products.prices.fetch', $product) }}">
+        @php
+            $fetchable = $links->whereNotNull('url')->map(fn ($link) => [
+                'url' => $link->url,
+                'provider' => $providers->firstWhere('id', $link->provider_id)?->name,
+                'chain' => \App\Services\StoreBranches::chainFor($link->url),
+                'fetch' => route('product-links.fetch', $link),
+            ])->values();
+        @endphp
+        <form method="POST" action="{{ route('products.prices.fetch', $product) }}" x-data="productPrices({{ Js::from(['product' => $product->name, 'links' => $fetchable]) }})"
+              @submit.prevent="fetchAll()" class="w-full sm:w-auto">
             @csrf
-            <button class="btn btn-primary btn-sm" @disabled($links->whereNotNull('url')->isEmpty())>Obtener precios</button>
+            <button class="btn btn-primary btn-sm" @disabled($fetchable->isEmpty()) :disabled="run.active || {{ $fetchable->isEmpty() ? 'true' : 'false' }}"
+                    title="{{ $fetchable->isEmpty() ? 'Pega abajo la dirección del artículo en alguna tienda' : 'Consulta las tiendas con dirección y guarda el precio de hoy' }}">
+                <x-icon name="refresh-cw" class="size-3.5" ::class="run.active && 'animate-spin'" />
+                <span x-text="run.active ? 'Consultando…' : 'Obtener precios'">Obtener precios</span>
+            </button>
+            <x-progress-panel run="run" class="mt-3 sm:w-[28rem]" />
+            <div x-show="run.finished && run.ok" x-cloak class="mt-2 text-right"><button type="button" class="btn btn-secondary btn-sm" @click="reload()">Ver los precios nuevos</button></div>
         </form>
     </div>
     <form method="POST" action="{{ route('products.links.update', $product) }}" class="space-y-3">
@@ -150,7 +165,7 @@
 
 <div class="card mb-6">
     <h2 class="card-title mb-3">Agregar precio</h2>
-    @include('prices._quick', ['product' => $product, 'providers' => $providers])
+    @include('prices._quick', ['product' => $product, 'providers' => $providers, 'links' => \App\Models\ProductLink::fetchMap($product->id)])
     <p class="mt-2 text-xs text-slate-500">Si la presentación es distinta (ej. Costco 6 × 1 L) cambia piezas/contenido: el precio por unidad se calcula solo.</p>
 </div>
 

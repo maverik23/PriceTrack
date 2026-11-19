@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductLink;
 use App\Models\Provider;
+use App\Models\ShoppingList;
 use App\Services\PriceUpdater;
 use App\Support\Barcode;
 use Illuminate\Http\Request;
@@ -63,5 +64,40 @@ class ProductLinkController extends Controller
         $summary = $links->map(fn (ProductLink $link) => $link->provider->name.': '.$updater->update($link)['message']);
 
         return back()->with('success', 'Precios en línea · '.$summary->join(' · '));
+    }
+
+    /**
+     * Consulta un enlace (JSON): registra el precio de hoy (o con la fecha de `list_id`) o,
+     * con `preview=1`, solo lo devuelve para proponerlo en un formulario. La pantalla
+     * consulta enlace por enlace para llevar el avance (resources/js/progress.js).
+     */
+    public function fetchLink(Request $request, ProductLink $link, PriceUpdater $updater)
+    {
+        $data = $request->validate([
+            'list_id' => ['nullable', 'integer', 'exists:shopping_lists,id'],
+            'preview' => ['nullable', 'boolean'],
+        ]);
+        abort_unless($link->url, 422, 'Ese artículo no tiene dirección en esa tienda.');
+        set_time_limit(120);
+        $link->load(['product', 'provider']);
+
+        if ($request->boolean('preview')) {
+            return response()->json(['provider_id' => $link->provider_id, 'provider' => $link->provider->name] + $updater->preview($link));
+        }
+
+        $list = isset($data['list_id']) ? ShoppingList::findOrFail($data['list_id']) : null;
+        $result = $updater->update($link, $list);
+        if ($list && $result['price']) {
+            $list->items()->where('product_id', $link->product_id)->with('price')->first()?->followPrice($result['price']);
+        }
+
+        return response()->json([
+            'ok' => $result['ok'],
+            'message' => $result['message'],
+            'provider_id' => $link->provider_id,
+            'provider' => $link->provider->name,
+            'product' => $link->product->name,
+            'price' => $result['price']?->only(['id', 'price', 'unit_price']),
+        ]);
     }
 }

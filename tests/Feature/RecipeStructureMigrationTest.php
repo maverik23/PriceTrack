@@ -22,7 +22,13 @@ class RecipeStructureMigrationTest extends TestCase
         config(['database.default' => 'migration_test']);
         DB::purge('migration_test');
         Artisan::call('migrate:fresh', ['--database' => 'migration_test']);
-        Artisan::call('migrate:rollback', ['--database' => 'migration_test', '--step' => 1]);
+        Artisan::call('migrate:rollback', ['--database' => 'migration_test', '--step' => $this->stepsSinceStructure()]);
+    }
+
+    /** Cuántas migraciones hay desde la que da estructura a las recetas (inclusive). */
+    private function stepsSinceStructure(): int
+    {
+        return count(array_filter(glob(database_path('migrations/*.php')), fn ($f) => basename($f) >= '2026_11_21_000002'));
     }
 
     public function test_instructions_become_steps_and_note_lines_move_to_notes(): void
@@ -56,7 +62,7 @@ class RecipeStructureMigrationTest extends TestCase
         $this->assertSame(3000, strlen(DB::table('recipes')->find($plain)->notes));
 
         // Y se puede regresar: los pasos vuelven a ser texto
-        Artisan::call('migrate:rollback', ['--database' => 'migration_test', '--step' => 1]);
+        Artisan::call('migrate:rollback', ['--database' => 'migration_test', '--step' => $this->stepsSinceStructure()]);
         $this->assertSame("Mezcla la carne con el arroz.\nForma las albóndigas.\nCuece en el caldo 25 minutos.", DB::table('recipes')->find($long)->instructions);
     }
 }

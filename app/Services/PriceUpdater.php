@@ -21,11 +21,13 @@ class PriceUpdater
 
     /**
      * @return array{provider_id: int, ok: bool, price: ?Price, message: string}
+     *
+     * @throws BranchRequiredException si la tienda cambia el precio por sucursal y falta el código postal o la sucursal
      */
     public function update(ProductLink $link, ?ShoppingList $list = null): array
     {
         try {
-            $found = $this->fetcher->fetch($link->url, Setting::value(Setting::POSTAL_CODE), Setting::value(Setting::CHEDRAUI_STORE));
+            $found = $this->find($link);
         } catch (PriceFetchException $e) {
             $link->update(['checked_at' => now(), 'error' => Str::limit($e->getMessage(), 250)]);
 
@@ -50,6 +52,43 @@ class PriceUpdater
             // De qué sucursal salió (Chedraui cambia el precio por tienda)
             'message' => collect([money($price->price), $price->presentationLabel(), $found['store']])->filter()->join(' · '),
         ];
+    }
+
+    /**
+     * El precio de hoy en la tienda, sin registrarlo (para proponerlo en un formulario).
+     *
+     * @return array{ok: bool, message: string, price?: float, pack_qty?: int, size?: float, unit?: string, bulk?: bool, store?: ?string}
+     *
+     * @throws BranchRequiredException
+     */
+    public function preview(ProductLink $link): array
+    {
+        try {
+            $found = $this->find($link);
+        } catch (PriceFetchException $e) {
+            return ['ok' => false, 'message' => $e->getMessage()];
+        }
+        $presentation = $this->presentation($link->product, $link->provider_id, $found);
+
+        return [
+            'ok' => true,
+            'price' => $found['price'],
+            'pack_qty' => (int) ($presentation['pack_qty'] ?? 1),
+            'size' => (float) $presentation['size'],
+            'unit' => $presentation['unit'] instanceof Unit ? $presentation['unit']->value : $presentation['unit'],
+            'bulk' => (bool) ($presentation['bulk'] ?? false),
+            'store' => $found['store'],
+            'message' => collect([money($found['price']), $found['store']])->filter()->join(' · '),
+        ];
+    }
+
+    /** Consulta la página con el código postal y, si la cadena cambia el precio por sucursal, la sucursal elegida. */
+    private function find(ProductLink $link): array
+    {
+        StoreBranches::ensure($link->url);
+        $chain = StoreBranches::chainFor($link->url);
+
+        return $this->fetcher->fetch($link->url, Setting::value(Setting::POSTAL_CODE), $chain ? StoreBranches::selected($chain) : null);
     }
 
     /**

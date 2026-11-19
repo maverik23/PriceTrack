@@ -30,4 +30,25 @@ class ProductLink extends Model
     {
         return $this->belongsTo(Provider::class);
     }
+
+    /**
+     * Direcciones guardadas por artículo y tienda, para traer el precio al capturarlo a mano
+     * (resources/js/product-prices.js, priceLink).
+     *
+     * @return array<int, array<int, array{url: string, fetch: string, provider: ?string}>>
+     */
+    public static function fetchMap(?int $productId = null): array
+    {
+        $map = [];
+        $links = static::with('provider')->whereNotNull('url')->when($productId, fn ($q) => $q->where('product_id', $productId))->get();
+        foreach ($links as $link) {
+            $map[$link->product_id][$link->provider_id] = [
+                'url' => $link->url,
+                'fetch' => route('product-links.fetch', $link),
+                'provider' => $link->provider?->name,
+            ];
+        }
+
+        return $map;
+    }
 }

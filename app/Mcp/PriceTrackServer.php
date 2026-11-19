@@ -32,6 +32,7 @@ use App\Mcp\Tools\RemoveListItem;
 use App\Mcp\Tools\RemoveMeal;
 use App\Mcp\Tools\SearchProducts;
 use App\Mcp\Tools\SetMenuNote;
+use App\Mcp\Tools\SetStoreBranch;
 use App\Mcp\Tools\UpdateListItem;
 use App\Mcp\Tools\UpdatePantry;
 use App\Mcp\Tools\UpdateRecipe;
@@ -74,6 +75,7 @@ class PriceTrackServer extends Server
         ListProviders::class,
         RecordPrice::class,
         FetchOnlinePrices::class,
+        SetStoreBranch::class,
         ListShoppingLists::class,
         GetShoppingList::class,
         CreateShoppingList::class,

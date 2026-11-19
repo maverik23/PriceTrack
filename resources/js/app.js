@@ -10,6 +10,8 @@ import recipeView from './recipe-show';
 import attachmentUpload from './attachment-upload';
 import themeToggle from './theme';
 import { pantryList, pantryToggle } from './pantry';
+import { branchPicker } from './online-prices';
+import productPrices, { priceLink, takeFlash } from './product-prices';
 
 Alpine.data('listGrid', listGrid);
 Alpine.data('combobox', combobox);
@@ -22,6 +24,10 @@ Alpine.data('attachmentUpload', attachmentUpload);
 Alpine.data('themeToggle', themeToggle);
 Alpine.data('pantryList', pantryList);
 Alpine.data('pantryToggle', pantryToggle);
+Alpine.data('branchPicker', branchPicker);
+Alpine.data('productPrices', productPrices);
+Alpine.data('priceLink', priceLink);
+window.takeFlash = takeFlash;
 window.Alpine = Alpine;
 Alpine.start();
 

@@ -11,6 +11,8 @@
  * granel, o los paquetes completos que cubren esa cantidad (Price::costFor()).
  */
 
+import { chainFor, createRun, ensureBranches, requestJson, runTasks } from './online-prices';
+
 const UNIT_ALIASES = {
     ml: 'ml', mililitro: 'ml', mililitros: 'ml',
     l: 'l', lt: 'l', lts: 'l', litro: 'l', litros: 'l',
@@ -140,6 +142,7 @@ export default function listGrid(config) {
         busy: false,
         fetching: false,
         fetchStatus: '',
+        run: createRun(),
         money,
 
         // ---------- utilidades ----------
@@ -149,22 +152,9 @@ export default function listGrid(config) {
         csrf() {
             return document.querySelector('meta[name="csrf-token"]').content;
         },
-        async request(method, url, body) {
-            const res = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': this.csrf(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: body ? JSON.stringify(body) : undefined,
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message || 'No se pudo guardar');
-            }
-            return data;
+        /** JSON con CSRF; si la tienda pide sucursal, abre la ventana y reintenta (online-prices.js). */
+        request(method, url, body, options) {
+            return requestJson(method, url, body, options);
         },
         syncCell(row, pid) {
             const c = row.cells[pid];
@@ -469,30 +459,45 @@ export default function listGrid(config) {
             const res = await this.request('POST', `${this.urls.items}/${row.id}/links`, { provider_id: pid, url });
             this.applyFetched(row, res);
         },
-        /** Consulta, artículo por artículo, las tiendas donde tiene enlace. */
+        providerName(pid) {
+            return this.providers.find((p) => String(p.id) === String(pid))?.name ?? '';
+        },
+        /** Consulta el precio de una sola tienda (botón ⟳ de la celda). */
+        async fetchOne(row, pid) {
+            const k = this.key(row, pid);
+            if (this.pending[k]) await this.pending[k];
+            return this.track(k, this.request('POST', `${this.urls.items}/${row.id}/prices/fetch`, { provider_id: pid }).then((res) => this.applyFetched(row, res)));
+        },
+        /**
+         * Consulta, tienda por tienda, los artículos con dirección guardada: lleva el avance
+         * ("12 de 48 · Leche — Walmart"), se puede cancelar y deja el resumen de fallos.
+         * La sucursal que falte se pregunta una sola vez, al principio.
+         */
         async fetchAll() {
-            const rows = this.rows.filter((r) => Object.keys(r.links).length);
-            if (!rows.length) {
-                this.fetchStatus = 'Ningún artículo tiene enlace: pega en una celda la dirección del artículo en esa tienda.';
+            if (this.run.active) return;
+            const tasks = this.rows.flatMap((row) => Object.entries(row.links).map(([pid, url]) => ({
+                row, pid: Number(pid), url, label: `${row.product.name} — ${this.providerName(pid)}`,
+            })));
+            if (!tasks.length) {
+                this.fetchStatus = 'Ningún artículo tiene dirección: pega en una celda la dirección del artículo en esa tienda.';
                 return;
             }
+            this.fetchStatus = '';
+            const skipped = await ensureBranches(tasks.map((t) => t.url));
             this.fetching = true;
-            let ok = 0;
-            let failed = 0;
-            for (const [i, row] of rows.entries()) {
-                this.fetchStatus = `Consultando ${i + 1} de ${rows.length}: ${row.product.name}…`;
+            await runTasks(this.run, 'Obteniendo precios', tasks, async (task, signal) => {
+                if (skipped.includes(chainFor(task.url))) return { ok: false, message: 'Sin sucursal elegida: no se consultó.' };
+                const k = this.key(task.row, task.pid);
+                this.saving[k] = true;
                 try {
-                    const res = await this.request('POST', `${this.urls.items}/${row.id}/prices/fetch`);
-                    this.applyFetched(row, res);
-                    ok += res.results.filter((r) => r.ok).length;
-                    failed += res.results.filter((r) => !r.ok).length;
-                } catch {
-                    failed += Object.keys(row.links).length;
+                    const res = await this.request('POST', `${this.urls.items}/${task.row.id}/prices/fetch`, { provider_id: task.pid }, { signal });
+                    this.applyFetched(task.row, res);
+                    return res.results[0] ?? { ok: false, message: 'Ya no tiene dirección en esa tienda.' };
+                } finally {
+                    delete this.saving[k];
                 }
-            }
+            });
             this.fetching = false;
-            this.fetchStatus = `${ok} ${ok === 1 ? 'precio actualizado' : 'precios actualizados'}`
-                + (failed ? ` · ${failed} sin respuesta (en rojo en su celda)` : '');
         },
 
         async removeRow(row) {

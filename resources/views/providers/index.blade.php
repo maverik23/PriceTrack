@@ -74,11 +74,11 @@
             <div>
                 <label class="label" for="chedraui_store">Tu tienda Chedraui</label>
                 <select id="chedraui_store" name="chedraui_store" class="input">
-                    <option value="">Automática: la más cercana que lo tenga</option>
+                    <option value="auto">Automática: la más cercana que lo tenga</option>
                     @foreach ($chedrauiStores as $seller => $name)
                         <option value="{{ $seller }}" @selected($chedrauiStore === $seller)>{{ $name }}</option>
                     @endforeach
-                    @if ($chedrauiStore && ! isset($chedrauiStores[$chedrauiStore]))
+                    @if ($chedrauiStore && $chedrauiStore !== 'auto' && ! isset($chedrauiStores[$chedrauiStore]))
                         <option value="{{ $chedrauiStore }}" selected>{{ $chedrauiStore }}</option>
                     @endif
                 </select>

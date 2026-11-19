@@ -34,6 +34,9 @@ Route::resource('products', ProductController::class);
 Route::put('products/{product}/links', [ProductLinkController::class, 'update'])->name('products.links.update');
 Route::post('products/{product}/prices/fetch', [ProductLinkController::class, 'fetch'])->name('products.prices.fetch');
 Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+Route::get('settings/branches', [SettingController::class, 'branches'])->name('settings.branches');
+Route::put('settings/branch', [SettingController::class, 'saveBranch'])->name('settings.branch');
+Route::post('product-links/{link}/fetch', [ProductLinkController::class, 'fetchLink'])->name('product-links.fetch');
 Route::resource('prices', PriceController::class)->except(['show']);
 
 Route::resource('lists', ShoppingListController::class)->parameters(['lists' => 'list']);

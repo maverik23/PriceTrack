@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Unit;
 use App\Models\Price;
 use App\Models\Product;
+use App\Models\ProductLink;
 use App\Models\Provider;
 use App\Models\ShoppingListItem;
 use Illuminate\Http\Request;
@@ -47,6 +48,7 @@ class PriceController extends Controller
             ]),
             'products' => Product::orderBy('name')->get(),
             'providers' => Provider::orderBy('name')->get(),
+            'links' => ProductLink::fetchMap(),
         ]);
     }
 
@@ -83,6 +85,7 @@ class PriceController extends Controller
             'price' => $price,
             'products' => Product::orderBy('name')->get(),
             'providers' => Provider::orderBy('name')->get(),
+            'links' => ProductLink::fetchMap(),
         ]);
     }
 

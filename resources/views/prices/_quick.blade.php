@@ -1,6 +1,7 @@
 {{--
     Formulario rápido para capturar un precio de un artículo conocido.
-    Variables: $product, $providers, $item (opcional, desde una lista), $redirect (opcional)
+    Variables: $product, $providers, $item (opcional, desde una lista), $redirect (opcional),
+    $links (opcional: ProductLink::fetchMap(), para traer el precio de la página de la tienda)
 --}}
 @php
     $item = $item ?? null;
@@ -26,6 +27,20 @@
             @endforeach
         </select>
     </div>
+    @isset($links)
+        <div x-data="priceLink({{ Js::from(['links' => $links, 'product' => $product->id, 'provider' => '']) }})" x-show="link" x-cloak class="col-span-full rounded-xl bg-emerald-50 px-3 py-2.5 text-sm ring-1 ring-emerald-200">
+    <div class="flex flex-wrap items-center gap-2">
+        <x-icon name="link" class="size-4 text-emerald-700" />
+        <span class="text-slate-700">Este artículo tiene su página en <strong x-text="link?.provider"></strong>.</span>
+        <a :href="link?.url" target="_blank" rel="noopener" class="link text-xs">Abrir ↗</a>
+        <button type="button" class="btn btn-secondary btn-sm ml-auto" @click="fill()" :disabled="busy">
+            <x-icon name="refresh-cw" class="size-3.5" ::class="busy && 'animate-spin'" /><span x-text="busy ? 'Consultando la tienda…' : 'Traer el precio de hoy'"></span>
+        </button>
+    </div>
+    <p x-show="status" class="mt-1 text-xs text-emerald-800" x-text="status"></p>
+    <p x-show="error" class="mt-1 text-xs text-red-600" x-text="error"></p>
+</div>
+    @endisset
     <div>
         <label class="label" for="{{ $uid }}-price">Precio $</label>
         <input id="{{ $uid }}-price" name="price" type="number" step="0.01" min="0.01" class="input" placeholder="0.00" required>

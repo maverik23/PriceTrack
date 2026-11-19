@@ -144,13 +144,16 @@ class ShoppingListItemController extends Controller
     }
 
     /**
-     * Consulta en línea las tiendas con enlace de este artículo y registra los
-     * precios con la fecha de la lista (como si se capturaran en la hoja).
+     * Consulta en línea las tiendas con enlace de este artículo (o solo `provider_id`) y
+     * registra los precios con la fecha de la lista (como si se capturaran en la hoja).
      */
-    public function fetchPrices(ShoppingList $list, ShoppingListItem $item, PriceUpdater $updater)
+    public function fetchPrices(Request $request, ShoppingList $list, ShoppingListItem $item, PriceUpdater $updater)
     {
         set_time_limit(180);
-        $results = $item->product->links()->whereNotNull('url')->with('product')->get()
+        $results = $item->product->links()->whereNotNull('url')->with('product')
+            // Una sola tienda (la hoja avanza tienda por tienda) o todas
+            ->when($request->filled('provider_id'), fn ($q) => $q->where('provider_id', $request->integer('provider_id')))
+            ->get()
             ->map(fn (ProductLink $link) => $this->recordFetched($updater->update($link, $list), $item));
 
         return $this->fetchedResponse($list, $item, $results->all());

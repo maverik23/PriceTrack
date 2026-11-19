@@ -7,6 +7,7 @@ use App\Mcp\Tool;
 use App\Models\Product;
 use App\Models\ProductLink;
 use App\Models\ShoppingList;
+use App\Services\BranchRequiredException;
 use App\Services\PriceUpdater;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -14,7 +15,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 
-#[Description('Consulta en internet el precio de hoy de un artículo en las tiendas donde tiene enlace guardado (ver `stores` en get-product) y lo registra. Puede tardar hasta un par de minutos; algunas tiendas bloquean la consulta y lo indica en el resultado.')]
+#[Description('Consulta en internet el precio de hoy de un artículo en las tiendas donde tiene enlace guardado (ver `stores` en get-product) y lo registra. Puede tardar hasta un par de minutos; algunas tiendas bloquean la consulta y lo indica en el resultado. Chedraui cambia el precio por sucursal: si falta el código postal o la sucursal, el resultado lo dice; elígela con set-store-branch y vuelve a consultar.')]
 #[IsOpenWorld]
 class FetchOnlinePrices extends Tool
 {
@@ -35,7 +36,11 @@ class FetchOnlinePrices extends Tool
         set_time_limit(180);
         $item = $list?->items()->where('product_id', $product->id)->with('price')->first();
         $results = $links->map(function (ProductLink $link) use ($updater, $list, $item) {
-            $result = $updater->update($link, $list);
+            try {
+                $result = $updater->update($link, $list);
+            } catch (BranchRequiredException $e) {
+                return ['provider' => $link->provider?->name, 'ok' => false, 'message' => $e->getMessage().' Pregunta a la persona su código postal y sucursal y guárdalos con set-store-branch.'];
+            }
             if ($result['price']) {
                 $item?->followPrice($result['price']);
             }

@@ -27,6 +27,19 @@
         <input id="observed_on" name="observed_on" type="date" max="{{ today()->format('Y-m-d') }}"
                value="{{ old('observed_on', $price->observed_on?->format('Y-m-d')) }}" class="input" required>
     </div>
+    {{-- Si el artículo tiene página en esa tienda, se trae el precio de ahí --}}
+    <div x-data="priceLink({{ Js::from(['links' => $links, 'product' => (string) old('product_id', $price->product_id), 'provider' => (string) old('provider_id', $price->provider_id)]) }})" x-show="link" x-cloak class="sm:col-span-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-sm ring-1 ring-emerald-200">
+    <div class="flex flex-wrap items-center gap-2">
+        <x-icon name="link" class="size-4 text-emerald-700" />
+        <span class="text-slate-700">Este artículo tiene su página en <strong x-text="link?.provider"></strong>.</span>
+        <a :href="link?.url" target="_blank" rel="noopener" class="link text-xs">Abrir ↗</a>
+        <button type="button" class="btn btn-secondary btn-sm ml-auto" @click="fill()" :disabled="busy">
+            <x-icon name="refresh-cw" class="size-3.5" ::class="busy && 'animate-spin'" /><span x-text="busy ? 'Consultando la tienda…' : 'Traer el precio de hoy'"></span>
+        </button>
+    </div>
+    <p x-show="status" class="mt-1 text-xs text-emerald-800" x-text="status"></p>
+    <p x-show="error" class="mt-1 text-xs text-red-600" x-text="error"></p>
+</div>
     <div>
         <label class="label" for="price">Precio del paquete ($)</label>
         <input id="price" name="price" type="number" step="0.01" min="0.01" value="{{ old('price', $price->price) }}" class="input" required>
