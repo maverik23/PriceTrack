@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Models\Provider;
 use App\Models\Recipe;
 use App\Models\ShoppingList;
+use App\Models\Task;
+use App\Models\TaskList;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -127,7 +129,39 @@ class DemoDataSeeder extends Seeder
             }
 
             $this->seedKitchen($products->keyBy('name'));
+            $this->seedTasks();
         });
+    }
+
+    /** Listas de tareas con pendientes vencidos, de hoy, próximos y repetitivos. */
+    private function seedTasks(): void
+    {
+        if (Task::exists()) {
+            return;
+        }
+        $today = CarbonImmutable::today();
+        $casa = TaskList::firstOrCreate(['name' => 'Casa']);
+        $auto = TaskList::firstOrCreate(['name' => 'Auto']);
+
+        $tasks = [
+            [$casa, 'Pagar la luz', -3, 3, 2, 'month'],
+            [$casa, 'Regar las plantas', 0, 2, 3, 'day'],
+            [$casa, 'Cambiar filtro del purificador', 12, 2, 6, 'month'],
+            [$casa, 'Limpiar el refrigerador', 4, 1, null, null],
+            [$auto, 'Verificación', 20, 3, 6, 'month'],
+            [$auto, 'Revisar presión de llantas', -1, 2, 2, 'week'],
+            [null, 'Renovar pasaporte', null, 2, null, null],
+            [null, 'Comprar foco del baño', 0, 2, null, null],
+        ];
+        foreach ($tasks as [$list, $title, $days, $priority, $every, $unit]) {
+            Task::create([
+                'task_list_id' => $list?->id, 'title' => $title, 'priority' => $priority,
+                'due_on' => $days === null ? null : $today->addDays($days),
+                'repeat_every' => $every, 'repeat_unit' => $unit,
+            ]);
+        }
+        Task::create(['task_list_id' => $casa->id, 'title' => 'Sacar la basura', 'priority' => 2,
+            'due_on' => $today->subDay(), 'repeat_every' => 3, 'repeat_unit' => 'day'])->complete($today->subDay()->setTime(21, 0));
     }
 
     /** Recetas con artículos del catálogo y el menú de esta semana. */

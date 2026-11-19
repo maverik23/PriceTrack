@@ -91,16 +91,24 @@ abrir la hoja. Sin errores de consola ni desbordes horizontales.
 - Foto de la receta, favoritos, copiar el menú de otra semana.
 - Evitar duplicar al mandar el mismo menú dos veces a la misma lista.
 
-## Fase 2. Hogar: tareas
+## Fase 2. Hogar: tareas ✅ terminada
 
-- `task_lists` (nombre) → `tasks` (título, notas, `due_on` opcional, `completed_at`,
-  prioridad, repetición: cada N días/semanas/meses/años).
-- Al completar una tarea repetitiva se crea la siguiente. Decidir y documentar si la
-  siguiente fecha cuenta desde el vencimiento o desde el día en que se completó
-  (para mantenimiento suele convenir desde que se hizo).
-- Vistas: Hoy / Próximas / Vencidas / Sin fecha, por lista; completar con un clic.
-- Las tareas pueden apuntar opcionalmente a otra cosa (un bien, en la fase 3) para que el
-  mantenimiento no necesite otro sistema de recordatorios.
+- Migración `2026_11_19_000002_create_tasks_tables.php`: `task_lists` (nombre único) →
+  `tasks` (título, notas, `due_on`, `completed_at`, prioridad 1–3, `repeat_every` +
+  `repeat_unit`, `repeated_from_id`, `taskable` morph opcional para ligar a un bien).
+- Modelos `TaskList`, `Task` (`complete()`, `reopen()`, `nextDueOn()`, `status()`).
+- `TaskController` (index con grupos Vencidas / Hoy / Próximas / Sin fecha y las hechas en
+  7 días; alta rápida; editar; borrar; `POST tasks/{task}/toggle`) y `TaskListController`
+  (crear, renombrar, borrar: las tareas pasan a General).
+- Vistas `tasks/index`, `tasks/edit`, `tasks/_fields`, `tasks/_row`. Sección **Hogar** en el menú.
+- Tareas demo en `DemoDataSeeder`. `tests/Feature/TasksTest.php` (5 tests).
+- **Decisión** (era pendiente): una sola regla, **la siguiente fecha se cuenta desde el día
+  en que se completa**, para todas las tareas. Es la más simple y la que conviene para
+  mantenimiento. Si se quiere "desde el vencimiento" (pagos con día fijo), sería un campo por
+  tarea; no se construyó.
+- Verificado con Playwright: completar una repetitiva (mensaje con la siguiente fecha y la
+  nueva en Próximas), deshacer, alta rápida con "Más" (lista, prioridad, cada año), alta dentro
+  de una lista, editar y volver a la lista; en móvil las listas son chips arriba de las tareas.
 
 ## Fase 3. Hogar: bienes, mantenimiento y valor
 
@@ -143,7 +151,7 @@ abrir la hoja. Sin errores de consola ni desbordes horizontales.
 
 ## Pendientes de decidir con el usuario (no bloquean la fase 1)
 
-- Tareas repetitivas: ¿desde la fecha de vencimiento o desde que se completan?
+- ~~Tareas repetitivas: ¿desde el vencimiento o desde que se completan?~~ Se eligió desde que se completan (fase 2).
 - ¿Deudas dentro de Finanzas?
 - ¿Avisos fuera de la app (correo, notificación) para tareas y mantenimientos, o basta con verlos en el inicio?
 - ¿Fotos y documentos adjuntos (facturas, pólizas, manuales) en los bienes?

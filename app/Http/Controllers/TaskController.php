@@ -1,0 +1,126 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Task;
+use App\Models\TaskList;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+class TaskController extends Controller
+{
+    /** Pendientes por grupo (vencidas, hoy, próximas, sin fecha) y lo completado en la última semana. */
+    public function index(Request $request)
+    {
+        $list = $request->filled('list') && $request->query('list') !== 'none'
+            ? TaskList::find($request->integer('list'))
+            : null;
+        $general = $request->query('list') === 'none';
+
+        $scope = fn ($query) => $query
+            ->when($list, fn ($q) => $q->where('task_list_id', $list->id))
+            ->when($general, fn ($q) => $q->whereNull('task_list_id'));
+
+        $pending = Task::with('list', 'taskable')->pending()->tap($scope)
+            ->orderByRaw('due_on is null')->orderBy('due_on')->orderByDesc('priority')->orderBy('id')
+            ->get();
+        $today = today();
+
+        return view('tasks.index', [
+            'list' => $list,
+            'general' => $general,
+            'groups' => [
+                'overdue' => ['Vencidas', $pending->filter(fn (Task $t) => $t->status($today) === 'overdue')],
+                'today' => ['Hoy', $pending->filter(fn (Task $t) => $t->status($today) === 'today')],
+                'upcoming' => ['Próximas', $pending->filter(fn (Task $t) => $t->status($today) === 'upcoming')],
+                'undated' => ['Sin fecha', $pending->filter(fn (Task $t) => $t->status($today) === 'undated')
+                    ->sortByDesc('priority')],
+            ],
+            'done' => Task::with('list')->completed()->tap($scope)
+                ->where('completed_at', '>=', now()->subDays(7))
+                ->orderByDesc('completed_at')->get(),
+            'lists' => TaskList::withCount(['tasks' => fn ($q) => $q->pending()])->orderBy('name')->get(),
+            'generalCount' => Task::pending()->whereNull('task_list_id')->count(),
+            'allCount' => Task::pending()->count(),
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $task = Task::create($this->validated($request));
+
+        return back()->with('success', "Tarea «{$task->title}» agregada.");
+    }
+
+    public function edit(Task $task)
+    {
+        return view('tasks.edit', ['task' => $task, 'lists' => TaskList::orderBy('name')->get()]);
+    }
+
+    public function update(Request $request, Task $task)
+    {
+        $task->update($this->validated($request));
+
+        return redirect($this->safeRedirect($request) ?? route('tasks.index'))->with('success', 'Tarea actualizada.');
+    }
+
+    public function destroy(Request $request, Task $task)
+    {
+        $task->delete();
+
+        return redirect($this->safeRedirect($request) ?? route('tasks.index'))->with('success', 'Tarea eliminada.');
+    }
+
+    /** Marca o desmarca como hecha (con un clic). Las repetitivas crean la siguiente. */
+    public function toggle(Task $task)
+    {
+        if ($task->isDone()) {
+            $task->reopen();
+
+            return back()->with('success', "«{$task->title}» vuelve a estar pendiente.");
+        }
+
+        $next = $task->complete();
+        $message = "«{$task->title}» hecha.";
+        if ($next) {
+            $message .= ' La siguiente: '.$next->due_on->translatedFormat('D d \d\e F Y').'.';
+        }
+
+        return back()->with('success', $message);
+    }
+
+    private function safeRedirect(Request $request): ?string
+    {
+        $to = (string) $request->input('redirect');
+
+        return str_starts_with($to, '/') && ! str_starts_with($to, '//') ? $to : null;
+    }
+
+    private function validated(Request $request): array
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:200'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+            'task_list_id' => ['nullable', 'exists:task_lists,id'],
+            'due_on' => ['nullable', 'date'],
+            'priority' => ['nullable', Rule::in(array_keys(Task::PRIORITIES))],
+            'repeat_every' => ['nullable', 'integer', 'min:1', 'max:999', 'required_with:repeat_unit'],
+            'repeat_unit' => ['nullable', Rule::in(array_keys(Task::REPEAT_UNITS)), 'required_with:repeat_every'],
+        ], [], [
+            'title' => 'tarea',
+            'task_list_id' => 'lista',
+            'due_on' => 'fecha',
+            'priority' => 'prioridad',
+            'repeat_every' => 'cada cuánto',
+            'repeat_unit' => 'unidad de repetición',
+        ]);
+
+        $data['priority'] = (int) ($data['priority'] ?? 2);
+        if (empty($data['repeat_every']) || empty($data['repeat_unit'])) {
+            $data['repeat_every'] = null;
+            $data['repeat_unit'] = null;
+        }
+
+        return $data;
+    }
+}

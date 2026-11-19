@@ -26,6 +26,9 @@
             ['recipes.index', 'Recetas', 'recipes.*'],
             ['menu.index', 'Menú de la semana', 'menu.*'],
         ]],
+        ['Hogar', [
+            ['tasks.index', 'Tareas', 'tasks.*'],
+        ]],
     ];
     $isActive = fn (array $links) => collect($links)->filter()->contains(fn ($link) => request()->routeIs($link[2]));
     $linkClass = fn (string $pattern) => request()->routeIs($pattern)

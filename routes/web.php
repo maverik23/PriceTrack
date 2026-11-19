@@ -11,6 +11,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ShoppingListController;
 use App\Http\Controllers\ShoppingListItemController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskListController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', DashboardController::class)->name('dashboard');
@@ -43,6 +45,11 @@ Route::get('menu', [MenuController::class, 'index'])->name('menu.index');
 Route::post('menu', [MenuController::class, 'store'])->name('menu.store');
 Route::post('menu/shop', [MenuController::class, 'shop'])->name('menu.shop');
 Route::delete('menu/{entry}', [MenuController::class, 'destroy'])->name('menu.destroy');
+
+// Hogar: tareas
+Route::resource('tasks', TaskController::class)->only(['index', 'store', 'edit', 'update', 'destroy']);
+Route::post('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
+Route::resource('task-lists', TaskListController::class)->only(['store', 'update', 'destroy']);
 
 Route::prefix('reports')->name('reports.')->controller(ReportController::class)->group(function () {
     Route::get('inflation', 'inflation')->name('inflation');

@@ -49,6 +49,10 @@ Comparador personal de precios del súper. Laravel 13 + Sail (PHP 8.5, MySQL 8.4
   - `App\Services\MenuShopper` suma lo que piden las recetas por artículo y lo **suma** a la lista en presentaciones habituales (no evita duplicar si se manda dos veces).
   - Menú: semana de lunes a domingo (`?week=` acepta cualquier día; si no es fecha, esta semana). Comidas en `MealPlanEntry::MEALS`. Las consultas de la semana usan rango semiabierto (`>= lunes`, `< lunes siguiente`), no `whereBetween`, porque la fecha se guarda con hora.
   - El formulario de receta es Alpine `recipeForm` (`resources/js/recipe-form.js`): con artículo solo ofrece las unidades de su dimensión.
+- **Tareas** (`task_lists` → `tasks`; sin lista = "General", al borrar una lista sus tareas pasan a General):
+  - `priority` 1 baja, 2 normal, 3 alta (`Task::PRIORITIES`). Repetición: `repeat_every` + `repeat_unit` (`day|week|month|year`, ambos o ninguno).
+  - **La siguiente fecha se cuenta desde el día en que se completa** (`Task::nextDueOn()`, meses y años sin desbordar: 31 ene + 1 mes = 28 feb). `Task::complete()` crea la siguiente con `repeated_from_id`; `reopen()` la borra si sigue pendiente. `POST tasks/{task}/toggle` hace una u otra.
+  - `Task::status()`: overdue / today / upcoming / undated / done. `taskable` (morph opcional) es para ligar una tarea a otra cosa (un bien); si el modelo tiene `taskLink()`, el renglón muestra el enlace.
 - **Hoja de la lista** (`lists/show`): tabla tipo Excel en Alpine (`resources/js/list-grid.js`) alimentada por `App\Support\ListGrid`. Filas = artículos, columnas = proveedores, celdas = último precio. Editar una celda hace `POST lists/{list}/items/{item}/prices`, que registra el precio con `ShoppingList::priceDate()` (la fecha de la lista, nunca futura). Si ese día ya se capturó desde la misma lista, corrige ese registro; si no, crea uno nuevo y conserva el historial. Si la compra estaba en ese proveedor, pasa al precio nuevo. Los cálculos en vivo del JS replican los de los modelos: si cambias uno, cambia el otro. Un precio a granel se escribe en la celda como `54/kg` o con la presentación `por kg` / `por 100 g`.
 
 ## Convenciones
