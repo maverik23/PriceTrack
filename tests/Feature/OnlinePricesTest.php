@@ -508,4 +508,21 @@ class OnlinePricesTest extends TestCase
         PriceTrackServer::tool(SetStoreBranch::class, ['chain' => 'chedraui', 'postal_code' => '77518', 'branch' => 'chedrauimx0112'])->assertOk();
         PriceTrackServer::tool(FetchOnlinePrices::class, ['product_id' => $product->id])->assertOk()->assertSee('41.00');
     }
+
+    public function test_bulk_update_lists_every_saved_link(): void
+    {
+        $milk = Product::create(['name' => 'Leche', 'size' => 1, 'unit' => 'l']);
+        $tv = Product::create(['name' => 'Aspiradora', 'size' => 1, 'unit' => 'item']);
+        $milk->links()->create(['provider_id' => $this->chedraui->id, 'url' => self::MILK]);
+        $tv->links()->create(['provider_id' => $this->costco->id, 'url' => self::COSTCO]);
+        // Solo marca, sin dirección: no se consulta
+        $tv->links()->create(['provider_id' => $this->chedraui->id, 'brand' => 'Dyson']);
+
+        $this->getJson(route('products.online-links'))->assertOk()
+            ->assertJsonCount(2, 'links')
+            ->assertJsonPath('links.0.label', 'Aspiradora — Costco')
+            ->assertJsonPath('links.0.chain', null)
+            ->assertJsonPath('links.1.chain', 'chedraui');
+        $this->get(route('products.index'))->assertOk()->assertSee('Actualizar todos los precios');
+    }
 }

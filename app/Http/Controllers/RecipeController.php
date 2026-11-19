@@ -11,6 +11,7 @@ use App\Models\RecipeStep;
 use App\Models\ShoppingList;
 use App\Models\Tag;
 use App\Services\MenuShopper;
+use App\Support\AttachmentForm;
 use App\Support\RecipeData;
 use Illuminate\Http\Request;
 
@@ -40,7 +41,9 @@ class RecipeController extends Controller
 
     public function store(Request $request)
     {
+        AttachmentForm::validate($request);
         $recipe = RecipeData::save(new Recipe, RecipeData::validate($request->all()));
+        AttachmentForm::apply($recipe, $request);
 
         return redirect()->route('recipes.show', $recipe)->with('success', 'Receta guardada.');
     }
@@ -65,7 +68,9 @@ class RecipeController extends Controller
 
     public function update(Request $request, Recipe $recipe)
     {
+        AttachmentForm::validate($request);
         RecipeData::save($recipe, RecipeData::validate($request->all(), $recipe));
+        AttachmentForm::apply($recipe, $request);
 
         return redirect()->route('recipes.show', $recipe)->with('success', 'Receta actualizada.');
     }

@@ -30,6 +30,7 @@ Route::get('/', DashboardController::class)->name('dashboard');
 Route::resource('providers', ProviderController::class)->except(['create', 'show']);
 // Antes del resource para que "lookup" no se tome como {product}
 Route::get('products/lookup', [ProductController::class, 'lookup'])->name('products.lookup');
+Route::get('products/online-links', [ProductLinkController::class, 'plan'])->name('products.online-links');
 Route::resource('products', ProductController::class);
 Route::put('products/{product}/links', [ProductLinkController::class, 'update'])->name('products.links.update');
 Route::post('products/{product}/prices/fetch', [ProductLinkController::class, 'fetch'])->name('products.prices.fetch');

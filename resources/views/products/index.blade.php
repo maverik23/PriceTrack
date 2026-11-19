@@ -7,7 +7,19 @@
         <h1 class="text-3xl font-bold text-slate-900">Artículos</h1>
         <p class="text-sm text-slate-500">El más barato se calcula por unidad ($/L, $/kg, $/pza) con el último precio de cada proveedor.</p>
     </div>
-    <a href="{{ route('products.create') }}" class="btn btn-primary">+ Nuevo artículo</a>
+    <div class="flex flex-wrap gap-2">
+        <button type="button" class="btn btn-secondary" x-data @click="$dispatch('bulk-prices')"
+                title="Consulta todas las direcciones guardadas de todos los artículos y registra los precios de hoy">
+            <x-icon name="refresh-cw" class="size-4" /> Actualizar todos los precios
+        </button>
+        <a href="{{ route('products.create') }}" class="btn btn-primary">+ Nuevo artículo</a>
+    </div>
+</div>
+
+<div x-data="bulkPrices({{ Js::from(['plan' => route('products.online-links')]) }})" @bulk-prices.window="start()">
+    <x-progress-panel run="run" class="mb-4" />
+    <div x-show="run.finished && run.ok" x-cloak class="-mt-2 mb-4 text-right"><button type="button" class="btn btn-secondary btn-sm" @click="reload()">Ver los precios nuevos</button></div>
+    <p x-show="empty" x-cloak class="flash flash-success mb-4" x-text="empty"></p>
 </div>
 
 <form method="GET" class="mb-4 flex flex-wrap gap-2" x-data @barcode-scanned="$el.requestSubmit()">

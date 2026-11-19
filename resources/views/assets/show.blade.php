@@ -190,7 +190,7 @@
     </div>
 
     <div class="min-w-0 space-y-6">
-        @include('attachments._panel', ['owner' => $asset, 'action' => route('assets.attachments.store', $asset), 'hint' => 'Fotos, factura, póliza, garantía, manual…'])
+        @include('attachments._gallery', ['owner' => $asset, 'edit' => route('assets.edit', $asset).'#fotos'])
 
         <section class="card">
             <h2 class="card-title">Capturas de valor</h2>

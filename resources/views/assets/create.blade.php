@@ -5,7 +5,7 @@
 <a href="{{ route('assets.index') }}" class="link text-sm">← Bienes</a>
 <h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">Nuevo bien</h1>
 
-<form method="POST" action="{{ route('assets.store') }}" class="card max-w-4xl space-y-5">
+<form method="POST" action="{{ route('assets.store') }}" enctype="multipart/form-data" class="card max-w-4xl space-y-5">
     @include('assets._form')
     <div class="flex gap-2">
         <button class="btn btn-primary">Guardar</button>

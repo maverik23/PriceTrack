@@ -7,11 +7,11 @@ import barcodeScanner from './barcode-scanner';
 import productForm from './product-form';
 import recipeForm, { tagInput } from './recipe-form';
 import recipeView from './recipe-show';
-import attachmentUpload from './attachment-upload';
+import attachmentsField from './attachments-field';
 import themeToggle from './theme';
 import { pantryList, pantryToggle } from './pantry';
 import { branchPicker } from './online-prices';
-import productPrices, { priceLink, takeFlash } from './product-prices';
+import productPrices, { bulkPrices, priceLink, takeFlash } from './product-prices';
 
 Alpine.data('listGrid', listGrid);
 Alpine.data('combobox', combobox);
@@ -20,13 +20,14 @@ Alpine.data('productForm', productForm);
 Alpine.data('recipeForm', recipeForm);
 Alpine.data('tagInput', tagInput);
 Alpine.data('recipeView', recipeView);
-Alpine.data('attachmentUpload', attachmentUpload);
+Alpine.data('attachmentsField', attachmentsField);
 Alpine.data('themeToggle', themeToggle);
 Alpine.data('pantryList', pantryList);
 Alpine.data('pantryToggle', pantryToggle);
 Alpine.data('branchPicker', branchPicker);
 Alpine.data('productPrices', productPrices);
 Alpine.data('priceLink', priceLink);
+Alpine.data('bulkPrices', bulkPrices);
 window.takeFlash = takeFlash;
 window.Alpine = Alpine;
 Alpine.start();
@@ -175,6 +176,37 @@ function initUnitPreview() {
         updateUnitPreview(form);
     });
 }
+
+/**
+ * Formularios normales: al enviarse, el botón muestra que está trabajando y un segundo
+ * envío (doble toque, Enter repetido) se ignora. No toca los formularios que manejan su
+ * propio envío (@submit.prevent) ni los que cancelaron un confirm(); data-no-busy lo apaga.
+ */
+function initBusyForms() {
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (event.defaultPrevented || !(form instanceof HTMLFormElement) || form.hasAttribute('data-no-busy') || form.method.toLowerCase() === 'get') return;
+        if (form.dataset.submitting) {
+            event.preventDefault();
+            return;
+        }
+        form.dataset.submitting = '1';
+        const button = event.submitter ?? form.querySelector('button:not([type=button]), [type=submit]');
+        button?.classList.add('is-busy');
+        button?.setAttribute('aria-busy', 'true');
+    });
+    // Al volver con "atrás" la página puede venir de la caché con el botón bloqueado
+    window.addEventListener('pageshow', () => {
+        document.querySelectorAll('form[data-submitting]').forEach((form) => {
+            delete form.dataset.submitting;
+            form.querySelectorAll('.is-busy').forEach((b) => {
+                b.classList.remove('is-busy');
+                b.removeAttribute('aria-busy');
+            });
+        });
+    });
+}
+initBusyForms();
 
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();

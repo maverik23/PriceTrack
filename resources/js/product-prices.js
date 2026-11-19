@@ -52,6 +52,42 @@ export default function productPrices(config) {
     };
 }
 
+/** "Actualizar todos los precios" (Artículos): todas las direcciones guardadas, una por una. */
+export function bulkPrices(config) {
+    return {
+        run: createRun(),
+        empty: '',
+
+        async start() {
+            if (this.run.active) return;
+            this.empty = '';
+            let links;
+            try {
+                links = (await requestJson('GET', config.plan)).links;
+            } catch (e) {
+                this.empty = e.message;
+                return;
+            }
+            if (!links.length) {
+                this.empty = 'Ningún artículo tiene dirección en alguna tienda. Pégala en la ficha del artículo («En cada tienda») o en una celda de la hoja.';
+                return;
+            }
+            const skipped = await ensureBranches(links.map((l) => l.url));
+            await runTasks(this.run, 'Actualizando todos los precios', links, async (link, signal) => {
+                if (skipped.includes(link.chain)) return { ok: false, message: 'Sin sucursal elegida: no se consultó.' };
+                return requestJson('POST', link.fetch, {}, { signal });
+            });
+            if (this.run.ok && !this.run.failures.length && !this.run.cancelled) {
+                flashAfterReload(`Precios en línea: ${this.run.ok} ${this.run.ok === 1 ? 'precio actualizado' : 'precios actualizados'}.`);
+                window.location.reload();
+            }
+        },
+        reload() {
+            window.location.reload();
+        },
+    };
+}
+
 export function priceLink(config) {
     return {
         links: config.links || {},

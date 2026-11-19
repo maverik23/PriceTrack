@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Asset;
 use App\Models\Task;
 use App\Services\AssetReport;
+use App\Support\AttachmentForm;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -34,7 +35,9 @@ class AssetController extends Controller
 
     public function store(Request $request)
     {
+        AttachmentForm::validate($request);
         $asset = Asset::create($this->validated($request));
+        AttachmentForm::apply($asset, $request);
 
         return redirect()->route('assets.show', $asset)->with('success', 'Bien guardado.');
     }
@@ -58,8 +61,10 @@ class AssetController extends Controller
 
     public function update(Request $request, Asset $asset)
     {
+        AttachmentForm::validate($request);
         $asset->update($this->validated($request));
         $asset->syncMaintenanceTasks();
+        AttachmentForm::apply($asset, $request);
 
         return redirect()->route('assets.show', $asset)->with('success', 'Bien actualizado.');
     }

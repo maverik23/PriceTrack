@@ -173,6 +173,8 @@
     </section>
 </div>
 
+<x-attachments-field :owner="$recipe" title="Fotos" hint="La primera foto es la portada de la receta." />
+
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
     <div class="sm:col-span-2">
         <label class="label" for="notes">Notas</label>

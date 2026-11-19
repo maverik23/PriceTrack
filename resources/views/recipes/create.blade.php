@@ -5,7 +5,7 @@
 <a href="{{ route('recipes.index') }}" class="link text-sm">← Recetas</a>
 <h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">Nueva receta</h1>
 
-<form method="POST" action="{{ route('recipes.store') }}" class="card max-w-4xl space-y-5">
+<form method="POST" action="{{ route('recipes.store') }}" enctype="multipart/form-data" class="card max-w-4xl space-y-5">
     @include('recipes._form')
     <div class="flex gap-2">
         <button class="btn btn-primary">Guardar receta</button>

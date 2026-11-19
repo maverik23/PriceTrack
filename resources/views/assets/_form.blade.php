@@ -92,3 +92,5 @@
         </div>
     </div>
 </div>
+
+<x-attachments-field :owner="$asset" hint="Fotos, factura, póliza, garantía, manual… La primera foto es la portada." />

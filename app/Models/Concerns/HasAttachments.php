@@ -17,10 +17,10 @@ trait HasAttachments
 
     public function attachments(): MorphMany
     {
-        return $this->morphMany(Attachment::class, 'attachable')->orderBy('id');
+        return $this->morphMany(Attachment::class, 'attachable')->orderBy('position')->orderBy('id');
     }
 
-    /** La primera foto: la portada. */
+    /** La primera foto (en el orden de la galería): la portada. */
     public function coverPhoto(): ?Attachment
     {
         return $this->attachments->firstWhere('kind', 'photo');

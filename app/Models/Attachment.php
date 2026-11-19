@@ -9,7 +9,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-#[Fillable(['kind', 'title', 'path', 'thumb_path', 'original_name', 'mime', 'size'])]
+#[Fillable(['kind', 'position', 'title', 'path', 'thumb_path', 'original_name', 'mime', 'size'])]
 class Attachment extends Model
 {
     public const DISK = 'local';
@@ -22,7 +22,7 @@ class Attachment extends Model
 
     protected function casts(): array
     {
-        return ['size' => 'integer'];
+        return ['size' => 'integer', 'position' => 'integer'];
     }
 
     protected static function booted(): void
@@ -49,6 +49,8 @@ class Attachment extends Model
 
         return $owner->attachments()->create([
             'kind' => $isPhoto ? 'photo' : 'document',
+            // Al final de la galería
+            'position' => (int) $owner->attachments()->max('position') + 1,
             'title' => $title ?: null,
             'path' => $path,
             'thumb_path' => $thumbPath,

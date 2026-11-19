@@ -83,4 +83,57 @@ class AttachmentsTest extends TestCase
         $missing = $asset->attachments()->create(['kind' => 'document', 'path' => 'attachments/no-existe.pdf', 'original_name' => 'x.pdf', 'mime' => 'application/pdf', 'size' => 1]);
         $this->get($missing->url())->assertNotFound();
     }
+
+    public function test_photos_are_uploaded_ordered_and_removed_from_the_edit_form(): void
+    {
+        $this->post(route('recipes.store'), [
+            'name' => 'Pozole', 'servings' => 6,
+            'files' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->image('b.jpg'), UploadedFile::fake()->create('nota.pdf', 20, 'application/pdf')],
+            'thumbs' => [1 => UploadedFile::fake()->image('b-thumb.jpg', 480, 320)],
+            // La segunda foto como portada
+            'attachment_order' => ['n1', 'n0', 'n2'],
+        ])->assertSessionHasNoErrors();
+        $recipe = Recipe::latest('id')->firstOrFail();
+        $this->assertSame(['b.jpg', 'a.jpg', 'nota.pdf'], $recipe->attachments()->pluck('original_name')->all());
+        $this->assertSame('b.jpg', $recipe->load('attachments')->coverPhoto()->original_name);
+        $this->assertNotNull($recipe->coverPhoto()->thumb_path);
+        [$b, $a, $pdf] = $recipe->attachments()->get()->all();
+
+        // Editar: otra portada, título al documento, quitar una foto y agregar otra
+        $this->put(route('recipes.update', $recipe), [
+            'name' => 'Pozole', 'servings' => 6,
+            'files' => [UploadedFile::fake()->image('c.jpg')],
+            'attachment_order' => ['a'.$a->id, 'n0', 'a'.$pdf->id],
+            'remove_attachments' => [$b->id],
+            'attachment_titles' => [$pdf->id => 'Receta de la abuela', $a->id => ''],
+        ])->assertSessionHasNoErrors()->assertRedirect(route('recipes.show', $recipe));
+        $this->assertSame(['a.jpg', 'c.jpg', 'nota.pdf'], $recipe->attachments()->pluck('original_name')->all());
+        $this->assertSame('Receta de la abuela', $pdf->fresh()->title);
+        Storage::disk(Attachment::DISK)->assertMissing($b->path);
+
+        // Sin tocar las fotos, se quedan como estaban
+        $this->put(route('recipes.update', $recipe), ['name' => 'Pozole rojo', 'servings' => 6])->assertSessionHasNoErrors();
+        $this->assertSame(3, $recipe->attachments()->count());
+
+        // La ficha solo muestra la galería; se edita en el formulario
+        $this->get(route('recipes.edit', $recipe))->assertOk()->assertSee('Agregar fotos o documentos');
+        $this->get(route('recipes.show', $recipe))->assertOk()->assertSee('Receta de la abuela')->assertDontSee('Agregar fotos o documentos');
+
+        // Archivos no permitidos: error y no se guarda nada
+        $this->put(route('recipes.update', $recipe), ['name' => 'Pozole', 'servings' => 6, 'files' => [UploadedFile::fake()->create('x.exe', 5, 'application/octet-stream')]])
+            ->assertSessionHasErrors('files.0');
+        $this->assertSame('Pozole rojo', $recipe->fresh()->name);
+    }
+
+    public function test_assets_take_photos_in_their_form(): void
+    {
+        $this->post(route('assets.store'), [
+            'name' => 'Lavadora', 'status' => 'active', 'valuation_method' => 'none',
+            'files' => [UploadedFile::fake()->image('lavadora.jpg'), UploadedFile::fake()->create('garantia.pdf', 50, 'application/pdf')],
+        ])->assertSessionHasNoErrors();
+        $asset = Asset::latest('id')->firstOrFail();
+        $this->assertSame(2, $asset->attachments()->count());
+        $this->get(route('assets.show', $asset))->assertOk()->assertSee('garantia.pdf')->assertSee('Portada');
+        $this->get(route('assets.edit', $asset))->assertOk()->assertSee('lavadora.jpg');
+    }
 }
