@@ -8,6 +8,7 @@ import productForm from './product-form';
 import recipeForm from './recipe-form';
 import attachmentUpload from './attachment-upload';
 import themeToggle from './theme';
+import { pantryList, pantryToggle } from './pantry';
 
 Alpine.data('listGrid', listGrid);
 Alpine.data('combobox', combobox);
@@ -16,6 +17,8 @@ Alpine.data('productForm', productForm);
 Alpine.data('recipeForm', recipeForm);
 Alpine.data('attachmentUpload', attachmentUpload);
 Alpine.data('themeToggle', themeToggle);
+Alpine.data('pantryList', pantryList);
+Alpine.data('pantryToggle', pantryToggle);
 window.Alpine = Alpine;
 Alpine.start();
 

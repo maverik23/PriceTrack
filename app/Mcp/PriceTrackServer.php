@@ -13,6 +13,7 @@ use App\Mcp\Tools\DeleteTask;
 use App\Mcp\Tools\FetchOnlinePrices;
 use App\Mcp\Tools\GetFinances;
 use App\Mcp\Tools\GetMenu;
+use App\Mcp\Tools\GetPantry;
 use App\Mcp\Tools\GetPriceReport;
 use App\Mcp\Tools\GetProduct;
 use App\Mcp\Tools\GetRecipe;
@@ -31,6 +32,7 @@ use App\Mcp\Tools\RemoveListItem;
 use App\Mcp\Tools\RemoveMeal;
 use App\Mcp\Tools\SearchProducts;
 use App\Mcp\Tools\UpdateListItem;
+use App\Mcp\Tools\UpdatePantry;
 use App\Mcp\Tools\UpdateTask;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -50,6 +52,7 @@ use Laravel\Mcp\Server\Attributes\Version;
     - Artículos: cada uno tiene una presentación habitual (size + unit). "El más barato" es el menor precio **por unidad** ($/L, $/kg, $/pza) entre el último precio de cada tienda; `latest_prices` ya viene en ese orden.
     - Listas: `quantity` es lo que se necesita, en presentaciones habituales. Lo que cuesta en una tienda son los paquetes completos que cubren esa cantidad (o lo justo si es a granel): la tienda más barata por unidad no siempre es donde sale más barato llevarse lo que se necesita (`cost_for_need`).
     - El gasto solo cuenta los artículos marcados como comprados en una tienda, en la fecha de su lista.
+    - Despensa: lo que está en casa (`pantry.status = stocked`) no se manda a la lista desde recetas o menú; si dice cuánto queda, solo se manda lo que falta. Revisa con `add-ingredients-to-list` y `preview: true` antes de mandar.
     - Busca antes de crear (artículos, recetas) para no duplicar, y confirma con la persona antes de borrar algo.
     MARKDOWN)]
 class PriceTrackServer extends Server
@@ -84,6 +87,8 @@ class PriceTrackServer extends Server
         PlanMeal::class,
         RemoveMeal::class,
         AddIngredientsToList::class,
+        GetPantry::class,
+        UpdatePantry::class,
 
         // Hogar
         ListTasks::class,

@@ -33,6 +33,7 @@
         'cocina' => ['Cocina', 'chef-hat', [
             ['recipes.index', 'Recetas', 'recipes.*', 'book-open'],
             ['menu.index', 'Menú de la semana', 'menu.*', 'calendar-days'],
+            ['pantry.index', 'Despensa', 'pantry.*', 'refrigerator'],
         ]],
         'hogar' => ['Hogar', 'house', [
             ['tasks.index', 'Tareas', 'tasks.*', 'list-checks'],

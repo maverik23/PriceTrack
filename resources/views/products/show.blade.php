@@ -12,6 +12,20 @@
             @if ($product->category) · <span class="badge badge-muted">{{ $product->category }}</span> @endif
             @if ($product->barcode) · <span class="font-mono text-xs" title="Código de barras">{{ $product->barcode }}</span> @endif
         </p>
+        {{-- Despensa: lo que está en casa no se manda a la lista desde las recetas --}}
+        <div x-data="pantryToggle({{ Js::from(\App\Http\Controllers\PantryController::row($product)) }})" class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+            <button type="button" class="switch" role="switch" :aria-checked="row.pantry === 'stocked'" :disabled="!!busy[row.id]"
+                    aria-label="Lo tengo en casa" @click="toggle(row)"></button>
+            <span class="font-medium text-slate-700" x-text="row.pantry === 'stocked' ? 'Lo tengo en casa' : (row.pantry === 'out' ? 'Se acabó' : 'No está en la despensa')"></span>
+            <label x-show="row.pantry === 'stocked'" class="flex items-center gap-2 text-xs text-slate-500">
+                queda
+                <input type="text" class="input w-28 py-1" :value="row.qty" placeholder="suficiente" title="Cuánto queda (300 g, 1.5 kg); vacío = suficiente"
+                       @change="setQty(row, $event.target.value.trim())" @keydown.enter.prevent="$event.target.blur()">
+            </label>
+            <span x-show="saved[row.id]" x-transition.opacity class="text-xs text-emerald-700">Guardado</span>
+            <span x-show="errors[row.id]" class="text-xs text-red-600" x-text="errors[row.id]"></span>
+            <a href="{{ route('pantry.index') }}" class="link text-xs">Despensa</a>
+        </div>
     </div>
     <div class="flex gap-2">
         <a href="{{ route('products.edit', $product) }}" class="btn btn-secondary">Editar</a>

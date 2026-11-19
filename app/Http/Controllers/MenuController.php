@@ -9,6 +9,7 @@ use App\Services\MenuShopper;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
 class MenuController extends Controller
@@ -74,28 +75,63 @@ class MenuController extends Controller
             ->with('success', 'Quitado del menú.');
     }
 
+    /** Revisión antes de mandar el menú de la semana a una lista: qué falta y qué ya está en casa. */
+    public function shopReview(Request $request, MenuShopper $shopper)
+    {
+        $start = $this->weekStart($request->query('week'));
+        $result = $shopper->needs($this->weekPortions($start));
+
+        return view('recipes.shop', [
+            'title' => 'Menú de la semana',
+            'subtitle' => 'Del '.$start->translatedFormat('d M').' al '.$start->addDays(6)->translatedFormat('d M'),
+            'back' => route('menu.index', ['week' => $start->toDateString()]),
+            'action' => route('menu.shop'),
+            'hidden' => ['week' => $start->toDateString()],
+            'newList' => $this->listName($start),
+            'rows' => $shopper->reviewRows($result),
+            'unlinked' => $result['unlinked'],
+            'lists' => ShoppingList::orderByDesc('shopped_on')->orderByDesc('id')->take(10)->get(),
+        ]);
+    }
+
     /** Manda a una lista de compras los ingredientes de todas las recetas de la semana. */
     public function shop(Request $request, MenuShopper $shopper)
     {
         $data = $request->validate([
             'week' => ['required', 'date'],
             'list_id' => ['nullable', 'exists:shopping_lists,id'],
+            'buy' => ['nullable', 'array'],
+            'buy.*' => ['integer'],
         ]);
 
         $start = $this->weekStart($data['week']);
-        $portions = $this->weekEntries($start)
-            ->filter(fn (MealPlanEntry $e) => $e->recipe)
-            ->map(fn (MealPlanEntry $e) => [$e->recipe, (float) $e->plannedServings()]);
-
-        $result = $shopper->needs($portions);
-        if (! $result['needs']) {
+        $result = $shopper->needs($this->weekPortions($start));
+        if (! $result['rows']) {
             return back()->withErrors(['list_id' => 'El menú de esta semana no tiene recetas con ingredientes ligados a artículos.']);
         }
 
-        $list = $shopper->resolveList($data['list_id'] ?? null, 'Menú del '.$start->translatedFormat('d M').' al '.$start->addDays(6)->translatedFormat('d M'));
-        $count = $shopper->addToList($list, $result['needs']);
+        [$add, $skipped] = $shopper->chosen($result, $request->boolean('reviewed') ? ($data['buy'] ?? []) : null);
+        if (! $add) {
+            return redirect()->route('menu.index', ['week' => $start->toDateString()])->with('success', $shopper->summary(0, $skipped, $result['unlinked']));
+        }
 
-        return redirect()->route('lists.show', $list)->with('success', $shopper->summary($count, $result['unlinked']));
+        $list = $shopper->resolveList($data['list_id'] ?? null, $this->listName($start));
+        $count = $shopper->addToList($list, $add);
+
+        return redirect()->route('lists.show', $list)->with('success', $shopper->summary($count, $skipped, $result['unlinked']));
+    }
+
+    /** @return Collection<int, array{0: Recipe, 1: float}> */
+    private function weekPortions(CarbonImmutable $start)
+    {
+        return $this->weekEntries($start)
+            ->filter(fn (MealPlanEntry $e) => $e->recipe)
+            ->map(fn (MealPlanEntry $e) => [$e->recipe->loadShoppingTree(), (float) $e->plannedServings()]);
+    }
+
+    private function listName(CarbonImmutable $start): string
+    {
+        return 'Menú del '.$start->translatedFormat('d M').' al '.$start->addDays(6)->translatedFormat('d M');
     }
 
     private function weekStart(mixed $day): CarbonImmutable

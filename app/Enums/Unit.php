@@ -78,6 +78,19 @@ enum Unit: string
         return $this->dimension() === $other->dimension();
     }
 
+    /** "kilos", "lts", "pzas"… → la unidad; null si no se reconoce. Igual que UNIT_ALIASES de list-grid.js. */
+    public static function fromAlias(string $text): ?self
+    {
+        return match (rtrim(mb_strtolower(trim($text)), '.')) {
+            'ml', 'mililitro', 'mililitros' => self::Ml,
+            'l', 'lt', 'lts', 'litro', 'litros' => self::L,
+            'g', 'gr', 'grs', 'gramo', 'gramos' => self::G,
+            'kg', 'kgs', 'kilo', 'kilos' => self::Kg,
+            'pza', 'pzas', 'pz', 'pieza', 'piezas', 'item', 'items', 'u', 'un', 'und' => self::Item,
+            default => null,
+        };
+    }
+
     /** @return array<int, self> */
     public function compatibleUnits(): array
     {

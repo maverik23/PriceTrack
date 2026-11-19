@@ -45,8 +45,20 @@ class Present
             'size' => $product->size,
             'unit' => $product->unit->value,
             'barcode' => $product->barcode,
+            'pantry' => self::pantry($product),
             'latest_prices' => $product->latestPrices()->map(fn (Price $p) => self::price($p))->all(),
         ];
+    }
+
+    /**
+     * Estado en la despensa: `stocked` (en casa), `out` (se acabó) o null (no se lleva);
+     * `remaining` = lo que queda ("300 g"), null = suficiente.
+     *
+     * @return array{status: ?string, remaining: ?string}
+     */
+    public static function pantry(Product $product): array
+    {
+        return ['status' => $product->pantry, 'remaining' => $product->pantryLabel()];
     }
 
     /**

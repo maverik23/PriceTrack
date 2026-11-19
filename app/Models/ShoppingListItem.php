@@ -19,6 +19,20 @@ class ShoppingListItem extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        // Comprar un básico de la despensa que se había acabado lo vuelve a marcar en casa.
+        // Solo los que se llevan sin cantidad: no se lleva inventario automático.
+        static::saved(function (ShoppingListItem $item) {
+            if ($item->price_id && ($item->wasChanged('price_id') || $item->wasRecentlyCreated)) {
+                $product = $item->product;
+                if ($product?->pantry === Product::PANTRY_OUT) {
+                    $product->setPantry(true);
+                }
+            }
+        });
+    }
+
     public function shoppingList(): BelongsTo
     {
         return $this->belongsTo(ShoppingList::class);

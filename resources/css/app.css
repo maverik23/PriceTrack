@@ -239,6 +239,11 @@
         letter-spacing: -0.022em;
         font-variation-settings: 'opsz' 40;
     }
+    /* Casillas y radios con el color de la marca (en los dos temas) */
+    input[type='checkbox'],
+    input[type='radio'] {
+        accent-color: var(--color-brand);
+    }
     ::selection {
         background: color-mix(in oklab, var(--color-brand) 28%, transparent);
     }
@@ -304,6 +309,28 @@
     }
     textarea.input {
         @apply leading-relaxed;
+    }
+
+    /* Filtros en píldora ("Todo", "En casa", "Se acabó") */
+    .chip {
+        @apply bg-surface inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap text-slate-600 ring-1 ring-slate-300 transition select-none hover:bg-slate-100 hover:text-slate-900;
+    }
+    .chip.is-active {
+        @apply bg-brand text-on-brand ring-transparent hover:bg-brand-strong;
+    }
+    /* Interruptor sí/no: <button class="switch" role="switch" :aria-checked="…"> */
+    .switch {
+        @apply relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full bg-slate-300 transition-colors duration-200 disabled:cursor-wait disabled:opacity-60;
+    }
+    .switch::after {
+        content: '';
+        @apply bg-surface absolute left-1 size-5 rounded-full shadow transition-transform duration-200;
+    }
+    .switch[aria-checked='true'] {
+        @apply bg-brand;
+    }
+    .switch[aria-checked='true']::after {
+        @apply translate-x-5;
     }
 
     .label {

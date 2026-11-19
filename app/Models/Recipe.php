@@ -118,6 +118,30 @@ class Recipe extends Model
         return $grams->isEmpty() ? null : round($grams->sum() / max(1, $this->servings));
     }
 
+    /** Carga lo necesario para costear y mandar a la lista (ingredientes con su artículo). */
+    public function loadShoppingTree(): static
+    {
+        $this->loadMissing('ingredients.product');
+
+        return $this;
+    }
+
+    /**
+     * Lo que pide la receta para la lista de compras: [id del artículo, unidad base, nombre]
+     * por ingrediente; sin artículo (o sin cantidad que se pueda convertir) el id y la
+     * cantidad son null.
+     *
+     * @return array<int, array{0: ?int, 1: ?float, 2: string}>
+     */
+    public function shoppingNeeds(float $factor = 1): array
+    {
+        return $this->ingredients->map(function (RecipeIngredient $ingredient) use ($factor) {
+            $base = $ingredient->productBaseQty($factor);
+
+            return [$base === null ? null : $ingredient->product_id, $base, $ingredient->displayName()];
+        })->all();
+    }
+
     /** Líneas de las instrucciones, una por paso. */
     public function steps(): array
     {

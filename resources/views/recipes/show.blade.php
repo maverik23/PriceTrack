@@ -150,22 +150,11 @@
             <button class="btn btn-secondary w-full">Agregar ({{ $servings }} {{ $servings === 1 ? 'porción' : 'porciones' }})</button>
         </form>
 
-        <form method="POST" action="{{ route('recipes.shop', $recipe) }}" class="card space-y-3">
-            @csrf
+        <div class="card space-y-3">
             <h2 class="card-title">Mandar a una lista de compras</h2>
-            <input type="hidden" name="servings" value="{{ $servings }}">
-            <div>
-                <label class="label" for="list_id">Lista</label>
-                <select id="list_id" name="list_id" class="input">
-                    <option value="">Lista nueva «{{ $recipe->name }}»</option>
-                    @foreach ($lists as $list)
-                        <option value="{{ $list->id }}">{{ $list->name }} ({{ $list->shopped_on->translatedFormat('d M') }})</option>
-                    @endforeach
-                </select>
-                <p class="mt-1 text-xs text-slate-500">Lo necesario para {{ $servings }} {{ $servings === 1 ? 'porción' : 'porciones' }} se suma a lo que ya tenga la lista.</p>
-            </div>
-            <button class="btn btn-primary w-full">Agregar ingredientes</button>
-        </form>
+            <p class="text-xs text-slate-500">Revisa lo que hace falta para {{ $servings }} {{ $servings === 1 ? 'porción' : 'porciones' }}: lo que ya está en tu despensa no se manda.</p>
+            <a href="{{ route('recipes.shop.review', [$recipe, 'servings' => $servings]) }}" class="btn btn-primary w-full">Revisar y mandar</a>
+        </div>
 
         @include('attachments._panel', ['owner' => $recipe, 'action' => route('recipes.attachments.store', $recipe), 'title' => 'Fotos', 'hint' => 'La primera es la portada de la receta.'])
     </div>

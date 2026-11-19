@@ -84,24 +84,50 @@ class RecipeController extends Controller
         return redirect()->route('recipes.index')->with('success', 'Receta eliminada.');
     }
 
+    /** Revisión antes de mandar a una lista: qué falta y qué ya está en la despensa. */
+    public function shopReview(Request $request, Recipe $recipe, MenuShopper $shopper)
+    {
+        $servings = min(999, max(1, $request->integer('servings') ?: $recipe->servings));
+        $result = $shopper->needs([[$recipe->loadShoppingTree(), (float) $servings]]);
+
+        return view('recipes.shop', [
+            'title' => $recipe->name,
+            'subtitle' => $servings.' '.($servings === 1 ? 'porción' : 'porciones'),
+            'back' => route('recipes.show', [$recipe, 'servings' => $servings === $recipe->servings ? null : $servings]),
+            'action' => route('recipes.shop', $recipe),
+            'hidden' => ['servings' => $servings],
+            'newList' => $recipe->name,
+            'rows' => $shopper->reviewRows($result),
+            'unlinked' => $result['unlinked'],
+            'lists' => $this->recentLists(),
+        ]);
+    }
+
     /** Manda los ingredientes (para las porciones indicadas) a una lista de compras. */
     public function shop(Request $request, Recipe $recipe, MenuShopper $shopper)
     {
         $data = $request->validate([
             'servings' => ['nullable', 'integer', 'min:1', 'max:999'],
             'list_id' => ['nullable', 'exists:shopping_lists,id'],
+            'buy' => ['nullable', 'array'],
+            'buy.*' => ['integer'],
         ]);
 
-        $recipe->load('ingredients.product');
-        $result = $shopper->needs([[$recipe, (float) ($data['servings'] ?? $recipe->servings)]]);
-        if (! $result['needs']) {
+        $result = $shopper->needs([[$recipe->loadShoppingTree(), (float) ($data['servings'] ?? $recipe->servings)]]);
+        if (! $result['rows']) {
             return back()->withErrors(['list_id' => 'Esta receta no tiene ingredientes ligados a artículos con cantidad.']);
         }
 
-        $list = $shopper->resolveList($data['list_id'] ?? null, $recipe->name);
-        $count = $shopper->addToList($list, $result['needs']);
+        // Con revisión (reviewed=1) se agrega lo marcado; sin ella, lo que falta en la despensa
+        [$add, $skipped] = $shopper->chosen($result, $request->boolean('reviewed') ? ($data['buy'] ?? []) : null);
+        if (! $add) {
+            return redirect()->route('recipes.show', $recipe)->with('success', $shopper->summary(0, $skipped, $result['unlinked']));
+        }
 
-        return redirect()->route('lists.show', $list)->with('success', $shopper->summary($count, $result['unlinked']));
+        $list = $shopper->resolveList($data['list_id'] ?? null, $recipe->name);
+        $count = $shopper->addToList($list, $add);
+
+        return redirect()->route('lists.show', $list)->with('success', $shopper->summary($count, $skipped, $result['unlinked']));
     }
 
     private function recentLists()

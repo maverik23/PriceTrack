@@ -66,19 +66,15 @@
             <div class="stat-label">Costo estimado de la semana</div>
             <div class="stat-value">{{ money($total) }}</div>
             <div class="mt-1 text-xs text-slate-500">{{ $entries->count() }} {{ $entries->count() === 1 ? 'comida planeada' : 'comidas planeadas' }} · lo que se usa, al precio más barato</div>
-            <form method="POST" action="{{ route('menu.shop') }}" class="mt-auto space-y-2 pt-4">
-                @csrf
-                <input type="hidden" name="week" value="{{ $start->toDateString() }}">
-                <label class="label" for="menu-list">Mandar ingredientes a</label>
-                <select id="menu-list" name="list_id" class="input">
-                    <option value="">Lista nueva para esta semana</option>
-                    @foreach ($lists as $list)
-                        <option value="{{ $list->id }}">{{ $list->name }} ({{ $list->shopped_on->translatedFormat('d M') }})</option>
-                    @endforeach
-                </select>
-                <button class="btn btn-secondary w-full" @disabled($entries->whereNotNull('recipe_id')->isEmpty())>Mandar a lista de compras</button>
-                <p class="text-xs text-slate-500">Se suma a lo que ya tenga la lista: mándalo una sola vez por semana.</p>
-            </form>
+            <div class="mt-auto space-y-2 pt-4">
+                @if ($entries->whereNotNull('recipe_id')->isEmpty())
+                    <button class="btn btn-secondary w-full" disabled>Mandar a lista de compras</button>
+                    <p class="text-xs text-slate-500">Agrega recetas al menú para mandar sus ingredientes a una lista.</p>
+                @else
+                    <a href="{{ route('menu.shop.review', ['week' => $start->toDateString()]) }}" class="btn btn-secondary w-full">Mandar a lista de compras</a>
+                    <p class="text-xs text-slate-500">Antes de agregar revisas qué falta: lo que está en tu despensa no se manda.</p>
+                @endif
+            </div>
         </div>
     </div>
 

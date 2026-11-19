@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'brand', 'barcode', 'category', 'size', 'unit', 'notes', 'piece_weight', 'cup_grams', 'kcal', 'protein', 'carbs', 'fat'])]
+#[Fillable(['name', 'brand', 'barcode', 'category', 'size', 'unit', 'notes', 'piece_weight', 'cup_grams', 'kcal', 'protein', 'carbs', 'fat', 'pantry', 'pantry_qty'])]
 class Product extends Model
 {
     use HasFactory;
@@ -27,7 +27,99 @@ class Product extends Model
             'protein' => 'float',
             'carbs' => 'float',
             'fat' => 'float',
+            'pantry_qty' => 'float',
+            'pantry_updated_at' => 'datetime',
         ];
+    }
+
+    /** Despensa: lo tengo en casa / se acabó (null = no se lleva en la despensa). */
+    public const PANTRY_STOCKED = 'stocked';
+
+    public const PANTRY_OUT = 'out';
+
+    protected static function booted(): void
+    {
+        static::saving(function (Product $product) {
+            if ($product->isDirty(['pantry', 'pantry_qty'])) {
+                $product->pantry_updated_at = now();
+            }
+        });
+    }
+
+    public function inPantry(): bool
+    {
+        return $this->pantry === self::PANTRY_STOCKED;
+    }
+
+    /**
+     * Cuánto de una necesidad (unidad base) cubre lo que hay en casa: todo si está
+     * marcado sin cantidad ("tengo suficiente"), lo que queda si tiene cantidad, nada si no.
+     */
+    public function pantryCovers(float $need): float
+    {
+        if (! $this->inPantry()) {
+            return 0.0;
+        }
+
+        return $this->pantry_qty === null ? $need : min($need, max(0.0, $this->pantry_qty));
+    }
+
+    /**
+     * Marca o desmarca el artículo en la despensa. Desmarcar uno que se llevaba en casa lo
+     * deja como "se acabó" (comprarlo lo vuelve a marcar); `$qty` = cuánto queda, en unidad base.
+     */
+    public function setPantry(bool $have, ?float $qty = null): void
+    {
+        $this->forceFill($have
+            ? ['pantry' => self::PANTRY_STOCKED, 'pantry_qty' => $qty !== null && $qty > 0 ? round($qty, 3) : null]
+            : ['pantry' => $this->pantry === null ? null : self::PANTRY_OUT, 'pantry_qty' => null]
+        )->save();
+    }
+
+    /** Lo que queda en casa en texto ("300 g", "1.5 L"); null = suficiente o no está. */
+    public function pantryLabel(): ?string
+    {
+        return $this->inPantry() && $this->pantry_qty !== null ? $this->baseLabel($this->pantry_qty) : null;
+    }
+
+    /** Una cantidad en unidad base (g, ml, pza) para mostrar: "610 g", "1.5 kg", "2 L", "12 pza". Igual que amountText() de list-grid.js. */
+    public function baseLabel(float $base): string
+    {
+        $base = round($base, 1);
+
+        return match ($this->unit->dimension()) {
+            'count' => qty($base).' pza',
+            'mass' => $base >= 1000 ? qty($base / 1000).' kg' : qty($base).' g',
+            'volume' => $base >= 1000 ? qty($base / 1000).' L' : qty($base).' ml',
+        };
+    }
+
+    /**
+     * Una cantidad escrita ("300 g", "1.5 kg", "2") en unidad base del artículo. Sin unidad
+     * se toma la del artículo (2 en un artículo por kg = 2 kg). null si está vacía; false si
+     * no se entiende o es de otra dimensión.
+     */
+    public function parseAmount(?string $text): float|false|null
+    {
+        $text = str_replace(',', '.', trim((string) $text));
+        if ($text === '') {
+            return null;
+        }
+        if (! preg_match('/^(\d+(?:\.\d+)?|\.\d+)\s*([\p{L}.]*)$/u', $text, $m)) {
+            return false;
+        }
+        $unit = $m[2] === '' ? $this->unit : Unit::fromAlias($m[2]);
+        if (! $unit || ! $unit->isCompatibleWith($this->unit)) {
+            return false;
+        }
+
+        return (float) $m[1] * $unit->toBase();
+    }
+
+    /** Lo más barato para llevarse $base (paquetes completos o a granel) entre el último precio de cada tienda. */
+    public function cheapestCostFor(float $base): ?float
+    {
+        return $base > 0 ? $this->latestPrices()->map(fn (Price $p) => $p->costFor($base))->min() : null;
     }
 
     /** Campos de nutrición: por 100 g o 100 ml, o por pieza si el artículo se mide en piezas. */
