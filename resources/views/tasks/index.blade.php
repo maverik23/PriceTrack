@@ -6,6 +6,9 @@
     $current = $list ? (string) $list->id : ($general ? 'none' : '');
     $showList = ! $list && ! $general;
     $empty = collect($groups)->every(fn ($group) => $group[1]->isEmpty());
+    // Lista elegida (para el calendario y sus enlaces) y vista/mes (para los enlaces de las listas)
+    $baseQuery = $current === '' ? [] : ['list' => $current];
+    $keep = array_filter(['view' => $view === 'list' ? 'list' : null, 'month' => $view === 'calendar' ? request('month') : null]);
 @endphp
 <div id="tasks-results" data-live-results>
 <div class="mb-6">
@@ -13,12 +16,21 @@
     <p class="text-sm text-slate-500">Las repetitivas crean la siguiente al completarlas, contando desde ese día.</p>
 </div>
 
+<nav class="mb-4 flex flex-wrap gap-2" aria-label="Vista">
+    <a href="{{ route('tasks.index', $baseQuery) }}" class="chip {{ $view === 'calendar' ? 'is-active' : '' }}" @if ($view === 'calendar') aria-current="page" @endif>
+        <x-icon name="calendar-days" class="size-4" /> Calendario
+    </a>
+    <a href="{{ route('tasks.index', $baseQuery + ['view' => 'list']) }}" class="chip {{ $view === 'list' ? 'is-active' : '' }}" @if ($view === 'list') aria-current="page" @endif>
+        <x-icon name="list-checks" class="size-4" /> Lista <span class="opacity-70">{{ $list ? $list->tasks()->pending()->count() : ($general ? $generalCount : $allCount) }}</span>
+    </a>
+</nav>
+
 <nav class="mb-4 flex flex-wrap gap-2 text-sm lg:hidden" aria-label="Listas de tareas">
     @foreach ([['', 'Todas', $allCount], ['none', 'General', $generalCount]] as [$value, $label, $count])
-        <a href="{{ route('tasks.index', $value === '' ? [] : ['list' => $value]) }}" class="badge px-3 py-1 {{ $current === $value ? 'badge-cheap' : 'badge-muted' }}">{{ $label }} · {{ $count }}</a>
+        <a href="{{ route('tasks.index', $keep + ($value === '' ? [] : ['list' => $value])) }}" class="badge px-3 py-1 {{ $current === $value ? 'badge-cheap' : 'badge-muted' }}">{{ $label }} · {{ $count }}</a>
     @endforeach
     @foreach ($lists as $option)
-        <a href="{{ route('tasks.index', ['list' => $option->id]) }}" class="badge px-3 py-1 {{ $current === (string) $option->id ? 'badge-cheap' : 'badge-muted' }}">{{ $option->name }} · {{ $option->tasks_count }}</a>
+        <a href="{{ route('tasks.index', $keep + ['list' => $option->id]) }}" class="badge px-3 py-1 {{ $current === (string) $option->id ? 'badge-cheap' : 'badge-muted' }}">{{ $option->name }} · {{ $option->tasks_count }}</a>
     @endforeach
 </nav>
 
@@ -69,6 +81,9 @@
             </div>
         </form>
 
+        @if ($view === 'calendar')
+            @include('tasks._calendar')
+        @else
         @if ($empty)
             <div class="card py-10 text-center text-sm text-slate-500">No hay tareas pendientes{{ $list || $general ? ' en esta lista' : '' }}. 🎉</div>
         @endif
@@ -97,11 +112,12 @@
                 </ul>
             </details>
         @endif
+        @endif
     </div>
     <aside class="space-y-4">
         <nav class="card p-2 text-sm" aria-label="Listas de tareas">
             @foreach ([['', 'Todas', $allCount], ['none', 'General', $generalCount]] as [$value, $label, $count])
-                <a href="{{ route('tasks.index', $value === '' ? [] : ['list' => $value]) }}"
+                <a href="{{ route('tasks.index', $keep + ($value === '' ? [] : ['list' => $value])) }}"
                    class="flex items-center justify-between rounded-md px-3 py-1.5 {{ $current === $value ? 'bg-emerald-50 font-semibold text-emerald-700' : 'text-slate-600 hover:bg-slate-100' }}">
                     {{ $label }} <span class="text-xs tabular-nums text-slate-400">{{ $count }}</span>
                 </a>
@@ -110,7 +126,7 @@
                 <div class="my-1 h-px bg-slate-100"></div>
             @endif
             @foreach ($lists as $option)
-                <a href="{{ route('tasks.index', ['list' => $option->id]) }}"
+                <a href="{{ route('tasks.index', $keep + ['list' => $option->id]) }}"
                    class="flex items-center justify-between rounded-md px-3 py-1.5 {{ $current === (string) $option->id ? 'bg-emerald-50 font-semibold text-emerald-700' : 'text-slate-600 hover:bg-slate-100' }}">
                     <span class="truncate">{{ $option->name }}</span> <span class="text-xs tabular-nums text-slate-400">{{ $option->tasks_count }}</span>
                 </a>

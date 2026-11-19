@@ -113,7 +113,7 @@ class AssetsTest extends TestCase
         $this->assertSame(1, Task::count());
 
         $this->get(route('assets.show', $asset))->assertOk()->assertSee('Afinación')->assertSee('Al día');
-        $this->get(route('tasks.index'))->assertOk()->assertSee('Afinación · Auto');
+        $this->get(route('tasks.index', ['view' => 'list']))->assertOk()->assertSee('Afinación · Auto');
 
         $this->delete(route('assets.plans.destroy', [$asset, $plan]))->assertRedirect();
         $this->assertSame(0, Task::count());

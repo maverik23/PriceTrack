@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\TaskList;
+use App\Support\TaskCalendar;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
-    /** Pendientes por grupo (vencidas, hoy, próximas, sin fecha) y lo completado en la última semana. */
+    /**
+     * Calendario del mes (por defecto; ?month=AAAA-MM) o lista (?view=list): pendientes por grupo
+     * (vencidas, hoy, próximas, sin fecha) y lo completado en la última semana.
+     */
     public function index(Request $request)
     {
         $list = $request->filled('list') && $request->query('list') !== 'none'
@@ -21,12 +26,19 @@ class TaskController extends Controller
             ->when($list, fn ($q) => $q->where('task_list_id', $list->id))
             ->when($general, fn ($q) => $q->whereNull('task_list_id'));
 
+        $view = $request->query('view') === 'list' ? 'list' : 'calendar';
+        $month = rescue(fn () => preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month'))
+            ? CarbonImmutable::createFromFormat('!Y-m', $request->query('month'))
+            : null, null, false) ?? CarbonImmutable::today();
+
         $pending = Task::with('list', 'taskable')->pending()->tap($scope)
             ->orderByRaw('due_on is null')->orderBy('due_on')->orderByDesc('priority')->orderBy('id')
             ->get();
         $today = today();
 
         return view('tasks.index', [
+            'view' => $view,
+            'calendar' => $view === 'calendar' ? TaskCalendar::month($month, $scope) : null,
             'list' => $list,
             'general' => $general,
             'groups' => [

@@ -22,11 +22,11 @@ class TasksTest extends TestCase
         $this->post(route('tasks.store'), ['title' => 'Llevar el auto', 'due_on' => '2026-11-25', 'priority' => 3])->assertSessionHasNoErrors();
         $this->post(route('tasks.store'), ['title' => 'Pintar la reja'])->assertSessionHasNoErrors();
 
-        $this->get(route('tasks.index'))->assertOk()
+        $this->get(route('tasks.index', ['view' => 'list']))->assertOk()
             ->assertSeeInOrder(['Vencidas', 'Pagar luz', 'hace 4 días', 'Hoy', 'Regar plantas', 'Próximas', 'Llevar el auto', 'Alta', 'Sin fecha', 'Pintar la reja']);
 
-        $this->get(route('tasks.index', ['list' => $casa->id]))->assertOk()->assertSee('Pagar luz')->assertDontSee('Regar plantas');
-        $this->get(route('tasks.index', ['list' => 'none']))->assertOk()->assertSee('Regar plantas')->assertDontSee('Pagar luz');
+        $this->get(route('tasks.index', ['list' => $casa->id, 'view' => 'list']))->assertOk()->assertSee('Pagar luz')->assertDontSee('Regar plantas');
+        $this->get(route('tasks.index', ['list' => 'none', 'view' => 'list']))->assertOk()->assertSee('Regar plantas')->assertDontSee('Pagar luz');
         $this->assertSame(2, Task::dueBy(today())->count());
     }
 
@@ -53,7 +53,7 @@ class TasksTest extends TestCase
         $this->assertNull($task->fresh()->completed_at);
         $this->assertSame(1, Task::count());
 
-        $this->get(route('tasks.index'))->assertOk()->assertSee('Cada 3 meses');
+        $this->get(route('tasks.index', ['view' => 'list']))->assertOk()->assertSee('Cada 3 meses');
     }
 
     public function test_next_dates_do_not_overflow_and_plain_tasks_do_not_repeat(): void
@@ -68,7 +68,7 @@ class TasksTest extends TestCase
         $plain = Task::create(['title' => 'Una vez']);
         $this->assertNull($plain->complete());
         $this->assertSame(1, Task::count());
-        $this->get(route('tasks.index'))->assertOk()->assertSee('Hechas en los últimos 7 días')->assertSee('Una vez');
+        $this->get(route('tasks.index', ['view' => 'list']))->assertOk()->assertSee('Hechas en los últimos 7 días')->assertSee('Una vez');
     }
 
     public function test_validation_and_editing(): void
@@ -100,7 +100,7 @@ class TasksTest extends TestCase
 
         $this->put(route('task-lists.update', $list), ['name' => 'Coche'])->assertSessionHasNoErrors();
         $this->assertSame('Coche', $list->fresh()->name);
-        $this->get(route('tasks.index', ['list' => $list->id]))->assertOk()->assertSee('Coche')->assertSee('Verificación');
+        $this->get(route('tasks.index', ['list' => $list->id, 'view' => 'list']))->assertOk()->assertSee('Coche')->assertSee('Verificación');
 
         $this->delete(route('task-lists.destroy', $list))->assertRedirect(route('tasks.index'));
         $this->assertNull($task->fresh()->task_list_id);
