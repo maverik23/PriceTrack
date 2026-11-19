@@ -3,9 +3,32 @@
 
 @section('content')
 @php $thisWeek = $start->isSameDay(today()->startOfWeek(\Carbon\CarbonInterface::MONDAY)); @endphp
-<div x-data="{ day: {{ Js::from(old('planned_on', today()->betweenIncluded($start, $end) ? today()->toDateString() : $start->toDateString())) }}, meal: {{ Js::from(old('meal', 'lunch')) }}, recipe: {{ Js::from((string) old('recipe_id', '')) }},
-               adding: {{ $errors->any() ? 'true' : 'false' }},
-               pick(day, meal) { this.day = day; this.meal = meal; this.adding = true; this.$nextTick(() => { const el = document.getElementById('menu-recipe'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.focus({ preventScroll: true }); }); } }">
+@php
+    // Si el alta falló (validación), se reabre el mismo «+» con lo que se había escrito
+    $oldKey = $errors->any() && old('planned_on') && old('meal') ? old('planned_on').'|'.old('meal') : '';
+    $oldRecipe = old('recipe_id') ? (string) old('recipe_id') : (old('title') ? 'other' : '');
+@endphp
+{{-- Agregar al menú: el «+» de cada comida abre ahí mismo el formulario (uno solo, que se mueve a esa comida) --}}
+<div x-data="{ open: {{ Js::from($oldKey) }}, recipe: {{ Js::from($oldRecipe) }}, servings: {{ Js::from((string) old('servings', '')) }}, title: {{ Js::from((string) old('title', '')) }},
+               get day() { return this.open.split('|')[0] ?? '' }, get meal() { return this.open.split('|')[1] ?? '' },
+               init() { if (this.open) this.place() },
+               pick(key) {
+                   if (this.open === key) { this.open = ''; return }
+                   this.open = key; this.recipe = ''; this.servings = ''; this.title = ''; this.place();
+               },
+               place() {
+                   this.$nextTick(() => {
+                       const form = document.getElementById('menu-add');
+                       document.getElementById('add-' + this.open)?.appendChild(form);
+                       form.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                       document.getElementById('menu-add-recipe').focus({ preventScroll: true });
+                   });
+               },
+               chosen() {
+                   const option = document.getElementById('menu-add-recipe').selectedOptions[0];
+                   this.servings = option?.dataset.servings ?? '';
+                   if (this.recipe === 'other') this.$nextTick(() => document.getElementById('menu-add-title').focus());
+               } }">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
             <h1 class="text-3xl font-bold text-slate-900">Menú de la semana</h1>
@@ -20,67 +43,23 @@
         </div>
     </div>
 
-    <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {{-- En celular se abre con el botón o con los «+» de cada día, para que la semana quede a la vista --}}
-        <button type="button" class="btn btn-primary lg:hidden" x-show="!adding" @click="pick(day, meal)"><x-icon name="plus" class="size-4" /> Agregar comida</button>
-        <form method="POST" action="{{ route('menu.store') }}" class="card lg:col-span-2" :class="!adding && 'max-lg:hidden'">
-            @csrf
-            <h2 class="card-title">Agregar al menú</h2>
-            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-6">
-                <div class="sm:col-span-2">
-                    <label class="label" for="menu-day">Día</label>
-                    <input id="menu-day" name="planned_on" type="date" x-model="day" class="input" required>
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="label" for="menu-meal">Comida</label>
-                    <select id="menu-meal" name="meal" x-model="meal" class="input">
-                        @foreach ($meals as $value => $label)
-                            <option value="{{ $value }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="label" for="menu-servings">Porciones <span class="font-normal text-slate-400">(las de la receta)</span></label>
-                    <input id="menu-servings" name="servings" type="number" min="1" max="999" value="{{ old('servings') }}" class="input" :disabled="!recipe">
-                </div>
-                <div class="sm:col-span-3">
-                    <label class="label" for="menu-recipe">Receta</label>
-                    <select id="menu-recipe" name="recipe_id" x-model="recipe" class="input">
-                        <option value="">Sin receta (escribe qué)</option>
-                        @foreach ($recipes as $recipe)
-                            <option value="{{ $recipe->id }}">{{ $recipe->name }} ({{ $recipe->servings }} porc.)</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="sm:col-span-3" x-show="!recipe">
-                    <label class="label" for="menu-title">Qué se va a comer</label>
-                    <input id="menu-title" name="title" value="{{ old('title') }}" class="input" placeholder="Ej. Sobras, comer fuera" maxlength="150" :disabled="!!recipe">
-                </div>
-            </div>
-            <div class="mt-3 flex flex-wrap items-center gap-3">
-                <button class="btn btn-primary">Agregar</button>
-                @if ($recipes->isEmpty())
-                    <span class="text-xs text-slate-500">Aún no tienes recetas. <a class="link" href="{{ route('recipes.create') }}">Crea una</a> para ver costos y mandar ingredientes a tu lista.</span>
-                @endif
-            </div>
-        </form>
-
-        <div class="card flex flex-col">
+    <div class="card mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div>
             <div class="stat-label">Costo estimado de la semana</div>
             <div class="stat-value">{{ money($total) }}</div>
             <div class="mt-1 text-xs text-slate-500">{{ $entries->count() }} {{ $entries->count() === 1 ? 'comida planeada' : 'comidas planeadas' }} · lo que se usa, al precio más barato</div>
             @if ($avgKcal)
                 <div class="mt-1 text-xs text-slate-500">Promedio por persona: <span class="font-semibold text-slate-700">{{ number_format($avgKcal) }} kcal</span> al día</div>
             @endif
-            <div class="mt-auto space-y-2 pt-4">
-                @if ($entries->whereNotNull('recipe_id')->isEmpty())
-                    <button class="btn btn-secondary w-full" disabled>Mandar a lista de compras</button>
-                    <p class="text-xs text-slate-500">Agrega recetas al menú para mandar sus ingredientes a una lista.</p>
-                @else
-                    <a href="{{ route('menu.shop.review', ['week' => $start->toDateString()]) }}" class="btn btn-secondary w-full">Mandar a lista de compras</a>
-                    <p class="text-xs text-slate-500">Antes de agregar revisas qué falta: lo que está en tu despensa no se manda.</p>
-                @endif
-            </div>
+        </div>
+        <div class="w-full space-y-2 sm:w-72">
+            @if ($entries->whereNotNull('recipe_id')->isEmpty())
+                <button class="btn btn-secondary w-full" disabled>Mandar a lista de compras</button>
+                <p class="text-xs text-slate-500">Agrega recetas al menú con el «+» de cada comida para mandar sus ingredientes a una lista.</p>
+            @else
+                <a href="{{ route('menu.shop.review', ['week' => $start->toDateString()]) }}" class="btn btn-secondary w-full">Mandar a lista de compras</a>
+                <p class="text-xs text-slate-500">Antes de agregar revisas qué falta: lo que está en tu despensa no se manda.</p>
+            @endif
         </div>
     </div>
 
@@ -131,14 +110,16 @@
 
                 @foreach ($day['meals'] as $meal => $slot)
                     {{-- En celular las comidas vacías no ocupan lugar: se agregan con los botones de abajo --}}
-                    <div class="min-w-0 border-b border-slate-100 px-3 py-2 {{ $slot['items']->isEmpty() ? 'hidden xl:block' : '' }}">
+                    @php $slotKey = $dateKey.'|'.$meal; @endphp
+                    <div class="min-w-0 border-b border-slate-100 px-3 py-2 {{ $slot['items']->isEmpty() && $oldKey !== $slotKey ? 'max-xl:hidden' : '' }}"
+                         @if ($slot['items']->isEmpty()) :class="{ 'max-xl:hidden': open !== '{{ $slotKey }}' }" @endif>
                         <div class="mb-1 flex items-center justify-between gap-1">
                             <span class="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">{{ $meals[$meal] }}</span>
                             @if ($slot['items']->count() > 1)
                                 <span class="text-[11px] text-slate-500 tabular-nums">{{ money($slot['cost']) }}@if ($slot['macros']) · {{ $slot['partial'] ? '~' : '' }}{{ number_format($slot['macros']['kcal']) }} kcal @endif</span>
                             @endif
                             <button type="button" class="icon-btn size-7 text-slate-400" title="Agregar a {{ $meals[$meal] }}" aria-label="Agregar a {{ $meals[$meal] }} del {{ $day['date']->translatedFormat('l d') }}"
-                                    @click="pick('{{ $dateKey }}', '{{ $meal }}')"><x-icon name="plus" class="size-4" /></button>
+                                    :aria-expanded="open === '{{ $slotKey }}'" @click="pick('{{ $slotKey }}')"><x-icon name="plus" class="size-4" /></button>
                         </div>
                         <div class="space-y-2">
                             @foreach ($slot['items'] as $item)
@@ -171,13 +152,15 @@
                                 </article>
                             @endforeach
                         </div>
+                        {{-- Aquí se coloca el formulario de agregar al tocar el «+» de esta comida --}}
+                        <div id="add-{{ $slotKey }}"></div>
                     </div>
                 @endforeach
 
                 @if ($empty->isNotEmpty())
                     <div class="flex flex-wrap gap-1 border-b border-slate-100 px-2 py-2 xl:hidden">
                         @foreach ($empty as $meal => $_)
-                            <button type="button" class="btn btn-ghost btn-sm" @click="pick('{{ $dateKey }}', '{{ $meal }}')">+ {{ $meals[$meal] }}</button>
+                            <button type="button" class="btn btn-ghost btn-sm" x-show="open !== '{{ $dateKey }}|{{ $meal }}'" @click="pick('{{ $dateKey }}|{{ $meal }}')">+ {{ $meals[$meal] }}</button>
                         @endforeach
                     </div>
                 @endif
@@ -202,6 +185,34 @@
             </section>
         @endforeach
     </div>
+    {{-- El formulario de agregar: vive aquí escondido y se mueve a la comida cuyo «+» se tocó --}}
+    <form id="menu-add" method="POST" action="{{ route('menu.store') }}" x-show="open" x-cloak
+          class="mt-2 space-y-2 rounded-xl bg-surface p-2 ring-1 ring-emerald-300" @keydown.escape.prevent="open = ''">
+        @csrf
+        <input type="hidden" name="planned_on" :value="day">
+        <input type="hidden" name="meal" :value="meal">
+        <input type="hidden" name="recipe_id" :value="recipe === 'other' ? '' : recipe">
+        <select id="menu-add-recipe" x-model="recipe" @change="chosen()" class="input py-1.5 text-sm" aria-label="Qué agregar" required>
+            <option value="" disabled>Elegir…</option>
+            @foreach ($recipes as $recipe)
+                <option value="{{ $recipe->id }}" data-servings="{{ $recipe->servings }}">{{ $recipe->name }}</option>
+            @endforeach
+            <option value="other">Otra cosa (sin receta)…</option>
+        </select>
+        <input id="menu-add-title" name="title" x-model="title" x-show="recipe === 'other'" :disabled="recipe !== 'other'" :required="recipe === 'other'"
+               class="input py-1.5 text-sm" placeholder="Ej. Sobras, comer fuera" maxlength="150" aria-label="Qué se va a comer">
+        <div class="flex flex-wrap items-center justify-end gap-1.5">
+            <label for="menu-add-servings" class="text-xs text-slate-500 xl:basis-full 2xl:basis-auto" x-show="recipe && recipe !== 'other'">Porciones</label>
+            <input id="menu-add-servings" name="servings" type="number" inputmode="numeric" min="1" max="999" x-model="servings"
+                   x-show="recipe && recipe !== 'other'" :disabled="!recipe || recipe === 'other'" class="input mr-auto w-14 px-1 py-1.5 text-center text-sm">
+            <button type="button" class="icon-btn size-8 shrink-0 text-slate-500" title="Cancelar" aria-label="Cancelar" @click="open = ''"><x-icon name="x" class="size-4" /></button>
+            <button class="btn btn-primary btn-sm shrink-0 xl:px-2 2xl:px-3" title="Agregar al menú" aria-label="Agregar al menú"><x-icon name="check" class="size-4" /><span class="xl:hidden 2xl:inline">Agregar</span></button>
+        </div>
+        @if ($recipes->isEmpty())
+            <p class="text-xs text-slate-500">Aún no tienes recetas. <a class="link" href="{{ route('recipes.create') }}">Crea una</a> para ver costos y mandar ingredientes a tu lista.</p>
+        @endif
+    </form>
+
     <p class="mt-3 text-xs text-slate-500">Costo: las porciones planeadas, al precio más barato. Macros (P proteína, C carbohidratos, G grasa, en g): una porción de cada platillo, lo que come una persona. «~» = faltan datos de algún ingrediente.</p>
 </div>
 @endsection
