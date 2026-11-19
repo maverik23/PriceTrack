@@ -143,14 +143,14 @@ class Recipe extends Model
     }
 
     /** @param  array<int, int>  $stack  recetas que se están expandiendo (contra ciclos) */
-    public function costAt(float $factor, array $stack = []): ?float
+    public function costAt(float $factor, array $stack = [], bool $round = true): ?float
     {
         $stack[] = $this->id;
         $costs = $this->ingredients
-            ->map(fn (RecipeIngredient $i) => $i->cost($factor, $stack))
+            ->map(fn (RecipeIngredient $i) => $i->cost($factor, $stack, $round))
             ->filter(fn ($cost) => $cost !== null);
 
-        return $costs->isEmpty() ? null : round($costs->sum(), 2);
+        return $costs->isEmpty() ? null : ($round ? round($costs->sum(), 2) : $costs->sum());
     }
 
     public function costPerServing(): ?float

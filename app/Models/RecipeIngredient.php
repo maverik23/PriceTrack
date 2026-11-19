@@ -145,18 +145,24 @@ class RecipeIngredient extends Model
         return trim(qty($quantity).' '.$this->unit?->labelFor($quantity));
     }
 
-    /** Lo que cuesta lo que se usa, con el precio más barato por unidad del artículo (o lo que cuesta la sub-receta). */
-    public function cost(float $factor = 1, array $stack = []): ?float
+    /**
+     * Lo que cuesta lo que se usa, con el precio más barato por unidad del artículo (o lo que
+     * cuesta la sub-receta). `$round = false` da el valor exacto (la pantalla lo multiplica en vivo).
+     */
+    public function cost(float $factor = 1, array $stack = [], bool $round = true): ?float
     {
         if ($this->subrecipe_id) {
             $subFactor = $this->subrecipeFactor($factor);
 
-            return $subFactor === null || $this->blocked($stack) ? null : $this->subrecipe->costAt($subFactor, $stack);
+            return $subFactor === null || $this->blocked($stack) ? null : $this->subrecipe->costAt($subFactor, $stack, $round);
         }
 
         $base = $this->productBaseQty($factor);
         $price = $base === null ? null : $this->product->cheapestPrice();
+        if ($base === null || ! $price) {
+            return null;
+        }
 
-        return $base === null || ! $price ? null : round($base * $price->unit_price, 2);
+        return $round ? round($base * $price->unit_price, 2) : $base * $price->unit_price;
     }
 }

@@ -2,6 +2,9 @@
 @section('title', 'Recetas')
 
 @section('content')
+@php
+    $filtered = request()->anyFilled(['q', 'category', 'tag', 'rating']);
+@endphp
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
         <h1 class="text-3xl font-bold text-slate-900">Recetas</h1>
@@ -13,63 +16,94 @@
     </div>
 </div>
 
-<form method="GET" class="mb-4 flex flex-wrap gap-2">
-    <input name="q" value="{{ request('q') }}" class="input max-w-xs" placeholder="Buscar receta…">
-    <select name="category" class="input max-w-48" onchange="this.form.submit()">
+<form method="GET" class="mb-3 flex flex-wrap gap-2">
+    <div class="relative w-full sm:max-w-xs">
+        <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+        <input type="search" name="q" value="{{ request('q') }}" class="input pl-9" placeholder="Buscar receta…" aria-label="Buscar receta">
+    </div>
+    @if ($tag = request('tag'))<input type="hidden" name="tag" value="{{ $tag }}">@endif
+    <select name="category" class="input w-auto max-w-52" onchange="this.form.submit()" aria-label="Categoría">
         <option value="">Todas las categorías</option>
         @foreach ($categories as $category)
             <option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>
         @endforeach
     </select>
+    <select name="rating" class="input w-auto" onchange="this.form.submit()" aria-label="Calificación">
+        <option value="">Cualquier calificación</option>
+        @foreach ([5 => '★★★★★', 4 => '★★★★ o más', 3 => '★★★ o más'] as $value => $label)
+            <option value="{{ $value }}" @selected((int) request('rating') === $value)>{{ $label }}</option>
+        @endforeach
+    </select>
     <button class="btn btn-secondary">Buscar</button>
-    @if (request()->hasAny(['q', 'category']))
+    @if ($filtered)
         <a href="{{ route('recipes.index') }}" class="btn btn-ghost">Limpiar</a>
     @endif
 </form>
 
-<div class="card overflow-x-auto p-0">
-    <table class="table">
-        <thead>
-        <tr><th>Receta</th><th>Categoría</th><th class="text-right">Porciones</th><th class="text-right">Tiempo</th><th class="text-right">Costo</th><th class="text-right">Por porción</th><th class="text-right">kcal/porción</th><th></th></tr>
-        </thead>
-        <tbody>
-        @forelse ($recipes as $recipe)
-            @php($uncosted = $recipe->uncostedCount())
-            <tr>
-                <td>
-                    <div class="flex items-center gap-3">
-                        @if ($cover = $recipe->coverPhoto())
-                            <img src="{{ $cover->url(true) }}" alt="" loading="lazy" class="size-12 shrink-0 rounded-md object-cover ring-1 ring-slate-200">
-                        @endif
-                        <div class="min-w-0">
-                            <a href="{{ route('recipes.show', $recipe) }}" class="font-medium text-slate-900 hover:text-emerald-700">{{ $recipe->name }}</a>
-                            <div class="text-xs text-slate-500">{{ $recipe->ingredients->count() }} ingredientes</div>
-                        </div>
-                    </div>
-                </td>
-                <td>@if ($recipe->category)<span class="badge badge-muted">{{ $recipe->category }}</span>@endif</td>
-                <td class="text-right tabular-nums">{{ $recipe->servings }}</td>
-                <td class="text-right tabular-nums text-slate-500">{{ $recipe->minutes ? $recipe->minutes.' min' : '—' }}</td>
-                <td class="text-right tabular-nums">
-                    {{ money($recipe->cost()) }}
-                    @if ($uncosted && $recipe->cost() !== null)
-                        <div class="text-xs text-amber-700" title="Ingredientes sin artículo, sin cantidad o sin precio">+ {{ $uncosted }} sin costo</div>
+@if ($tags->isNotEmpty())
+    <div class="mb-5 flex flex-wrap gap-2" aria-label="Etiquetas">
+        @foreach ($tags as $name)
+            @php
+                $active = request('tag') === $name;
+            @endphp
+            <a href="{{ route('recipes.index', array_filter([...request()->only(['q', 'category', 'rating']), 'tag' => $active ? null : $name])) }}"
+               @class(['chip', 'is-active' => $active]) @if ($active) aria-current="true" @endif>{{ $name }}</a>
+        @endforeach
+    </div>
+@endif
+
+@if ($recipes->isEmpty())
+    <div class="card py-12 text-center text-slate-500">
+        @if ($filtered)
+            Ninguna receta coincide. <a class="link" href="{{ route('recipes.index') }}">Ver todas</a>.
+        @else
+            No hay recetas todavía. <a class="link" href="{{ route('recipes.create') }}">Agrega la primera</a>.
+        @endif
+    </div>
+@else
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        @foreach ($recipes as $recipe)
+            @php
+                $cover = $recipe->coverPhoto();
+                $perServing = $recipe->costPerServing();
+                $nutrition = $recipe->nutrition();
+            @endphp
+            <a href="{{ route('recipes.show', $recipe) }}" class="card group flex flex-col overflow-hidden p-0">
+                <div @class(['relative bg-slate-100', 'aspect-[16/10]' => $cover, 'h-14 sm:aspect-[16/10] sm:h-auto' => ! $cover])>
+                    @if ($cover)
+                        <img src="{{ $cover->url(true) }}" alt="" loading="lazy" class="size-full object-cover">
+                    @else
+                        <div class="grid size-full place-items-center text-slate-300" data-nav="cocina"><x-icon name="chef-hat" class="hidden size-12 sm:block" /></div>
                     @endif
-                </td>
-                <td class="text-right font-semibold tabular-nums">{{ money($recipe->costPerServing()) }}</td>
-                <td class="text-right tabular-nums text-slate-600">{{ ($n = $recipe->nutrition()) ? number_format($n['perServing']['kcal']) : '—' }}</td>
-                <td class="text-right"><a href="{{ route('recipes.show', $recipe) }}" class="btn btn-ghost btn-sm">Abrir →</a></td>
-            </tr>
-        @empty
-            <tr><td colspan="8" class="py-10 text-center text-slate-500">
-                @if (request()->hasAny(['q', 'category']))
-                    Ninguna receta coincide.
-                @else
-                    No hay recetas todavía. <a class="link" href="{{ route('recipes.create') }}">Agrega la primera</a>.
-                @endif
-            </td></tr>
-        @endforelse
-        </tbody>
-    </table>
-</div>
+                    @if ($recipe->category)
+                        <span class="badge absolute top-2 left-2 bg-surface/90 text-slate-700 shadow-sm">{{ $recipe->category }}</span>
+                    @endif
+                </div>
+                <div class="flex flex-1 flex-col gap-2 p-4">
+                    <div class="flex items-start justify-between gap-2">
+                        <h2 class="font-display text-lg leading-tight font-semibold text-slate-900 group-hover:text-emerald-700">{{ $recipe->name }}</h2>
+                        @if ($recipe->rating)
+                            <span class="flex shrink-0 items-center gap-0.5 text-amber-500" title="{{ $recipe->rating }} de 5" aria-label="{{ $recipe->rating }} de 5">
+                                @for ($i = 1; $i <= 5; $i++)
+                                    <x-icon name="star" :class="'size-3.5'.($i > $recipe->rating ? ' opacity-30' : '')" :fill="$i <= $recipe->rating ? 'currentColor' : 'none'" />
+                                @endfor
+                            </span>
+                        @endif
+                    </div>
+                    @if ($recipe->tags->isNotEmpty())
+                        <div class="flex flex-wrap gap-1">
+                            @foreach ($recipe->tags as $tag)<span class="badge badge-cheap">{{ $tag->name }}</span>@endforeach
+                        </div>
+                    @endif
+                    <div class="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-slate-500">
+                        <span>{{ $recipe->servings }} porc.</span>
+                        @if ($recipe->minutes)<span class="inline-flex items-center gap-1"><x-icon name="timer" class="size-3.5" />{{ $recipe->minutes }} min</span>@endif
+                        @if ($nutrition)<span>{{ number_format($nutrition['perServing']['kcal']) }} kcal/porc.</span>@endif
+                        <span class="ml-auto text-sm font-semibold text-slate-900 tabular-nums" title="Costo por porción">{{ $perServing !== null ? money($perServing).' /porc.' : 'Sin costo' }}</span>
+                    </div>
+                </div>
+            </a>
+        @endforeach
+    </div>
+@endif
 @endsection
