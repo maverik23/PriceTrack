@@ -65,17 +65,7 @@
 
     {{-- Hoja --}}
     <div class="card p-0">
-        <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-slate-200 px-4 py-3 text-xs text-slate-500">
-            <p>
-                Los precios se guardan con fecha <strong class="text-slate-700" x-text="priceDateLabel"></strong>.
-                {{-- La ayuda de teclado no sirve en el celular --}}
-                <span class="hidden sm:inline">Escribe y usa <kbd class="rounded bg-slate-100 px-1">Tab</kbd> / <kbd class="rounded bg-slate-100 px-1">Enter</kbd> / <kbd class="rounded bg-slate-100 px-1">↑↓</kbd>.
-                <kbd class="rounded bg-slate-100 px-1">Enter</kbd> sobre un precio anterior lo confirma para esta fecha; borrarlo deshace lo capturado hoy.</span>
-                En <strong class="text-slate-700">Cantidad</strong> pon lo que necesitas (<code>2</code> o <code>610 g</code>). Marca con el círculo la tienda donde lo compraste y corrige ahí el precio, la presentación y cuántos te llevaste (<strong class="text-slate-700">Compré</strong>).
-                Abajo, en el ticket de cada tienda, escribe el total si hubo descuentos: eso es lo que va a los gastos.
-                Si se vende a granel escribe el precio como <code>54/kg</code>.
-                Pega en una celda la dirección del artículo en esa tienda para consultar su precio en línea.
-            </p>
+        <div class="flex flex-wrap items-center justify-end gap-x-6 gap-y-1 border-b border-slate-200 px-4 py-2 text-xs text-slate-500">
             <p class="flex flex-wrap items-center gap-3 whitespace-nowrap">
                 {{-- Tiendas sin datos en esta lista (u ocultadas a mano): se pueden mostrar --}}
                 <label x-show="hiddenProviders.length" class="flex items-center gap-1.5">
