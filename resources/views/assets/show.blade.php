@@ -84,12 +84,12 @@
                 <div class="sm:col-span-6"><h3 class="text-xs font-semibold tracking-wide text-slate-500 uppercase">Nuevo plan</h3></div>
                 <div class="sm:col-span-3">
                     <label class="label" for="plan-name">Qué se hace</label>
-                    <input id="plan-name" name="name" class="input" maxlength="150" required placeholder="Ej. Afinación">
+                    <input id="plan-name" name="name" value="{{ old('name') }}" class="input" maxlength="150" required placeholder="Ej. Afinación">
                 </div>
                 <div class="sm:col-span-3">
                     <span class="label">Cada</span>
                     <div class="flex gap-2">
-                        <input name="every" type="number" min="1" max="999" class="input w-20" aria-label="Cada cuánto tiempo">
+                        <input name="every" type="number" min="1" max="999" value="{{ old('every') }}" class="input w-20" aria-label="Cada cuánto tiempo">
                         <select name="every_unit" class="input" aria-label="Unidad de tiempo">
                             <option value="">—</option>
                             @foreach ($units as $value => [$one, $many])
@@ -101,12 +101,12 @@
                 @if ($asset->meter_unit)
                     <div class="sm:col-span-2">
                         <label class="label" for="plan-meter">o cada ({{ $asset->meter_unit }})</label>
-                        <input id="plan-meter" name="every_meter" type="number" step="0.1" min="0.1" class="input" placeholder="Ej. 10000">
+                        <input id="plan-meter" name="every_meter" type="number" step="0.1" min="0.1" value="{{ old('every_meter') }}" class="input" placeholder="Ej. 10000">
                     </div>
                 @endif
                 <div class="sm:col-span-2">
                     <label class="label" for="plan-cost">Costo estimado</label>
-                    <input id="plan-cost" name="estimated_cost" type="number" step="0.01" min="0" class="input" placeholder="$">
+                    <input id="plan-cost" name="estimated_cost" type="number" step="0.01" min="0" value="{{ old('estimated_cost') }}" class="input" placeholder="$">
                 </div>
                 <div class="flex items-end sm:col-span-2">
                     <button class="btn btn-primary w-full">Agregar plan</button>
@@ -202,7 +202,7 @@
                     <li class="flex items-center justify-between gap-2 py-1.5">
                         <span>{{ $valuation->valued_on->translatedFormat('d M Y') }} @if ($valuation->notes)<span class="text-xs text-slate-500">· {{ $valuation->notes }}</span>@endif</span>
                         <span class="flex items-center gap-1 tabular-nums">{{ money($valuation->value) }}
-                            <form method="POST" action="{{ route('assets.valuations.destroy', [$asset, $valuation]) }}">
+                            <form method="POST" action="{{ route('assets.valuations.destroy', [$asset, $valuation]) }}" onsubmit="return confirm(\'¿Borrar esta captura de valor?\')">
                                 @csrf @method('DELETE')
                                 <button class="btn btn-danger btn-sm" title="Eliminar captura" aria-label="Eliminar captura del {{ $valuation->valued_on->translatedFormat('d M Y') }}">✕</button>
                             </form>
@@ -213,7 +213,7 @@
             <form method="POST" action="{{ route('assets.valuations.store', $asset) }}" class="mt-3 grid grid-cols-2 gap-2">
                 @csrf
                 <input name="valued_on" type="date" value="{{ today()->toDateString() }}" max="{{ today()->toDateString() }}" class="input" required aria-label="Fecha del valor">
-                <input name="value" type="number" step="0.01" min="0" class="input" placeholder="Valor $" required aria-label="Valor">
+                <input name="value" type="number" step="0.01" min="0" value="{{ old('value') }}" class="input" placeholder="Valor $" required aria-label="Valor">
                 <input name="notes" class="input col-span-2" maxlength="255" placeholder="De dónde: avalúo, Libro Azul…" aria-label="Notas del valor">
                 <button class="btn btn-secondary col-span-2">Capturar valor</button>
             </form>
@@ -228,7 +228,7 @@
                         <li class="flex items-center justify-between py-1.5">
                             <span class="text-slate-500">{{ $reading->read_on->translatedFormat('d M Y') }}</span>
                             <span class="flex items-center gap-1 tabular-nums">{{ number_format($reading->reading) }}
-                                <form method="POST" action="{{ route('assets.readings.destroy', [$asset, $reading]) }}">
+                                <form method="POST" action="{{ route('assets.readings.destroy', [$asset, $reading]) }}" onsubmit="return confirm(\'¿Borrar esta lectura?\')">
                                     @csrf @method('DELETE')
                                     <button class="btn btn-danger btn-sm" title="Eliminar lectura">✕</button>
                                 </form>
@@ -239,7 +239,7 @@
                 <form method="POST" action="{{ route('assets.readings.store', $asset) }}" class="mt-3 grid grid-cols-2 gap-2">
                     @csrf
                     <input name="read_on" type="date" value="{{ today()->toDateString() }}" max="{{ today()->toDateString() }}" class="input" required aria-label="Fecha de la lectura">
-                    <input name="reading" type="number" step="0.1" min="0" class="input" placeholder="{{ $asset->meter_unit }}" required aria-label="Lectura">
+                    <input name="reading" type="number" step="0.1" min="0" value="{{ old('reading') }}" class="input" placeholder="{{ $asset->meter_unit }}" required aria-label="Lectura">
                     <button class="btn btn-secondary col-span-2">Registrar lectura</button>
                 </form>
             </section>

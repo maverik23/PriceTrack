@@ -23,7 +23,7 @@
         <select id="{{ $uid }}-provider" name="provider_id" class="input" required>
             <option value="">Elegir…</option>
             @foreach ($providers as $provider)
-                <option value="{{ $provider->id }}">{{ $provider->name }}</option>
+                <option value="{{ $provider->id }}" @selected((string) old('provider_id') === (string) $provider->id)>{{ $provider->name }}</option>
             @endforeach
         </select>
     </div>
@@ -43,21 +43,21 @@
     @endisset
     <div>
         <label class="label" for="{{ $uid }}-price">Precio $</label>
-        <input id="{{ $uid }}-price" name="price" type="number" step="0.01" min="0.01" class="input" placeholder="0.00" required>
+        <input id="{{ $uid }}-price" name="price" type="number" step="0.01" min="0.01" value="{{ old('price') }}" class="input" placeholder="0.00" required>
     </div>
     <div>
         <label class="label" for="{{ $uid }}-pack" title="Piezas en el paquete, ej. 6 en un six-pack">Piezas/paq.</label>
-        <input id="{{ $uid }}-pack" name="pack_qty" type="number" step="1" min="1" value="1" class="input">
+        <input id="{{ $uid }}-pack" name="pack_qty" type="number" step="1" min="1" value="{{ old('pack_qty', 1) }}" class="input">
     </div>
     <div>
         <label class="label" for="{{ $uid }}-size">Contenido</label>
-        <input id="{{ $uid }}-size" name="size" type="number" step="0.001" min="0.001" value="{{ num($product->size) }}" class="input" required>
+        <input id="{{ $uid }}-size" name="size" type="number" step="0.001" min="0.001" value="{{ old('size', num($product->size)) }}" class="input" required>
     </div>
     <div>
         <label class="label" for="{{ $uid }}-unit">Unidad</label>
         <select id="{{ $uid }}-unit" name="unit" class="input">
             @foreach ($product->unit->compatibleUnits() as $unit)
-                <option value="{{ $unit->value }}" @selected($unit === $product->unit)>{{ $unit->label() }}</option>
+                <option value="{{ $unit->value }}" @selected(old('unit', $product->unit->value) === $unit->value)>{{ $unit->label() }}</option>
             @endforeach
         </select>
     </div>
@@ -70,7 +70,7 @@
         <button class="btn btn-primary">Guardar</button>
     </div>
     <label class="col-span-full flex items-center gap-2 text-xs text-slate-600">
-        <input type="checkbox" name="bulk" value="1" class="rounded border-slate-300 text-emerald-600">
+        <input type="checkbox" name="bulk" value="1" @checked(old('bulk')) class="rounded border-slate-300 text-emerald-600">
         A granel (el precio es por el contenido, ej. $54 por 1 kg)
     </label>
     @if ($item)

@@ -123,7 +123,7 @@
             <form method="POST" action="{{ route('debts.balances.store', $debt) }}" class="mt-3 grid grid-cols-2 gap-2">
                 @csrf
                 <input name="balance_on" type="date" value="{{ today()->toDateString() }}" max="{{ today()->toDateString() }}" class="input" required aria-label="Fecha del saldo">
-                <input name="balance" type="number" step="0.01" min="0" class="input" placeholder="Saldo $" required aria-label="Saldo">
+                <input name="balance" type="number" step="0.01" min="0" value="{{ old('balance') }}" class="input" placeholder="Saldo $" required aria-label="Saldo">
                 <button class="btn btn-secondary col-span-2">Capturar saldo</button>
             </form>
             <ul class="mt-3 divide-y divide-slate-100 text-sm">
@@ -131,7 +131,7 @@
                     <li class="flex items-center justify-between gap-2 py-1.5">
                         <span class="text-slate-500">{{ $capture->balance_on->translatedFormat('d M Y') }}</span>
                         <span class="flex items-center gap-1 tabular-nums">{{ money($capture->balance) }}
-                            <form method="POST" action="{{ route('debts.balances.destroy', [$debt, $capture]) }}">
+                            <form method="POST" action="{{ route('debts.balances.destroy', [$debt, $capture]) }}" onsubmit="return confirm(\'¿Borrar este saldo capturado?\')">
                                 @csrf @method('DELETE')
                                 <button class="btn btn-danger btn-sm" title="Eliminar captura">✕</button>
                             </form>

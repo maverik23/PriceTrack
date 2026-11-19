@@ -125,7 +125,7 @@
             <form method="POST" action="{{ route('investments.valuations.store', $account) }}" class="mt-3 grid grid-cols-2 gap-2">
                 @csrf
                 <input name="valued_on" type="date" value="{{ today()->toDateString() }}" max="{{ today()->toDateString() }}" class="input" required aria-label="Fecha del valor">
-                <input name="value" type="number" step="0.01" min="0" class="input" placeholder="Valor {{ $account->currency }}" required aria-label="Valor">
+                <input name="value" type="number" step="0.01" min="0" value="{{ old('value') }}" class="input" placeholder="Valor {{ $account->currency }}" required aria-label="Valor">
                 @if ($foreign)
                     <input name="exchange_rate" type="number" step="0.0001" min="0.0001" class="input col-span-2" placeholder="Tipo de cambio (MXN por {{ $account->currency }})" required aria-label="Tipo de cambio">
                 @endif
@@ -137,7 +137,7 @@
                         <span class="text-slate-500">{{ $valuation->valued_on->translatedFormat('d M Y') }}</span>
                         <span class="flex items-center gap-1 text-right tabular-nums">
                             <span>{{ money($valuation->valueMxn()) }}@if ($foreign)<span class="block text-xs text-slate-500">{{ number_format($valuation->value, 2) }} {{ $account->currency }} a {{ num($valuation->exchange_rate) }}</span>@endif</span>
-                            <form method="POST" action="{{ route('investments.valuations.destroy', [$account, $valuation]) }}">
+                            <form method="POST" action="{{ route('investments.valuations.destroy', [$account, $valuation]) }}" onsubmit="return confirm(\'¿Borrar esta captura de valor?\')">
                                 @csrf @method('DELETE')
                                 <button class="btn btn-danger btn-sm" title="Eliminar captura">✕</button>
                             </form>

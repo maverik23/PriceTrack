@@ -60,8 +60,9 @@
         <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-slate-200 px-4 py-3 text-xs text-slate-500">
             <p>
                 Los precios se guardan con fecha <strong class="text-slate-700" x-text="priceDateLabel"></strong>.
-                Escribe y usa <kbd class="rounded bg-slate-100 px-1">Tab</kbd> / <kbd class="rounded bg-slate-100 px-1">Enter</kbd> / <kbd class="rounded bg-slate-100 px-1">↑↓</kbd>.
-                <kbd class="rounded bg-slate-100 px-1">Enter</kbd> sobre un precio anterior lo confirma para esta fecha; borrarlo deshace lo capturado hoy.
+                {{-- La ayuda de teclado no sirve en el celular --}}
+                <span class="hidden sm:inline">Escribe y usa <kbd class="rounded bg-slate-100 px-1">Tab</kbd> / <kbd class="rounded bg-slate-100 px-1">Enter</kbd> / <kbd class="rounded bg-slate-100 px-1">↑↓</kbd>.
+                <kbd class="rounded bg-slate-100 px-1">Enter</kbd> sobre un precio anterior lo confirma para esta fecha; borrarlo deshace lo capturado hoy.</span>
                 En <strong class="text-slate-700">Cant.</strong> pon lo que necesitas (<code>2</code> o <code>610 g</code>). Si se vende a granel escribe el precio como <code>54/kg</code>.
                 Pega en una celda la dirección del artículo en esa tienda para consultar su precio en línea.
             </p>

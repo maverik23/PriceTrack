@@ -4,7 +4,8 @@
 @section('content')
 @php($thisWeek = $start->isSameDay(today()->startOfWeek(\Carbon\CarbonInterface::MONDAY)))
 <div x-data="{ day: {{ Js::from(old('planned_on', today()->betweenIncluded($start, $end) ? today()->toDateString() : $start->toDateString())) }}, meal: {{ Js::from(old('meal', 'lunch')) }}, recipe: {{ Js::from((string) old('recipe_id', '')) }},
-               pick(day, meal) { this.day = day; this.meal = meal; const el = document.getElementById('menu-recipe'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.focus({ preventScroll: true }); } }">
+               adding: {{ $errors->any() ? 'true' : 'false' }},
+               pick(day, meal) { this.day = day; this.meal = meal; this.adding = true; this.$nextTick(() => { const el = document.getElementById('menu-recipe'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.focus({ preventScroll: true }); }); } }">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
             <h1 class="text-3xl font-bold text-slate-900">Menú de la semana</h1>
@@ -20,7 +21,9 @@
     </div>
 
     <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <form method="POST" action="{{ route('menu.store') }}" class="card lg:col-span-2">
+        {{-- En celular se abre con el botón o con los «+» de cada día, para que la semana quede a la vista --}}
+        <button type="button" class="btn btn-primary lg:hidden" x-show="!adding" @click="pick(day, meal)"><x-icon name="plus" class="size-4" /> Agregar comida</button>
+        <form method="POST" action="{{ route('menu.store') }}" class="card lg:col-span-2" :class="!adding && 'max-lg:hidden'">
             @csrf
             <h2 class="card-title">Agregar al menú</h2>
             <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-6">
