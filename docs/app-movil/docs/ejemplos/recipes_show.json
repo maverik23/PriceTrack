@@ -1,0 +1,203 @@
+{
+  "data": {
+    "id": 4,
+    "name": "Molletes",
+    "category": "Desayunos",
+    "servings": 4,
+    "yield": null,
+    "minutes": 20,
+    "rating": 3,
+    "tags": [],
+    "cost": 47.41,
+    "cost_per_serving": 11.85,
+    "yield_qty": null,
+    "yield_unit": null,
+    "photo": null,
+    "pantry_check": {
+      "ready": false,
+      "missing": [
+        "Pan blanco grande",
+        "Frijol negro 900 g"
+      ],
+      "unchecked": 2
+    },
+    "notes": "Con pico de gallo quedan mejor.",
+    "source_url": null,
+    "cost_exact": 47.406971,
+    "uncosted": 0,
+    "nutrition": {
+      "total": {
+        "kcal": 1367.55,
+        "protein": 73.08000000000001,
+        "carbs": 174.44,
+        "fat": 40.897999999999996
+      },
+      "missing": 0
+    },
+    "nutrition_per_serving": {
+      "kcal": 341.9,
+      "protein": 18.3,
+      "carbs": 43.6,
+      "fat": 10.2
+    },
+    "grams_per_serving": 176,
+    "units": {
+      "g": {
+        "label": "g",
+        "plural": "g"
+      },
+      "kg": {
+        "label": "kg",
+        "plural": "kg"
+      },
+      "ml": {
+        "label": "ml",
+        "plural": "ml"
+      },
+      "l": {
+        "label": "L",
+        "plural": "L"
+      },
+      "item": {
+        "label": "pza",
+        "plural": "pza"
+      },
+      "cup": {
+        "label": "taza",
+        "plural": "tazas"
+      },
+      "tbsp": {
+        "label": "cda",
+        "plural": "cda"
+      },
+      "tsp": {
+        "label": "cdita",
+        "plural": "cdita"
+      },
+      "serving": {
+        "label": "porción",
+        "plural": "porciones"
+      }
+    },
+    "sections": [
+      {
+        "name": null,
+        "items": [
+          {
+            "id": 12,
+            "name": "Pan blanco grande",
+            "kind": "product",
+            "product_id": 2,
+            "subrecipe_id": null,
+            "quantity": 8,
+            "unit": "item",
+            "note": "rebanadas",
+            "cost": 14.016576,
+            "source": "Sam's Club · $62.57/kg",
+            "status": "ok",
+            "pantry": null
+          },
+          {
+            "id": 13,
+            "name": "Frijoles de la olla",
+            "kind": "recipe",
+            "product_id": null,
+            "subrecipe_id": 2,
+            "quantity": 300,
+            "unit": "g",
+            "note": "refritos",
+            "cost": 3.870395,
+            "source": null,
+            "status": "ok",
+            "pantry": null
+          }
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "stage": "Frijoles",
+        "body": "Machaca los frijoles de la olla y fríelos hasta que espesen",
+        "minutes": 8
+      },
+      {
+        "stage": "Montaje",
+        "body": "Parte el pan a la mitad.",
+        "minutes": null
+      }
+    ],
+    "stages": [
+      {
+        "name": "Frijoles",
+        "steps": [
+          {
+            "position": 0,
+            "body": "Machaca los frijoles de la olla y fríelos hasta que espesen",
+            "minutes": 8
+          }
+        ]
+      },
+      {
+        "name": "Montaje",
+        "steps": [
+          {
+            "position": 1,
+            "body": "Parte el pan a la mitad.",
+            "minutes": null
+          },
+          {
+            "position": 2,
+            "body": "Unta frijoles y cubre con queso.",
+            "minutes": null
+          }
+        ]
+      }
+    ],
+    "used_in": [],
+    "attachments": [],
+    "input": {
+      "name": "Molletes",
+      "category": "Desayunos",
+      "servings": 4,
+      "yield_qty": null,
+      "yield_unit": null,
+      "minutes": 20,
+      "rating": 3,
+      "source_url": null,
+      "notes": "Con pico de gallo quedan mejor.",
+      "tags": [],
+      "ingredients": [
+        {
+          "product_id": 2,
+          "subrecipe_id": null,
+          "name": "Pan blanco grande",
+          "quantity": 8,
+          "unit": "item",
+          "note": "rebanadas",
+          "section": null
+        },
+        {
+          "product_id": null,
+          "subrecipe_id": 2,
+          "name": "Frijoles de la olla",
+          "quantity": 300,
+          "unit": "g",
+          "note": "refritos",
+          "section": null
+        }
+      ],
+      "steps": [
+        {
+          "stage": "Frijoles",
+          "body": "Machaca los frijoles de la olla y fríelos hasta que espesen",
+          "minutes": 8
+        },
+        {
+          "stage": "Montaje",
+          "body": "Parte el pan a la mitad.",
+          "minutes": null
+        }
+      ]
+    }
+  }
+}

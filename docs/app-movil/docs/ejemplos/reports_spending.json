@@ -1,0 +1,93 @@
+{
+  "data": {
+    "from": "2025-11-20",
+    "to": "2026-11-19",
+    "stores": "super",
+    "store_options": {
+      "super": "Súper",
+      "other": "Otras tiendas",
+      "all": "Todas"
+    },
+    "excluded": {
+      "amount": 0,
+      "stores": []
+    },
+    "total": 46284.6,
+    "start": "2025-11-22",
+    "end": "2026-11-19",
+    "span": 363,
+    "days": 363,
+    "short_monthly": false,
+    "short_annual": false,
+    "daily": 127.51,
+    "weekly": 892.54,
+    "monthly": 3880.96,
+    "annual": 46571.49,
+    "lists": 51,
+    "per_list": 907.54,
+    "by_week": [
+      {
+        "week": "2025-11-17",
+        "label": "17 nov. 25",
+        "amount": 814.48
+      },
+      {
+        "week": "2025-11-24",
+        "label": "24 nov. 25",
+        "amount": 1306.76
+      }
+    ],
+    "by_month": [
+      {
+        "month": "2025-11",
+        "label": "Nov. 2025",
+        "amount": 2121.24
+      },
+      {
+        "month": "2025-12",
+        "label": "Dic. 2025",
+        "amount": 3261.31
+      }
+    ],
+    "by_year": [
+      {
+        "year": 2025,
+        "amount": 5382.55,
+        "lists": 6
+      },
+      {
+        "year": 2026,
+        "amount": 40902.05,
+        "lists": 45
+      }
+    ],
+    "by_provider": [
+      {
+        "name": "Costco",
+        "amount": 18465.11,
+        "share": 0.3989
+      },
+      {
+        "name": "Walmart",
+        "amount": 16383.27,
+        "share": 0.354
+      }
+    ],
+    "by_category": [
+      {
+        "name": "Abarrotes",
+        "amount": 20627,
+        "share": 0.4457
+      },
+      {
+        "name": "Limpieza",
+        "amount": 11572.5,
+        "share": 0.25
+      }
+    ],
+    "gaps": {
+      "unmarked": 0,
+      "future": 6
+    }
+  }
+}

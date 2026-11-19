@@ -1,0 +1,44 @@
+{
+  "data": {
+    "new_list": "Molletes",
+    "rows": [
+      {
+        "id": 10,
+        "name": "Frijol negro 900 g · Verde Valle",
+        "category": "Abarrotes",
+        "need": "95 g",
+        "have": null,
+        "buy": "95 g",
+        "checked": true,
+        "inPantry": false,
+        "estimate": 42.2,
+        "buyLabel": "95 g"
+      },
+      {
+        "id": 2,
+        "name": "Pan blanco grande · Bimbo",
+        "category": "Panadería",
+        "need": "224 g",
+        "have": null,
+        "buy": "224 g",
+        "checked": true,
+        "inPantry": false,
+        "estimate": 56.2,
+        "buyLabel": "224 g"
+      }
+    ],
+    "estimated_total": 164,
+    "unlinked": [
+      "Cebolla",
+      "Sal"
+    ],
+    "lists": [
+      {
+        "id": 52,
+        "name": "Despensa 19 nov. 2026",
+        "shopped_on": "2026-11-19"
+      }
+    ],
+    "servings": 4
+  }
+}

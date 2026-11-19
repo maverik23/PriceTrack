@@ -1,0 +1,158 @@
+{
+  "data": {
+    "week_start": "2026-11-16",
+    "week_end": "2026-11-22",
+    "prev": "2026-11-09",
+    "next": "2026-11-23",
+    "total": 202.74,
+    "avg_kcal": 498,
+    "meals": {
+      "breakfast": "Desayuno",
+      "lunch": "Comida",
+      "snack": "Merienda",
+      "dinner": "Cena",
+      "other": "Otro"
+    },
+    "days": [
+      {
+        "date": "2026-11-16",
+        "day": "lunes",
+        "note": "Mealprep: cocer los frijoles y el arroz para la semana",
+        "count": 2,
+        "cost": 69.36,
+        "macros": {
+          "kcal": 643.5,
+          "protein": 23.3,
+          "carbs": 95.7,
+          "fat": 17.6
+        },
+        "partial": false,
+        "meals": [
+          {
+            "meal": "breakfast",
+            "label": "Desayuno",
+            "cost": 0,
+            "macros": null,
+            "partial": false,
+            "items": []
+          },
+          {
+            "meal": "lunch",
+            "label": "Comida",
+            "cost": 21.95,
+            "macros": {
+              "kcal": 301.6,
+              "protein": 5,
+              "carbs": 52.1,
+              "fat": 7.4
+            },
+            "partial": false,
+            "items": [
+              {
+                "id": 1,
+                "date": "2026-11-16",
+                "meal": "lunch",
+                "meal_label": "Comida",
+                "label": "Arroz rojo",
+                "recipe_id": 1,
+                "title": null,
+                "servings": 4,
+                "cost": 21.95,
+                "macros": {
+                  "kcal": 301.6,
+                  "protein": 5,
+                  "carbs": 52.1,
+                  "fat": 7.4,
+                  "missing": false
+                },
+                "photo": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "date": "2026-11-17",
+        "day": "martes",
+        "note": null,
+        "count": 2,
+        "cost": 34.23,
+        "macros": {
+          "kcal": 737.7,
+          "protein": 36.6,
+          "carbs": 103.7,
+          "fat": 21.1
+        },
+        "partial": false,
+        "meals": [
+          {
+            "meal": "breakfast",
+            "label": "Desayuno",
+            "cost": 14.88,
+            "macros": {
+              "kcal": 467.7,
+              "protein": 19.5,
+              "carbs": 54.3,
+              "fat": 20
+            },
+            "partial": false,
+            "items": [
+              {
+                "id": 3,
+                "date": "2026-11-17",
+                "meal": "breakfast",
+                "meal_label": "Desayuno",
+                "label": "Huevos a la mexicana",
+                "recipe_id": 3,
+                "title": null,
+                "servings": 2,
+                "cost": 14.88,
+                "macros": {
+                  "kcal": 467.7,
+                  "protein": 19.5,
+                  "carbs": 54.3,
+                  "fat": 20,
+                  "missing": false
+                },
+                "photo": null
+              }
+            ]
+          },
+          {
+            "meal": "lunch",
+            "label": "Comida",
+            "cost": 19.35,
+            "macros": {
+              "kcal": 270,
+              "protein": 17.1,
+              "carbs": 49.4,
+              "fat": 1.1
+            },
+            "partial": false,
+            "items": [
+              {
+                "id": 4,
+                "date": "2026-11-17",
+                "meal": "lunch",
+                "meal_label": "Comida",
+                "label": "Frijoles de la olla",
+                "recipe_id": 2,
+                "title": null,
+                "servings": 6,
+                "cost": 19.35,
+                "macros": {
+                  "kcal": 270,
+                  "protein": 17.1,
+                  "carbs": 49.4,
+                  "fat": 1.1,
+                  "missing": false
+                },
+                "photo": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

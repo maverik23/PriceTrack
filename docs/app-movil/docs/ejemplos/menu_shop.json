@@ -1,0 +1,44 @@
+{
+  "data": {
+    "new_list": "Menú del 16 nov. al 22 nov.",
+    "rows": [
+      {
+        "id": 6,
+        "name": "Aceite vegetal 946 ml · Nutrioli",
+        "category": "Abarrotes",
+        "need": "105 ml",
+        "have": null,
+        "buy": "105 ml",
+        "checked": true,
+        "inPantry": false,
+        "estimate": 48.7,
+        "buyLabel": "105 ml"
+      },
+      {
+        "id": 5,
+        "name": "Arroz 1 kg · Verde Valle",
+        "category": "Abarrotes",
+        "need": "500 g",
+        "have": null,
+        "buy": "500 g",
+        "checked": true,
+        "inPantry": false,
+        "estimate": 34.8,
+        "buyLabel": "500 g"
+      }
+    ],
+    "estimated_total": 392.53,
+    "unlinked": [
+      "Sal",
+      "Cebolla"
+    ],
+    "lists": [
+      {
+        "id": 52,
+        "name": "Despensa 19 nov. 2026",
+        "shopped_on": "2026-11-19"
+      }
+    ],
+    "week": "2026-11-16"
+  }
+}

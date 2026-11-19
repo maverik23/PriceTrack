@@ -6,13 +6,15 @@ Objetivo: una app Flutter (Android + iOS) con la misma información que la web d
 
 - Una fase a la vez, en orden. Cada fase termina con `flutter analyze` limpio, `flutter test` en verde, docs al día y su commit.
 - Lo que requiere dispositivo (cámara, compilar iOS, verse bien) lo prueba el usuario: al cerrar cada fase, deja una lista corta de qué probar en el teléfono.
-- Las fases 2 a 4 empiezan por el servidor (`maverik23/PriceTrack`): agregar sus rutas a la API con tests, y solo después la app.
+- La API de todas las fases ya existe en el servidor (`maverik23/PriceTrack`, `main`): ver `docs/API.md`. Si a una pantalla le falta algo, se agrega primero en el servidor (con tests) y luego en la app.
 
 ## Fase 0. Servidor: API de Inicio y Súper ✅ hecha
 
-En `maverik23/PriceTrack`, rama `claude/friendly-mendel-2k6ot2`: `/api/v1` con token opcional (`API_ENABLED`, `API_TOKEN`), inicio, tiendas, artículos, despensa, precios, precios en línea y listas con la hoja calculada (`App\Api\ListSheet`). 8 tests en `tests/Feature/ApiTest.php`.
+En `maverik23/PriceTrack` (`main`): `/api/v1` con token opcional (`API_ENABLED`, `API_TOKEN`), inicio, tiendas, artículos, despensa, precios, precios en línea y listas con la hoja calculada (`App\Api\ListSheet`). Tests en `tests/Feature/ApiTest.php`.
 
-- [ ] Confirmar con el usuario que esa rama ya está en `main` y desplegada en su servidor (si no, la app no tiene contra qué probar).
+**API de Cocina, Hogar y Finanzas ✅ hecha** (mismo repo, `main`): recetas, menú, envío a la lista, tareas y calendario, bienes, inversiones, patrimonio, deudas, pagos recurrentes, ingresos y reportes del súper. Tests en `ApiKitchenTest`, `ApiHomeTest` y `ApiFinanceTest`; ejemplos en `docs/ejemplos/`.
+
+- [ ] Confirmar con el usuario que `main` del servidor está desplegado (si no, la app no tiene contra qué probar).
 
 ## Fase 1. Esqueleto, conexión, Inicio y Súper
 
@@ -30,15 +32,15 @@ Orden sugerido dentro de la fase (cada punto deja la app usable): 1–4 → Inic
 
 ## Fase 2. Cocina
 
-Servidor: API de recetas, menú y envío a la lista (`docs/API.md` «Por construir»). App: recetas (lista con filtros de despensa y etiquetas, ficha con porciones ajustables, costo y macros, calificación, fotos, formulario con secciones, sub-recetas y pasos por etapa), modo cocinar, menú semanal con notas, revisión y envío de ingredientes a una lista. Copia sin conexión: recetas completas y la semana actual y la siguiente.
+Servidor: ✅ (`docs/API.md` «Cocina»). App: recetas (lista con filtros de despensa y etiquetas, ficha con porciones ajustables, costo y macros, calificación, fotos, formulario con secciones, sub-recetas y pasos por etapa), modo cocinar, menú semanal con notas, revisión y envío de ingredientes a una lista. Copia sin conexión: recetas completas y la semana actual y la siguiente (`docs/OFFLINE.md` §2).
 
 ## Fase 3. Hogar
 
-Servidor: API de tareas y bienes. App: tareas (calendario y lista, alta rápida, repetición, completar/reabrir, mover, listas), bienes (ficha con valor y gráfica, lecturas, servicios, planes, fotos y documentos), reporte de bienes. El inicio ya puede completar tareas.
+Servidor: ✅ (`docs/API.md` «Hogar»). App: tareas (calendario y lista, alta rápida, repetición, completar/reabrir, mover, listas), bienes (ficha con valor y gráfica, lecturas, servicios, planes, fotos y documentos), reporte de bienes. El inicio ya puede completar tareas.
 
 ## Fase 4. Finanzas y reportes
 
-Servidor: API de inversiones, patrimonio, deudas, pagos recurrentes, ingresos y reportes del súper. App: esas pantallas con sus gráficas y registros.
+Servidor: ✅ (`docs/API.md` «Finanzas» y «Reportes del súper»). App: esas pantallas con sus gráficas y registros.
 
 ## Fase 5. Pulido
 

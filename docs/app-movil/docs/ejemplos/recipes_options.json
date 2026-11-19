@@ -1,0 +1,111 @@
+{
+  "products": [
+    {
+      "id": 6,
+      "name": "Aceite vegetal 946 ml · Nutrioli",
+      "unit": "ml",
+      "dimension": "volume",
+      "piece": null,
+      "cup": 218
+    },
+    {
+      "id": 5,
+      "name": "Arroz 1 kg · Verde Valle",
+      "unit": "kg",
+      "dimension": "mass",
+      "piece": null,
+      "cup": 200
+    }
+  ],
+  "recipes": [
+    {
+      "id": 1,
+      "name": "Arroz rojo",
+      "servings": 4,
+      "yield": null,
+      "yieldLabel": null
+    },
+    {
+      "id": 2,
+      "name": "Frijoles de la olla",
+      "servings": 6,
+      "yield": "mass",
+      "yieldLabel": "1,500 g"
+    }
+  ],
+  "units": {
+    "g": {
+      "label": "g",
+      "plural": "g",
+      "dimension": "mass",
+      "base": 1
+    },
+    "kg": {
+      "label": "kg",
+      "plural": "kg",
+      "dimension": "mass",
+      "base": 1000
+    },
+    "ml": {
+      "label": "ml",
+      "plural": "ml",
+      "dimension": "volume",
+      "base": 1
+    },
+    "l": {
+      "label": "L",
+      "plural": "L",
+      "dimension": "volume",
+      "base": 1000
+    },
+    "item": {
+      "label": "pza",
+      "plural": "pza",
+      "dimension": "count",
+      "base": 1
+    },
+    "cup": {
+      "label": "taza",
+      "plural": "tazas",
+      "dimension": "volume",
+      "base": 240
+    },
+    "tbsp": {
+      "label": "cda",
+      "plural": "cda",
+      "dimension": "volume",
+      "base": 15
+    },
+    "tsp": {
+      "label": "cdita",
+      "plural": "cdita",
+      "dimension": "volume",
+      "base": 5
+    },
+    "serving": {
+      "label": "porción",
+      "plural": "porciones",
+      "dimension": "serving",
+      "base": 1
+    }
+  },
+  "yield_units": [
+    "g",
+    "kg"
+  ],
+  "categories": [
+    "Desayunos",
+    "Guarniciones"
+  ],
+  "tags": [
+    "Mealprep",
+    "Rápidas"
+  ],
+  "meals": {
+    "breakfast": "Desayuno",
+    "lunch": "Comida",
+    "snack": "Merienda",
+    "dinner": "Cena",
+    "other": "Otro"
+  }
+}

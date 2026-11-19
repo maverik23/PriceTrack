@@ -1,0 +1,171 @@
+{
+  "data": {
+    "id": 1,
+    "name": "Auto",
+    "category": "Vehículos",
+    "brand": "Mazda",
+    "model": "3 Sedán 2023",
+    "serial_number": null,
+    "location": "Cochera",
+    "purchase_price": 380000,
+    "status": "active",
+    "disposal_amount": null,
+    "valuation_method": "annual_rate",
+    "useful_life_years": null,
+    "salvage_value": null,
+    "annual_rate": -12,
+    "meter_unit": "km",
+    "notes": null,
+    "status_label": "En uso",
+    "purchased_on": "2023-09-19",
+    "warranty_until": null,
+    "warranty_active": false,
+    "disposed_on": null,
+    "current_value": 261580.47,
+    "gain": -118419.53,
+    "current_meter": 34900,
+    "maintenance_cost_year": 6150,
+    "maintenance_cost_total": 9200,
+    "ownership_cost": 127619.53,
+    "photo": null,
+    "plans": [
+      {
+        "id": 1,
+        "asset_id": 1,
+        "asset": "Auto",
+        "name": "Afinación",
+        "every": 1,
+        "every_unit": "year",
+        "every_meter": 15000,
+        "interval": "Cada año o 15,000 km",
+        "estimated_cost": 3200,
+        "notes": null,
+        "status": "overdue",
+        "next_due_on": "2026-10-19",
+        "next_meter": 35500,
+        "due_label": "19 oct. 2026 o a los 35,500 km",
+        "last_done_on": "2025-10-19",
+        "task_id": 11
+      },
+      {
+        "id": 2,
+        "asset_id": 1,
+        "asset": "Auto",
+        "name": "Cambio de aceite",
+        "every": 6,
+        "every_unit": "month",
+        "every_meter": 7500,
+        "interval": "Cada 6 meses o 7,500 km",
+        "estimated_cost": 1400,
+        "notes": null,
+        "status": "soon",
+        "next_due_on": "2026-12-19",
+        "next_meter": 36400,
+        "due_label": "19 dic. 2026 o a los 36,400 km",
+        "last_done_on": "2026-06-19",
+        "task_id": 12
+      }
+    ],
+    "valuations": [
+      {
+        "id": 1,
+        "valued_on": "2026-03-19",
+        "value": 285000,
+        "notes": "Libro Azul"
+      }
+    ],
+    "readings": [
+      {
+        "id": 5,
+        "read_on": "2026-11-19",
+        "reading": 34900
+      },
+      {
+        "id": 4,
+        "read_on": "2026-09-19",
+        "reading": 33200
+      }
+    ],
+    "services": [
+      {
+        "id": 2,
+        "done_on": "2026-06-19",
+        "plan_id": 2,
+        "plan": "Cambio de aceite",
+        "meter_reading": 28900,
+        "cost": 1350,
+        "provider": "Taller Gómez",
+        "notes": null,
+        "task_id": null
+      },
+      {
+        "id": 3,
+        "done_on": "2026-01-19",
+        "plan_id": null,
+        "plan": null,
+        "meter_reading": null,
+        "cost": 4800,
+        "provider": "Llantera",
+        "notes": "Dos llantas",
+        "task_id": null
+      }
+    ],
+    "series": [
+      {
+        "x": "2023-09-19",
+        "y": 380000
+      },
+      {
+        "x": "2023-10-19",
+        "y": 376031
+      }
+    ],
+    "tasks": [
+      {
+        "id": 11,
+        "title": "Afinación · Auto",
+        "notes": "Toca a los 35,500 km (lo que pase primero).",
+        "list_id": 3,
+        "list": "Mantenimiento",
+        "due_on": "2026-10-19",
+        "status": "overdue",
+        "priority": "Normal",
+        "repeats": null,
+        "completed_at": null
+      },
+      {
+        "id": 12,
+        "title": "Cambio de aceite · Auto",
+        "notes": "Toca a los 36,400 km (lo que pase primero).",
+        "list_id": 3,
+        "list": "Mantenimiento",
+        "due_on": "2026-12-19",
+        "status": "upcoming",
+        "priority": "Normal",
+        "repeats": null,
+        "completed_at": null
+      }
+    ],
+    "attachments": [],
+    "input": {
+      "name": "Auto",
+      "category": "Vehículos",
+      "brand": "Mazda",
+      "model": "3 Sedán 2023",
+      "serial_number": null,
+      "location": "Cochera",
+      "purchased_on": "2023-09-19",
+      "purchase_price": 380000,
+      "warranty_until": null,
+      "notes": null,
+      "status": "active",
+      "disposed_on": null,
+      "disposal_amount": null,
+      "valuation_method": "annual_rate",
+      "useful_life_years": null,
+      "salvage_value": null,
+      "annual_rate": -12,
+      "meter_unit": "km"
+    }
+  }
+}

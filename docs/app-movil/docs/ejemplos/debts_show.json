@@ -1,0 +1,84 @@
+{
+  "data": {
+    "id": 1,
+    "name": "Hipoteca",
+    "lender": "Infonavit",
+    "type": "mortgage",
+    "original_amount": 1800000,
+    "annual_rate": 10.5,
+    "notes": null,
+    "type_label": "Hipoteca",
+    "started_on": "2019-11-01",
+    "paid_off_on": null,
+    "paid_off": false,
+    "balance": 1542048.78,
+    "total_paid": 1509564,
+    "monthly_payment": 17971,
+    "months_left": 160,
+    "balances": [
+      {
+        "id": 1,
+        "balance_on": "2026-09-01",
+        "balance": 1560907.33
+      }
+    ],
+    "payments": [
+      {
+        "id": 84,
+        "recurring_payment_id": 1,
+        "recurring": "Mensualidad hipoteca",
+        "debt_id": 1,
+        "paid_on": "2026-11-10",
+        "due_on": "2026-11-10",
+        "amount": 17971,
+        "reading": null,
+        "consumption": null,
+        "unit_price": null,
+        "notes": null
+      },
+      {
+        "id": 83,
+        "recurring_payment_id": 1,
+        "recurring": "Mensualidad hipoteca",
+        "debt_id": 1,
+        "paid_on": "2026-10-07",
+        "due_on": "2026-10-10",
+        "amount": 17971,
+        "reading": null,
+        "consumption": null,
+        "unit_price": null,
+        "notes": null
+      }
+    ],
+    "recurring_payments": [
+      {
+        "id": 1,
+        "name": "Mensualidad hipoteca",
+        "amount": 17971,
+        "interval": "Cada mes",
+        "active": true,
+        "next_due_on": "2026-12-10"
+      }
+    ],
+    "series": [
+      {
+        "x": "2019-11-01",
+        "y": 1800000
+      },
+      {
+        "x": "2019-12-01",
+        "y": 1815522.96
+      }
+    ],
+    "input": {
+      "name": "Hipoteca",
+      "lender": "Infonavit",
+      "type": "mortgage",
+      "original_amount": 1800000,
+      "annual_rate": 10.5,
+      "notes": null,
+      "started_on": "2019-11-01",
+      "paid_off_on": null
+    }
+  }
+}

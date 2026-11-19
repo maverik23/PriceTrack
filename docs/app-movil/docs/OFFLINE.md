@@ -18,7 +18,13 @@ Toda pantalla lee por el repositorio, que entrega **primero la copia** (pinta al
 - Sin copia y sin conexión: «Sin conexión y esto todavía no se había guardado en el teléfono», con «Reintentar».
 - `404`: se borra esa copia.
 
-**Copia completa** para que *toda* la app se vea sin haber abierto antes cada pantalla: al conectar, al abrir la app y cada ~30 min (y con el botón «Guardar copia ahora» de Ajustes) se piden en segundo plano: `dashboard`, `products/catalog`, `products/options`, `pantry`, `providers`, la primera página de `prices`, todos los artículos con `detail=1` (cada uno se guarda además como `products/{id}`), todas las listas (`status=all`) y la hoja de cada lista pendiente y de las últimas 15 compradas. Cada fase nueva agrega aquí sus recursos.
+**Copia completa** para que *toda* la app se vea sin haber abierto antes cada pantalla: al conectar, al abrir la app y cada ~30 min (y con el botón «Guardar copia ahora» de Ajustes) se piden en segundo plano: `dashboard`, `products/catalog`, `products/options`, `pantry`, `providers`, la primera página de `prices`, todos los artículos con `detail=1` (cada uno se guarda además como `products/{id}`), todas las listas (`status=all`) y la hoja de cada lista pendiente y de las últimas 15 compradas. Cada fase nueva agrega aquí sus recursos:
+
+- **Cocina**: `recipes?detail=1&per_page=200` (cada una se guarda además como `recipes/{id}`), `recipes/options`, `menu` de esta semana y de la siguiente (`menu?week=`; cada una con su clave). La revisión para mandar a la lista (`recipes/{id}/shop`) no se guarda: mandar necesita conexión.
+- **Hogar**: `tasks?per_page=200` (todas las páginas), `tasks/calendar` del mes actual, `task-lists`, `assets?status=all&detail=1&per_page=200` (cada uno además como `assets/{id}`), `assets/options`, `reports/assets`.
+- **Finanzas**: `investments?detail=1` (cada una además como `investments/{id}`), `net-worth`, `debts?detail=1` (y `debts/{id}`), `recurring?detail=1&per_page=200` (y `recurring/{id}`), `incomes` del mes actual, `reports/spending`, `reports/inflation` y la primera página de `reports/changes`.
+
+Todo lo de Cocina, Hogar y Finanzas es de solo lectura sin conexión (§3): completar una tarea, pagar un recibo o agregar al menú piden conexión.
 
 Las listas largas (artículos, listas de compra) se bajan completas y **se buscan y filtran en el teléfono**, así el buscador funciona igual con y sin conexión. El historial de precios sí se pagina en el servidor (sin conexión se ve lo último guardado).
 

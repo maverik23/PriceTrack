@@ -1,0 +1,74 @@
+{
+  "data": {
+    "month": "2026-11",
+    "label": "Noviembre 2026",
+    "prev": "2026-10",
+    "next": "2026-12",
+    "is_current_month": true,
+    "total": 0,
+    "money": 0,
+    "in_kind": 0,
+    "by_category": [],
+    "spent": {
+      "super": 1647,
+      "payments": 27133.07,
+      "total": 28780.07
+    },
+    "balance": -28780.07,
+    "incomes": [],
+    "series": [
+      {
+        "month": "2025-12",
+        "label": "Dic. 25",
+        "money": 0,
+        "in_kind": 0,
+        "total": 0
+      },
+      {
+        "month": "2026-01",
+        "label": "Ene. 26",
+        "money": 0,
+        "in_kind": 0,
+        "total": 0
+      }
+    ],
+    "average": null,
+    "expected": {
+      "money": 0,
+      "in_kind": 0,
+      "total": 0
+    },
+    "sources": [],
+    "inactive": [],
+    "categories": [
+      "Sueldo",
+      "Aguinaldo"
+    ],
+    "kinds": {
+      "money": "Dinero",
+      "in_kind": "En especie"
+    },
+    "units": {
+      "day": {
+        "one": "día",
+        "many": "días"
+      },
+      "week": {
+        "one": "semana",
+        "many": "semanas"
+      },
+      "fortnight": {
+        "one": "quincena",
+        "many": "quincenas"
+      },
+      "month": {
+        "one": "mes",
+        "many": "meses"
+      },
+      "year": {
+        "one": "año",
+        "many": "años"
+      }
+    }
+  }
+}

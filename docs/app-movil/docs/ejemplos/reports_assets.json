@@ -1,0 +1,171 @@
+{
+  "data": {
+    "years": [
+      2023,
+      2024
+    ],
+    "rows": [
+      {
+        "asset_id": 1,
+        "name": "Auto",
+        "status": "active",
+        "by_year": {
+          "2023": 0,
+          "2024": 0,
+          "2025": 3050,
+          "2026": 6150
+        },
+        "total": 9200,
+        "value": 261580.47,
+        "gain": -118419.53,
+        "ownership": 127619.53
+      },
+      {
+        "asset_id": 2,
+        "name": "Casa",
+        "status": "active",
+        "by_year": {
+          "2023": 16500,
+          "2024": 0,
+          "2025": 0,
+          "2026": 0
+        },
+        "total": 16500,
+        "value": 3539057.69,
+        "gain": 1139057.69,
+        "ownership": -1122557.69
+      }
+    ],
+    "totals": {
+      "2023": 16500,
+      "2024": 0,
+      "2025": 3050,
+      "2026": 6150
+    },
+    "summary": {
+      "value": 3830190.3,
+      "maintenance_year": 6150,
+      "overdue": [
+        {
+          "id": 4,
+          "asset_id": 3,
+          "asset": "Refrigerador",
+          "name": "Limpiar el condensador",
+          "every": 6,
+          "every_unit": "month",
+          "every_meter": null,
+          "interval": "Cada 6 meses",
+          "estimated_cost": 0,
+          "notes": null,
+          "status": "overdue",
+          "next_due_on": "2026-06-29",
+          "next_meter": null,
+          "due_label": "29 jun. 2026",
+          "last_done_on": null,
+          "task_id": 15
+        },
+        {
+          "id": 1,
+          "asset_id": 1,
+          "asset": "Auto",
+          "name": "Afinación",
+          "every": 1,
+          "every_unit": "year",
+          "every_meter": 15000,
+          "interval": "Cada año o 15,000 km",
+          "estimated_cost": 3200,
+          "notes": null,
+          "status": "overdue",
+          "next_due_on": "2026-10-19",
+          "next_meter": 35500,
+          "due_label": "19 oct. 2026 o a los 35,500 km",
+          "last_done_on": "2025-10-19",
+          "task_id": 11
+        }
+      ],
+      "soon": [
+        {
+          "id": 3,
+          "asset_id": 2,
+          "asset": "Casa",
+          "name": "Impermeabilizar",
+          "every": 3,
+          "every_unit": "year",
+          "every_meter": null,
+          "interval": "Cada 3 años",
+          "estimated_cost": 18000,
+          "notes": null,
+          "status": "soon",
+          "next_due_on": "2026-12-03",
+          "next_meter": null,
+          "due_label": "03 dic. 2026",
+          "last_done_on": "2023-12-03",
+          "task_id": 13
+        },
+        {
+          "id": 2,
+          "asset_id": 1,
+          "asset": "Auto",
+          "name": "Cambio de aceite",
+          "every": 6,
+          "every_unit": "month",
+          "every_meter": 7500,
+          "interval": "Cada 6 meses o 7,500 km",
+          "estimated_cost": 1400,
+          "notes": null,
+          "status": "soon",
+          "next_due_on": "2026-12-19",
+          "next_meter": 36400,
+          "due_label": "19 dic. 2026 o a los 36,400 km",
+          "last_done_on": "2026-06-19",
+          "task_id": 12
+        }
+      ],
+      "warranties": [
+        {
+          "id": 3,
+          "name": "Refrigerador",
+          "warranty_until": "2026-12-29"
+        }
+      ]
+    },
+    "plans": [
+      {
+        "id": 4,
+        "asset_id": 3,
+        "asset": "Refrigerador",
+        "name": "Limpiar el condensador",
+        "every": 6,
+        "every_unit": "month",
+        "every_meter": null,
+        "interval": "Cada 6 meses",
+        "estimated_cost": 0,
+        "notes": null,
+        "status": "overdue",
+        "next_due_on": "2026-06-29",
+        "next_meter": null,
+        "due_label": "29 jun. 2026",
+        "last_done_on": null,
+        "task_id": 15
+      },
+      {
+        "id": 1,
+        "asset_id": 1,
+        "asset": "Auto",
+        "name": "Afinación",
+        "every": 1,
+        "every_unit": "year",
+        "every_meter": 15000,
+        "interval": "Cada año o 15,000 km",
+        "estimated_cost": 3200,
+        "notes": null,
+        "status": "overdue",
+        "next_due_on": "2026-10-19",
+        "next_meter": 35500,
+        "due_label": "19 oct. 2026 o a los 35,500 km",
+        "last_done_on": "2025-10-19",
+        "task_id": 11
+      }
+    ]
+  }
+}

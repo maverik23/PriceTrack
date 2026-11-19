@@ -1,0 +1,74 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Arroz rojo",
+      "category": "Guarniciones",
+      "servings": 4,
+      "yield": null,
+      "minutes": 35,
+      "rating": 5,
+      "tags": [
+        "Mealprep",
+        "Rápidas"
+      ],
+      "cost": 21.95,
+      "cost_per_serving": 5.49,
+      "yield_qty": null,
+      "yield_unit": null,
+      "photo": null,
+      "pantry_check": {
+        "ready": false,
+        "missing": [
+          "Arroz 1 kg",
+          "Aceite vegetal 946 ml"
+        ],
+        "unchecked": 1
+      }
+    },
+    {
+      "id": 2,
+      "name": "Frijoles de la olla",
+      "category": "Guisados",
+      "servings": 6,
+      "yield": "1,500 g",
+      "minutes": 150,
+      "rating": 4,
+      "tags": [
+        "Mealprep"
+      ],
+      "cost": 19.35,
+      "cost_per_serving": 3.23,
+      "yield_qty": 1500,
+      "yield_unit": "g",
+      "photo": null,
+      "pantry_check": {
+        "ready": false,
+        "missing": [
+          "Frijol negro 900 g"
+        ],
+        "unchecked": 2
+      }
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "per_page": 50,
+    "last_page": 1,
+    "total": 4
+  },
+  "pantry": null,
+  "counts": {
+    "all": 4,
+    "ready": 0,
+    "almost": 1
+  },
+  "categories": [
+    "Desayunos",
+    "Guarniciones"
+  ],
+  "tags": [
+    "Mealprep",
+    "Rápidas"
+  ]
+}

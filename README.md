@@ -183,7 +183,7 @@ Abre http://localhost:8080 (puerto en `APP_PORT`). Para recarga en caliente: `./
 ## Código
 
 - `app/Enums/Unit.php`: unidades y conversiones.
-- `app/Api/`, `app/Http/Controllers/Api/` y `routes/api.php`: API REST (`/api/v1`) para la app móvil ([PriceTrack-App](https://github.com/maverik23/PriceTrack-App)); el plan de la app y el contrato de la API están en `docs/app-movil/`.
+- `app/Api/`, `app/Http/Controllers/Api/` y `routes/api.php`: API REST (`/api/v1`) para la app móvil ([PriceTrack-App](https://github.com/maverik23/PriceTrack-App)): Inicio, Súper, Cocina, Hogar, Finanzas y reportes. El plan de la app y el contrato de la API (`docs/API.md`, con ejemplos reales en `docs/ejemplos/`) están en `docs/app-movil/`.
 - `app/Mcp/`: servidor MCP (`PriceTrackServer`) y sus herramientas (`Tools/`); rutas en `routes/ai.php`.
 - `app/Models/Price.php`: normaliza `base_qty` y `unit_price` al guardar.
 - `app/Services/ReportService.php`: gasto, inflación y cambios de precio.

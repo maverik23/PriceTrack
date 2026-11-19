@@ -1,0 +1,14 @@
+{
+  "data": [
+    {
+      "id": 2,
+      "name": "Auto",
+      "pending": 2
+    },
+    {
+      "id": 1,
+      "name": "Casa",
+      "pending": 5
+    }
+  ]
+}

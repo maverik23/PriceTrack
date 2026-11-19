@@ -1,0 +1,62 @@
+{
+  "data": {
+    "month": "2026-11",
+    "label": "Noviembre 2026",
+    "prev": "2026-10",
+    "next": "2026-12",
+    "counts": {
+      "total": 7,
+      "done": 1,
+      "pending": 4,
+      "overdue": 2
+    },
+    "completion": 0.2,
+    "projected_count": 6,
+    "undated": 1,
+    "overdue_before": 3,
+    "days": [
+      {
+        "date": "2026-10-26",
+        "in_month": false,
+        "is_today": false,
+        "is_past": true,
+        "counts": {
+          "total": 0,
+          "done": 0,
+          "pending": 0,
+          "overdue": 0
+        },
+        "tasks": [],
+        "projected": []
+      },
+      {
+        "date": "2026-10-27",
+        "in_month": false,
+        "is_today": false,
+        "is_past": true,
+        "counts": {
+          "total": 0,
+          "done": 0,
+          "pending": 0,
+          "overdue": 0
+        },
+        "tasks": [],
+        "projected": []
+      }
+    ]
+  },
+  "lists": [
+    {
+      "id": 2,
+      "name": "Auto",
+      "pending": 2
+    },
+    {
+      "id": 1,
+      "name": "Casa",
+      "pending": 5
+    }
+  ],
+  "general_count": 2,
+  "all_count": 14
+}

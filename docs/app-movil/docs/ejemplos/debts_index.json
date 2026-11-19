@@ -1,0 +1,47 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Hipoteca",
+      "lender": "Infonavit",
+      "type": "mortgage",
+      "original_amount": 1800000,
+      "annual_rate": 10.5,
+      "notes": null,
+      "type_label": "Hipoteca",
+      "started_on": "2019-11-01",
+      "paid_off_on": null,
+      "paid_off": false,
+      "balance": 1542048.78,
+      "total_paid": 1509564,
+      "monthly_payment": 17971,
+      "months_left": 160
+    },
+    {
+      "id": 2,
+      "name": "Crédito del auto",
+      "lender": "Mazda Finance",
+      "type": "car",
+      "original_amount": 250000,
+      "annual_rate": 13.9,
+      "notes": null,
+      "type_label": "Crédito del auto",
+      "started_on": "2024-09-01",
+      "paid_off_on": null,
+      "paid_off": false,
+      "balance": 81606.75,
+      "total_paid": 221780,
+      "monthly_payment": 8530,
+      "months_left": 11
+    }
+  ],
+  "total": 1623655.53,
+  "monthly": 26501,
+  "types": {
+    "mortgage": "Hipoteca",
+    "car": "Crédito del auto",
+    "card": "Tarjeta de crédito",
+    "personal": "Préstamo personal",
+    "other": "Otra"
+  }
+}

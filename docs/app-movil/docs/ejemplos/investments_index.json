@@ -1,0 +1,56 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "CETES",
+      "institution": "Cetesdirecto",
+      "type": "cetes",
+      "currency": "MXN",
+      "notes": null,
+      "type_label": "CETES / bonos",
+      "closed_on": null,
+      "closed": false,
+      "value": 102408.96,
+      "last_value": 102408.96,
+      "last_exchange_rate": 1,
+      "contributed": 82000,
+      "gain": 20408.96,
+      "simple_return": 0.2195,
+      "annualized_return": 0.1706,
+      "as_of": "2026-10-28",
+      "stale": false
+    },
+    {
+      "id": 3,
+      "name": "ETF S&P 500",
+      "institution": "GBM",
+      "type": "stocks",
+      "currency": "USD",
+      "notes": null,
+      "type_label": "Acciones / ETF",
+      "closed_on": null,
+      "closed": false,
+      "value": 64709.08,
+      "last_value": 4051.23,
+      "last_exchange_rate": 15.9727,
+      "contributed": 53198.03,
+      "gain": 11511.05,
+      "simple_return": 0.2098,
+      "annualized_return": 0.1617,
+      "as_of": "2026-10-28",
+      "stale": false
+    }
+  ],
+  "summary": {
+    "value": 213125.84,
+    "contributed": 184261.64,
+    "gain": 38027.81,
+    "annualized_return": 0.1449,
+    "stale": [
+      {
+        "id": 2,
+        "name": "Afore"
+      }
+    ]
+  }
+}

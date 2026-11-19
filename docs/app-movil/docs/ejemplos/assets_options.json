@@ -1,0 +1,38 @@
+{
+  "statuses": {
+    "active": "En uso",
+    "sold": "Vendido",
+    "retired": "Dado de baja"
+  },
+  "methods": {
+    "none": "Sin estimación (vale la última captura)",
+    "straight_line": "Línea recta (vida útil y valor de rescate)",
+    "annual_rate": "Porcentaje anual (− se deprecia, + plusvalía)"
+  },
+  "units": {
+    "day": {
+      "one": "día",
+      "many": "días"
+    },
+    "week": {
+      "one": "semana",
+      "many": "semanas"
+    },
+    "month": {
+      "one": "mes",
+      "many": "meses"
+    },
+    "year": {
+      "one": "año",
+      "many": "años"
+    }
+  },
+  "categories": [
+    "Electrodomésticos",
+    "Electrónica"
+  ],
+  "locations": [
+    "Cochera",
+    "Cocina"
+  ]
+}

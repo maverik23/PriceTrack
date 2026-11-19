@@ -1,0 +1,113 @@
+{
+  "data": [
+    {
+      "id": 4,
+      "name": "Agua",
+      "category": "Servicios",
+      "amount": 280,
+      "meter_unit": null,
+      "every": 2,
+      "every_unit": "month",
+      "debt_id": null,
+      "active": true,
+      "notes": null,
+      "interval": "Cada 2 meses",
+      "next_due_on": "2026-11-17",
+      "status": "overdue",
+      "paid_up": false,
+      "debt": null,
+      "monthly": 140,
+      "asks_reading": true,
+      "suggested_meter_unit": "m³",
+      "last_payment": {
+        "id": 116,
+        "recurring_payment_id": 4,
+        "recurring": null,
+        "debt_id": null,
+        "paid_on": "2026-09-17",
+        "due_on": "2026-09-17",
+        "amount": 266,
+        "reading": null,
+        "consumption": null,
+        "unit_price": null,
+        "notes": null
+      }
+    },
+    {
+      "id": 5,
+      "name": "Internet",
+      "category": "Servicios",
+      "amount": 499,
+      "meter_unit": null,
+      "every": 1,
+      "every_unit": "month",
+      "debt_id": null,
+      "active": true,
+      "notes": null,
+      "interval": "Cada mes",
+      "next_due_on": "2026-11-22",
+      "status": "soon",
+      "paid_up": false,
+      "debt": null,
+      "monthly": 499,
+      "asks_reading": false,
+      "suggested_meter_unit": null,
+      "last_payment": {
+        "id": 119,
+        "recurring_payment_id": 5,
+        "recurring": null,
+        "debt_id": null,
+        "paid_on": "2026-10-22",
+        "due_on": "2026-10-22",
+        "amount": 459.08,
+        "reading": null,
+        "consumption": null,
+        "unit_price": null,
+        "notes": null
+      }
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "per_page": 50,
+    "last_page": 1,
+    "total": 10
+  },
+  "inactive": [],
+  "monthly": 29908,
+  "by_category": {
+    "Deudas": 26501,
+    "Servicios": 1479,
+    "Seguros": 1183.33,
+    "Suscripciones": 428,
+    "Vivienda": 316.67
+  },
+  "recent": [
+    {
+      "id": 128,
+      "recurring_payment_id": 8,
+      "recurring": "Spotify",
+      "debt_id": null,
+      "paid_on": "2026-11-11",
+      "due_on": "2026-11-11",
+      "amount": 132.87,
+      "reading": null,
+      "consumption": null,
+      "unit_price": null,
+      "notes": null
+    },
+    {
+      "id": 84,
+      "recurring_payment_id": 1,
+      "recurring": "Mensualidad hipoteca",
+      "debt_id": 1,
+      "paid_on": "2026-11-10",
+      "due_on": "2026-11-10",
+      "amount": 17971,
+      "reading": null,
+      "consumption": null,
+      "unit_price": null,
+      "notes": null
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "data": {
+    "now": {
+      "date": "2026-11-19",
+      "investments": 213125.84,
+      "assets": 3830190.3,
+      "debts": 1623655.53,
+      "total": 2419660.61
+    },
+    "month_ago": {
+      "date": "2026-10-31",
+      "investments": 213125.84,
+      "assets": 3821412.47,
+      "debts": 1641128.11,
+      "total": 2393410.2
+    },
+    "year_ago": {
+      "date": "2025-11-30",
+      "investments": 151197.81,
+      "assets": 3651973.88,
+      "debts": 1762808.76,
+      "total": 2040362.93
+    },
+    "series": [
+      {
+        "date": "2024-11-30",
+        "investments": 44859.59,
+        "assets": 3508227.53,
+        "debts": 1884021.32,
+        "total": 1669065.8
+      },
+      {
+        "date": "2024-12-31",
+        "investments": 50854.4,
+        "assets": 3519814,
+        "debts": 1874825.61,
+        "total": 1695842.79
+      }
+    ],
+    "accounts": [
+      {
+        "id": 2,
+        "name": "Afore",
+        "value": 46007.8
+      },
+      {
+        "id": 1,
+        "name": "CETES",
+        "value": 102408.96
+      }
+    ],
+    "assets": [
+      {
+        "id": 1,
+        "name": "Auto",
+        "value": 261580.47
+      },
+      {
+        "id": 2,
+        "name": "Casa",
+        "value": 3539057.69
+      }
+    ],
+    "debts": [
+      {
+        "id": 2,
+        "name": "Crédito del auto",
+        "balance": 81606.75
+      },
+      {
+        "id": 1,
+        "name": "Hipoteca",
+        "balance": 1542048.78
+      }
+    ]
+  }
+}

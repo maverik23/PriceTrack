@@ -1,0 +1,75 @@
+{
+  "data": {
+    "id": 4,
+    "name": "Agua",
+    "category": "Servicios",
+    "amount": 280,
+    "meter_unit": null,
+    "every": 2,
+    "every_unit": "month",
+    "debt_id": null,
+    "active": true,
+    "notes": null,
+    "interval": "Cada 2 meses",
+    "next_due_on": "2026-11-17",
+    "status": "overdue",
+    "paid_up": false,
+    "debt": null,
+    "monthly": 140,
+    "asks_reading": true,
+    "suggested_meter_unit": "m³",
+    "last_payment": {
+      "id": 116,
+      "recurring_payment_id": 4,
+      "recurring": null,
+      "debt_id": null,
+      "paid_on": "2026-09-17",
+      "due_on": "2026-09-17",
+      "amount": 266,
+      "reading": null,
+      "consumption": null,
+      "unit_price": null,
+      "notes": null
+    },
+    "history": [
+      {
+        "id": 116,
+        "recurring_payment_id": 4,
+        "recurring": null,
+        "debt_id": null,
+        "paid_on": "2026-09-17",
+        "due_on": "2026-09-17",
+        "amount": 266,
+        "reading": null,
+        "consumption": null,
+        "unit_price": null,
+        "notes": null
+      },
+      {
+        "id": 115,
+        "recurring_payment_id": 4,
+        "recurring": null,
+        "debt_id": null,
+        "paid_on": "2026-07-17",
+        "due_on": "2026-07-17",
+        "amount": 288.4,
+        "reading": null,
+        "consumption": null,
+        "unit_price": null,
+        "notes": null
+      }
+    ],
+    "input": {
+      "name": "Agua",
+      "category": "Servicios",
+      "amount": 280,
+      "meter_unit": null,
+      "every": 2,
+      "every_unit": "month",
+      "debt_id": null,
+      "active": true,
+      "notes": null,
+      "next_due_on": "2026-11-17"
+    }
+  }
+}

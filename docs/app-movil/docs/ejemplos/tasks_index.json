@@ -1,0 +1,98 @@
+{
+  "data": [
+    {
+      "id": 15,
+      "title": "Limpiar el condensador · Refrigerador",
+      "notes": null,
+      "list_id": 3,
+      "list": "Mantenimiento",
+      "due_on": "2026-06-29",
+      "status": "overdue",
+      "priority": "Normal",
+      "repeats": null,
+      "completed_at": null,
+      "priority_value": 2,
+      "repeat_every": null,
+      "repeat_unit": null,
+      "repeated_from_id": null,
+      "taskable": {
+        "type": "asset",
+        "id": 3,
+        "name": "Refrigerador"
+      }
+    },
+    {
+      "id": 11,
+      "title": "Afinación · Auto",
+      "notes": "Toca a los 35,500 km (lo que pase primero).",
+      "list_id": 3,
+      "list": "Mantenimiento",
+      "due_on": "2026-10-19",
+      "status": "overdue",
+      "priority": "Normal",
+      "repeats": null,
+      "completed_at": null,
+      "priority_value": 2,
+      "repeat_every": null,
+      "repeat_unit": null,
+      "repeated_from_id": null,
+      "taskable": {
+        "type": "asset",
+        "id": 1,
+        "name": "Auto"
+      }
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "per_page": 50,
+    "last_page": 1,
+    "total": 14
+  },
+  "today": "2026-11-19",
+  "groups": [
+    {
+      "key": "overdue",
+      "title": "Vencidas",
+      "total": 5
+    },
+    {
+      "key": "today",
+      "title": "Hoy",
+      "total": 2
+    }
+  ],
+  "done": [
+    {
+      "id": 9,
+      "title": "Sacar la basura",
+      "notes": null,
+      "list_id": 1,
+      "list": "Casa",
+      "due_on": "2026-11-18",
+      "status": "done",
+      "priority": "Normal",
+      "repeats": "Cada 3 días",
+      "completed_at": "2026-11-18 21:00:00",
+      "priority_value": 2,
+      "repeat_every": 3,
+      "repeat_unit": "day",
+      "repeated_from_id": null,
+      "taskable": null
+    }
+  ],
+  "lists": [
+    {
+      "id": 2,
+      "name": "Auto",
+      "pending": 2
+    },
+    {
+      "id": 1,
+      "name": "Casa",
+      "pending": 5
+    }
+  ],
+  "general_count": 2,
+  "all_count": 14
+}

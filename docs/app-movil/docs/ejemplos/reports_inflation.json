@@ -1,0 +1,80 @@
+{
+  "data": {
+    "from": "2025-11-20",
+    "to": "2026-11-19",
+    "overall": 0.0552,
+    "annualized": 0.0552,
+    "up": 14,
+    "down": 1,
+    "flat": 0,
+    "observations": 1079,
+    "monthly": [
+      {
+        "month": "2025-11",
+        "label": "Nov. 2025",
+        "index": 100,
+        "change": null
+      },
+      {
+        "month": "2025-12",
+        "label": "Dic. 2025",
+        "index": 100.53,
+        "change": 0.0053
+      }
+    ],
+    "products": [
+      {
+        "product_id": 13,
+        "product": "Queso panela 400 g · Lala",
+        "change": 0.1118,
+        "first_unit_price": 164.38,
+        "last_unit_price": 181.56,
+        "per": "/kg",
+        "from": "2025-12-06",
+        "to": "2026-11-07",
+        "providers": [
+          {
+            "provider_id": 1,
+            "provider": "Sam's Club",
+            "change": 0.2472,
+            "first_unit_price": 136,
+            "last_unit_price": 169.63
+          },
+          {
+            "provider_id": 3,
+            "provider": "Walmart",
+            "change": 0.0737,
+            "first_unit_price": 179.75,
+            "last_unit_price": 193
+          }
+        ]
+      },
+      {
+        "product_id": 8,
+        "product": "Café soluble 225 g · Nescafé",
+        "change": 0.087,
+        "first_unit_price": 585.06,
+        "last_unit_price": 636.11,
+        "per": "/kg",
+        "from": "2025-11-22",
+        "to": "2026-10-10",
+        "providers": [
+          {
+            "provider_id": 4,
+            "provider": "Amazon",
+            "change": 0.0915,
+            "first_unit_price": 636,
+            "last_unit_price": 694.22
+          },
+          {
+            "provider_id": 3,
+            "provider": "Walmart",
+            "change": 0.0914,
+            "first_unit_price": 617.33,
+            "last_unit_price": 673.78
+          }
+        ]
+      }
+    ]
+  }
+}
