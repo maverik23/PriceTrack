@@ -77,8 +77,14 @@ class RecurringPaymentController extends Controller
             'paid_on' => ['nullable', 'date', 'before_or_equal:today'],
             'amount' => ['nullable', 'numeric', 'gt:0', 'max:99999999999'],
             'reading' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
+            // La primera lectura de un pago sin unidad la trae (kWh, m³) y se queda guardada
+            'meter_unit' => [Rule::requiredIf(fn () => $request->filled('reading') && ! $recurringPayment->meter_unit), 'nullable', 'string', 'max:12'],
             'notes' => ['nullable', 'string', 'max:255'],
-        ], [], ['paid_on' => 'fecha', 'amount' => 'monto', 'reading' => 'lectura']);
+        ], [], ['paid_on' => 'fecha', 'amount' => 'monto', 'reading' => 'lectura', 'meter_unit' => 'unidad de la lectura']);
+
+        if (isset($data['reading']) && ! $recurringPayment->meter_unit) {
+            $recurringPayment->update(['meter_unit' => trim($data['meter_unit'])]);
+        }
 
         $due = $recurringPayment->next_due_on;
         $payment = $recurringPayment->markPaid(
@@ -105,6 +111,7 @@ class RecurringPaymentController extends Controller
             'reading' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
             'notes' => ['nullable', 'string', 'max:255'],
         ], [], ['paid_on' => 'fecha', 'amount' => 'monto', 'reading' => 'lectura']);
+
         $payment->update($data);
 
         return back()->with('success', 'Pago corregido.');

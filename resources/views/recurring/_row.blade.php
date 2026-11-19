@@ -61,11 +61,23 @@
                 <span class="sr-only">Monto de este recibo de {{ $item->name }}</span>
                 <input name="amount" type="number" step="0.01" min="0.01" class="input py-1.5 text-sm" placeholder="{{ num($item->amount) }}" title="Monto de este recibo (vacío = {{ money($item->amount) }})">
             </label>
-            @if ($unit)
+            @if ($item->asksReading())
+                {{-- Lectura final junto al monto: con ella se calcula el consumo y el precio por unidad --}}
                 <label class="w-32">
-                    <span class="sr-only">Lectura final en {{ $unit }}</span>
-                    <input name="reading" type="number" step="0.001" min="0" class="input py-1.5 text-sm" placeholder="Lectura {{ $unit }}" title="Lectura final del periodo que pagas, en {{ $unit }}">
+                    <span class="sr-only">Lectura final{{ $unit ? ' en '.$unit : '' }} de {{ $item->name }}</span>
+                    <input name="reading" type="number" step="0.001" min="0" inputmode="decimal" class="input py-1.5 text-sm"
+                           placeholder="Lectura{{ $unit ? ' '.$unit : '' }}" title="Lectura final del periodo que pagas{{ $unit ? ', en '.$unit : '' }} (vacía = sin lectura)">
                 </label>
+                @unless ($unit)
+                    @once
+                        <datalist id="rp-row-units"><option value="kWh"><option value="m³"><option value="L"></datalist>
+                    @endonce
+                    {{-- Aún sin unidad: se propone por el nombre y se guarda con la primera lectura --}}
+                    <label class="w-20">
+                        <span class="sr-only">Unidad de la lectura</span>
+                        <input name="meter_unit" value="{{ $item->guessMeterUnit() }}" maxlength="12" list="rp-row-units" class="input py-1.5 text-sm" title="Unidad de la lectura (se guarda con la primera)">
+                    </label>
+                @endunless
             @endif
             <button class="btn btn-secondary btn-sm" aria-label="Registrar pago de {{ $item->name }}"><x-icon name="check" class="size-4" /> Pagar</button>
         </form>

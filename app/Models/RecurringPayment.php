@@ -72,6 +72,27 @@ class RecurringPayment extends Model
         return static::categories()->first(fn ($c) => $key($c) === $key($value)) ?? $value;
     }
 
+    /** Unidad de la lectura que suele traer el recibo, por el nombre (luz → kWh, agua o gas → m³). */
+    public function guessMeterUnit(): ?string
+    {
+        $name = Str::of($this->name)->ascii()->lower();
+
+        return match (true) {
+            $name->contains(['luz', 'cfe', 'electric', 'energia']) => 'kWh',
+            $name->contains(['agua', 'gas']) => 'm³',
+            default => null,
+        };
+    }
+
+    /**
+     * Si al pagar se pide la lectura del medidor: los que ya tienen unidad y, sin ella, los que
+     * por el nombre la traen (luz, agua, gas) y no son mensualidad de una deuda.
+     */
+    public function asksReading(): bool
+    {
+        return (bool) $this->meter_unit || (! $this->debt_id && $this->guessMeterUnit() !== null);
+    }
+
     /** overdue | soon | ok | inactive */
     public function status(): string
     {

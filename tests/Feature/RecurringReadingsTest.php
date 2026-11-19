@@ -73,4 +73,27 @@ class RecurringReadingsTest extends TestCase
         $this->assertSame(360.0, $payment->fresh()->consumption());
         PriceTrackServer::tool(GetFinances::class, [])->assertOk()->assertSee('kWh')->assertSee('1360');
     }
+
+    public function test_utilities_without_a_unit_ask_for_the_reading_and_keep_the_unit_from_the_first_one(): void
+    {
+        $light = RecurringPayment::create(['name' => 'Luz (CFE)', 'category' => 'Servicios', 'amount' => 600, 'every' => 2, 'every_unit' => 'month', 'next_due_on' => '2026-10-10']);
+        $netflix = RecurringPayment::create(['name' => 'Netflix', 'amount' => 219, 'every' => 1, 'every_unit' => 'month', 'next_due_on' => '2026-11-25']);
+        $this->assertSame('kWh', $light->guessMeterUnit());
+        $this->assertTrue($light->asksReading());
+        $this->assertFalse($netflix->asksReading());
+
+        // La lectura va junto al monto, con la unidad propuesta por el nombre
+        $this->get(route('recurring.index'))->assertOk()
+            ->assertSee('placeholder="Lectura"', false)->assertSee('name="meter_unit" value="kWh"', false);
+
+        // Una lectura sin unidad no se acepta; con ella, la unidad se queda en el pago
+        $this->post(route('recurring.pay', $light), ['reading' => 1200, 'meter_unit' => ''])->assertSessionHasErrors('meter_unit');
+        $this->post(route('recurring.pay', $light), ['amount' => 650, 'reading' => 1200, 'meter_unit' => 'kWh', 'paid_on' => '2026-10-11'])->assertSessionHasNoErrors();
+        $this->post(route('recurring.pay', $light), ['amount' => 700, 'reading' => 1450, 'paid_on' => '2026-11-12'])
+            ->assertSessionHas('success', fn ($m) => str_contains($m, '250 kWh') && str_contains($m, '$2.80/kWh'));
+        $this->assertSame('kWh', $light->fresh()->meter_unit);
+
+        // Pagar sin lectura sigue funcionando y no pide unidad
+        $this->post(route('recurring.pay', $netflix))->assertSessionHasNoErrors();
+    }
 }
