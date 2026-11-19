@@ -16,8 +16,8 @@ class Guide
         'general' => 'Esta guía y un resumen de todo lo de la casa.',
         'super' => 'Artículos, precios por tienda (también en línea), listas de compra y reportes de gasto.',
         'cocina' => 'Recetas, menú de la semana, despensa y mandar ingredientes a la lista.',
-        'hogar' => 'Tareas (con repetición) y bienes con su mantenimiento.',
-        'finanzas' => 'Pagos recurrentes (con lecturas de medidor), ingresos (dinero o en especie), inversiones, deudas y patrimonio.',
+        'hogar' => 'Tareas y sus listas; bienes (alta, valor, lecturas del medidor, servicios, planes de mantenimiento y venta o baja).',
+        'finanzas' => 'Pagos recurrentes (con lecturas de medidor), ingresos (dinero o en especie), cuentas de inversión, deudas y patrimonio; con corrección y borrado de cada registro.',
     ];
 
     /**

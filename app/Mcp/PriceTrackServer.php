@@ -5,12 +5,18 @@ namespace App\Mcp;
 use App\Mcp\Tools\AddIngredientsToList;
 use App\Mcp\Tools\AddListItem;
 use App\Mcp\Tools\CompleteTask;
+use App\Mcp\Tools\CorrectFinanceRecord;
 use App\Mcp\Tools\CreateProduct;
 use App\Mcp\Tools\CreateRecipe;
 use App\Mcp\Tools\CreateShoppingList;
 use App\Mcp\Tools\CreateTask;
+use App\Mcp\Tools\DeleteAssetRecord;
+use App\Mcp\Tools\DeleteFinanceRecord;
 use App\Mcp\Tools\DeleteTask;
+use App\Mcp\Tools\DeleteTaskList;
 use App\Mcp\Tools\FetchOnlinePrices;
+use App\Mcp\Tools\GetAsset;
+use App\Mcp\Tools\GetFinanceRecords;
 use App\Mcp\Tools\GetFinances;
 use App\Mcp\Tools\GetHelp;
 use App\Mcp\Tools\GetIncomes;
@@ -29,14 +35,20 @@ use App\Mcp\Tools\ListShoppingLists;
 use App\Mcp\Tools\ListTasks;
 use App\Mcp\Tools\MarkPaymentPaid;
 use App\Mcp\Tools\PlanMeal;
+use App\Mcp\Tools\RecordAsset;
 use App\Mcp\Tools\RecordDebt;
 use App\Mcp\Tools\RecordIncome;
 use App\Mcp\Tools\RecordInvestment;
 use App\Mcp\Tools\RecordPrice;
 use App\Mcp\Tools\RemoveListItem;
 use App\Mcp\Tools\RemoveMeal;
+use App\Mcp\Tools\SaveAsset;
+use App\Mcp\Tools\SaveDebt;
 use App\Mcp\Tools\SaveIncomeSource;
+use App\Mcp\Tools\SaveInvestmentAccount;
+use App\Mcp\Tools\SaveMaintenancePlan;
 use App\Mcp\Tools\SaveRecurringPayment;
+use App\Mcp\Tools\SaveTaskList;
 use App\Mcp\Tools\SearchProducts;
 use App\Mcp\Tools\SetMenuNote;
 use App\Mcp\Tools\SetStoreBranch;
@@ -58,7 +70,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 #[Name('PriceTrack')]
 #[Version('1.0.0')]
 #[Instructions(<<<'MARKDOWN'
-    PriceTrack es la app del hogar de quien te habla: comparador de precios del súper y listas de compras, recetas y menú semanal, tareas, bienes con su mantenimiento, y finanzas (ingresos, pagos recurrentes con lecturas de medidor, deudas, inversiones y patrimonio). Todo está en español de México, los montos en pesos (MXN) y las fechas en AAAA-MM-DD.
+    PriceTrack es la app del hogar de quien te habla: comparador de precios del súper y listas de compras, recetas y menú semanal, tareas, bienes con su mantenimiento, y finanzas (ingresos, pagos recurrentes con lecturas de medidor, deudas, inversiones y patrimonio). Casi todo se puede consultar, crear, corregir y borrar. Todo está en español de México, los montos en pesos (MXN) y las fechas en AAAA-MM-DD.
 
     - `get-help` explica qué puedes hacer en cada sección y con qué herramienta (y cómo se conecta este servidor). Empieza por `get-summary` si no sabes qué hay; las demás herramientas trabajan con los `id` que devuelven las de consulta.
     - Artículos: cada uno tiene una presentación habitual (size + unit). "El más barato" es el menor precio **por unidad** ($/L, $/kg, $/pza) entre el último precio de cada tienda; `latest_prices` ya viene en ese orden.
@@ -71,7 +83,9 @@ use Laravel\Mcp\Server\Attributes\Version;
 class PriceTrackServer extends Server
 {
     /** Todas las herramientas caben en una sola página de tools/list. */
-    public int $defaultPaginationLength = 50;
+    public int $defaultPaginationLength = 100;
+
+    public int $maxPaginationLength = 100;
 
     /**
      * Herramientas por sección (de aquí sale la guía de get-help y de la pantalla "Asistente (MCP)").
@@ -120,7 +134,14 @@ class PriceTrackServer extends Server
             UpdateTask::class,
             CompleteTask::class,
             DeleteTask::class,
+            SaveTaskList::class,
+            DeleteTaskList::class,
             ListAssets::class,
+            GetAsset::class,
+            SaveAsset::class,
+            RecordAsset::class,
+            SaveMaintenancePlan::class,
+            DeleteAssetRecord::class,
         ]],
         'finanzas' => ['Finanzas', [
             GetFinances::class,
@@ -130,8 +151,13 @@ class PriceTrackServer extends Server
             GetIncomes::class,
             RecordIncome::class,
             SaveIncomeSource::class,
+            SaveInvestmentAccount::class,
             RecordInvestment::class,
+            SaveDebt::class,
             RecordDebt::class,
+            GetFinanceRecords::class,
+            CorrectFinanceRecord::class,
+            DeleteFinanceRecord::class,
         ]],
     ];
 

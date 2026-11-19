@@ -5,10 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\InvestmentAccount;
 use App\Models\InvestmentTransaction;
 use App\Services\FinanceReport;
+use App\Support\InvestmentAccountData;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class InvestmentController extends Controller
 {
@@ -81,22 +80,6 @@ class InvestmentController extends Controller
 
     private function validated(Request $request, ?InvestmentAccount $account = null): array
     {
-        $request->merge(['currency' => strtoupper(trim((string) $request->input('currency', 'MXN'))) ?: 'MXN']);
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'institution' => ['nullable', 'string', 'max:80'],
-            'type' => ['required', Rule::in(array_keys(InvestmentAccount::TYPES))],
-            'currency' => ['required', 'string', 'size:3', 'alpha'],
-            'notes' => ['nullable', 'string', 'max:255'],
-            'closed_on' => ['nullable', 'date', 'before_or_equal:today'],
-        ], [], ['institution' => 'institución', 'type' => 'tipo', 'currency' => 'moneda', 'closed_on' => 'fecha de cierre']);
-
-        // Cambiar la moneda con registros dejaría los tipos de cambio sin sentido
-        if ($account && $account->currency !== $data['currency']
-            && ($account->transactions()->exists() || $account->valuations()->exists())) {
-            throw ValidationException::withMessages(['currency' => 'La cuenta ya tiene registros en '.$account->currency.'; crea otra cuenta para otra moneda.']);
-        }
-
-        return $data;
+        return InvestmentAccountData::validate($request->all(), $account);
     }
 }

@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Debt;
 use App\Models\DebtBalance;
 use App\Models\Payment;
+use App\Support\DebtData;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class DebtController extends Controller
 {
@@ -112,18 +112,6 @@ class DebtController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'lender' => ['nullable', 'string', 'max:80'],
-            'type' => ['required', Rule::in(array_keys(Debt::TYPES))],
-            'original_amount' => ['required', 'numeric', 'gt:0', 'max:99999999999999'],
-            'annual_rate' => ['nullable', 'numeric', 'min:0', 'max:500'],
-            'started_on' => ['nullable', 'date', 'before_or_equal:today'],
-            'paid_off_on' => ['nullable', 'date', 'before_or_equal:today'],
-            'notes' => ['nullable', 'string', 'max:255'],
-        ], [], [
-            'lender' => 'acreedor', 'type' => 'tipo', 'original_amount' => 'monto original',
-            'annual_rate' => 'tasa anual', 'started_on' => 'fecha de inicio', 'paid_off_on' => 'fecha en que se liquidó',
-        ]);
+        return DebtData::validate($request->all());
     }
 }
