@@ -292,6 +292,24 @@ class Recipe extends Model
      *
      * @return array{ready: bool, missing: list<string>, unchecked: int}
      */
+    /**
+     * pantryCheck() de cada receta (null si no tiene ingredientes). Necesita withTree().
+     *
+     * @return Collection<int, ?array{ready: bool, missing: list<string>, unchecked: int}>
+     */
+    public static function pantryChecks(Collection $recipes): Collection
+    {
+        return $recipes->mapWithKeys(fn (Recipe $r) => [$r->id => $r->ingredients->isEmpty() ? null : $r->pantryCheck()]);
+    }
+
+    /** Las que se pueden hacer con la despensa (`ready`) o a las que les faltan 1 o 2 cosas (`almost`). */
+    public static function filterByPantry(Collection $recipes, Collection $checks, string $mode): Collection
+    {
+        return $recipes->filter(fn (Recipe $r) => ($check = $checks[$r->id]) && ($mode === 'ready'
+            ? $check['ready']
+            : ! $check['ready'] && count($check['missing']) <= 2))->values();
+    }
+
     public function pantryCheck(?float $servings = null): array
     {
         $needs = [];

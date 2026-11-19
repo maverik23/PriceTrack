@@ -73,7 +73,7 @@ class McpServerTest extends TestCase
 
         $tools = $this->rpc('tools/list')->assertOk()->assertJsonMissingPath('result.nextCursor')->json('result.tools');
 
-        $this->assertCount(56, $tools);
+        $this->assertCount(61, $tools);
         $this->assertContains('search-products', array_column($tools, 'name'));
         $this->assertTrue(collect($tools)->firstWhere('name', 'get-summary')['annotations']['readOnlyHint']);
     }

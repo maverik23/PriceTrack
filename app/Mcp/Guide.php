@@ -14,8 +14,8 @@ class Guide
     /** Qué se puede hacer en cada sección, en palabras. */
     public const SUMMARIES = [
         'general' => 'Esta guía y un resumen de todo lo de la casa.',
-        'super' => 'Artículos, precios por tienda (también en línea), listas de compra y reportes de gasto.',
-        'cocina' => 'Recetas, menú de la semana, despensa y mandar ingredientes a la lista.',
+        'super' => 'Artículos (alta, corrección y su versión y dirección en cada tienda), tiendas y su sucursal, precios (también en línea), listas de compra con su ticket, reportes de gasto, y borrar precios, listas, artículos o recetas.',
+        'cocina' => 'Recetas (y cuáles se pueden hacer con la despensa), menú de la semana, despensa con su valor (y mandar lo que se acabó a la lista) y mandar ingredientes a la lista.',
         'hogar' => 'Tareas y sus listas; bienes (alta, valor, lecturas del medidor, servicios, planes de mantenimiento y venta o baja).',
         'finanzas' => 'Pagos recurrentes (con lecturas de medidor), ingresos (dinero o en especie), cuentas de inversión, deudas y patrimonio; con corrección y borrado de cada registro.',
     ];

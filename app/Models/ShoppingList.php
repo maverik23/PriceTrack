@@ -97,6 +97,27 @@ class ShoppingList extends Model
         return $this->completed_at !== null;
     }
 
+    /**
+     * Agrega un artículo (una presentación) si no está ya pendiente en la lista.
+     *
+     * @return bool true si se agregó; false si ya estaba sin comprar
+     */
+    public function addProductOnce(Product $product, float $quantity = 1): bool
+    {
+        if ($this->items()->where('product_id', $product->id)->whereNull('price_id')->exists()) {
+            return false;
+        }
+        $this->items()->create(['product_id' => $product->id, 'quantity' => $quantity]);
+
+        return true;
+    }
+
+    /** Lista nueva para lo que se acabó en la despensa. */
+    public static function forPantry(): self
+    {
+        return self::create(['name' => 'Despensa '.today()->translatedFormat('d M Y'), 'shopped_on' => today()]);
+    }
+
     public function markDone(bool $done = true): void
     {
         $this->update(['completed_at' => $done ? ($this->completed_at ?? now()) : null]);

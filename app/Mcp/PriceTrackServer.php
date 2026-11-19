@@ -12,6 +12,7 @@ use App\Mcp\Tools\CreateShoppingList;
 use App\Mcp\Tools\CreateTask;
 use App\Mcp\Tools\DeleteAssetRecord;
 use App\Mcp\Tools\DeleteFinanceRecord;
+use App\Mcp\Tools\DeleteRecord;
 use App\Mcp\Tools\DeleteTask;
 use App\Mcp\Tools\DeleteTaskList;
 use App\Mcp\Tools\FetchOnlinePrices;
@@ -47,6 +48,8 @@ use App\Mcp\Tools\SaveDebt;
 use App\Mcp\Tools\SaveIncomeSource;
 use App\Mcp\Tools\SaveInvestmentAccount;
 use App\Mcp\Tools\SaveMaintenancePlan;
+use App\Mcp\Tools\SaveProductLink;
+use App\Mcp\Tools\SaveProvider;
 use App\Mcp\Tools\SaveRecurringPayment;
 use App\Mcp\Tools\SaveTaskList;
 use App\Mcp\Tools\SearchProducts;
@@ -55,7 +58,9 @@ use App\Mcp\Tools\SetStoreBranch;
 use App\Mcp\Tools\UpdateListItem;
 use App\Mcp\Tools\UpdatePantry;
 use App\Mcp\Tools\UpdatePayment;
+use App\Mcp\Tools\UpdateProduct;
 use App\Mcp\Tools\UpdateRecipe;
+use App\Mcp\Tools\UpdateShoppingList;
 use App\Mcp\Tools\UpdateTask;
 use App\Mcp\Tools\UseRecipeAsIngredient;
 use Laravel\Mcp\Server;
@@ -101,18 +106,23 @@ class PriceTrackServer extends Server
             SearchProducts::class,
             GetProduct::class,
             CreateProduct::class,
+            UpdateProduct::class,
+            SaveProductLink::class,
             ListProviders::class,
+            SaveProvider::class,
             RecordPrice::class,
             FetchOnlinePrices::class,
             SetStoreBranch::class,
             ListShoppingLists::class,
             GetShoppingList::class,
             CreateShoppingList::class,
+            UpdateShoppingList::class,
             AddListItem::class,
             UpdateListItem::class,
             RemoveListItem::class,
             GetSpendingReport::class,
             GetPriceReport::class,
+            DeleteRecord::class,
         ]],
         'cocina' => ['Cocina', [
             ListRecipes::class,

@@ -67,14 +67,8 @@ class PantryController extends Controller
     {
         $data = $request->validate(['list_id' => ['nullable', 'integer', 'exists:shopping_lists,id']], [], ['list_id' => 'lista']);
 
-        $list = isset($data['list_id'])
-            ? ShoppingList::findOrFail($data['list_id'])
-            : ShoppingList::create(['name' => 'Despensa '.today()->translatedFormat('d M Y'), 'shopped_on' => today()]);
-
-        $already = $list->items()->where('product_id', $product->id)->whereNull('price_id')->exists();
-        if (! $already) {
-            $list->items()->create(['product_id' => $product->id, 'quantity' => 1]);
-        }
+        $list = isset($data['list_id']) ? ShoppingList::findOrFail($data['list_id']) : ShoppingList::forPantry();
+        $already = ! $list->addProductOnce($product);
         $message = $already ? "«{$product->name}» ya estaba en «{$list->name}»." : "«{$product->name}» se agregó a «{$list->name}».";
 
         if ($request->expectsJson()) {
@@ -96,7 +90,7 @@ class PantryController extends Controller
     }
 
     /** Lista pendiente donde ya está cada artículo sin comprar: product_id => nombre de la lista. */
-    private static function pendingItems(?int $productId = null): array
+    public static function pendingItems(?int $productId = null): array
     {
         return ShoppingListItem::query()
             ->join('shopping_lists', 'shopping_lists.id', '=', 'shopping_list_items.shopping_list_id')

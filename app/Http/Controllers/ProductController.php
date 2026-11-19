@@ -16,9 +16,8 @@ use App\Services\SubrecipeConverter;
 use App\Support\AttachmentForm;
 use App\Support\Barcode;
 use App\Support\ListGrid;
+use App\Support\ProductData;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Validator;
 use RuntimeException;
 
 class ProductController extends Controller
@@ -235,45 +234,6 @@ class ProductController extends Controller
 
     private function validated(Request $request, ?Product $product = null): array
     {
-        $request->merge(['barcode' => Barcode::normalize($request->input('barcode'))]);
-
-        $validator = validator($request->all(), [
-            'name' => ['required', 'string', 'max:150'],
-            'brand' => ['nullable', 'string', 'max:100'],
-            'barcode' => ['nullable', Barcode::RULE, Rule::unique('products', 'barcode')->ignore($product)],
-            'category' => ['nullable', 'string', 'max:60'],
-            'size' => ['required', 'numeric', 'gt:0', 'max:9999999'],
-            'unit' => ['required', Rule::enum(Unit::class)],
-            'notes' => ['nullable', 'string', 'max:255'],
-            'piece_weight' => ['nullable', 'numeric', 'gt:0', 'max:99999999'],
-            'cup_grams' => ['nullable', 'numeric', 'gt:0', 'max:99999'],
-            'kcal' => ['nullable', 'numeric', 'min:0', 'max:9999'],
-            'protein' => ['nullable', 'numeric', 'min:0', 'max:9999'],
-            'carbs' => ['nullable', 'numeric', 'min:0', 'max:9999'],
-            'fat' => ['nullable', 'numeric', 'min:0', 'max:9999'],
-        ], [], [
-            'piece_weight' => 'peso de una pieza', 'cup_grams' => 'peso de una taza',
-            'protein' => 'proteína', 'carbs' => 'carbohidratos', 'fat' => 'grasa',
-        ]);
-
-        // No permitir cambiar de dimensión (ej. ml → kg) si ya hay precios registrados
-        $validator->after(function (Validator $v) use ($request, $product) {
-            if (! $product || $v->errors()->isNotEmpty()) {
-                return;
-            }
-            $newUnit = Unit::from($request->input('unit'));
-            $incompatible = $product->prices()->get()->contains(fn ($p) => ! $p->unit->isCompatibleWith($newUnit));
-            if ($incompatible) {
-                $v->errors()->add('unit', 'Ya hay precios registrados en otra dimensión (volumen/peso/piezas). Usa una unidad compatible.');
-            }
-        });
-
-        $data = $validator->validate();
-
-        // Reusar la marca/categoría existente aunque se escriba distinto ("lacteos" → "Lácteos")
-        $data['brand'] = Product::canonicalValue('brand', $data['brand'] ?? null);
-        $data['category'] = Product::canonicalValue('category', $data['category'] ?? null);
-
-        return $data;
+        return ProductData::validate($request->all(), $product);
     }
 }

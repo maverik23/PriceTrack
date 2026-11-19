@@ -28,12 +28,10 @@ class RecipeController extends Controller
             ->get();
 
         // Qué se puede hacer con lo de la despensa (?pantry=1: solo esas; ?pantry=almost: falta 1 o 2 cosas)
-        $checks = $recipes->mapWithKeys(fn (Recipe $r) => [$r->id => $r->ingredients->isEmpty() ? null : $r->pantryCheck()]);
+        $checks = Recipe::pantryChecks($recipes);
         $pantry = in_array($request->query('pantry'), ['1', 'almost'], true) ? $request->query('pantry') : null;
         if ($pantry) {
-            $recipes = $recipes->filter(fn (Recipe $r) => ($check = $checks[$r->id]) && ($pantry === '1'
-                ? $check['ready']
-                : ! $check['ready'] && count($check['missing']) <= 2))->values();
+            $recipes = Recipe::filterByPantry($recipes, $checks, $pantry === '1' ? 'ready' : 'almost');
         }
 
         return view('recipes.index', [

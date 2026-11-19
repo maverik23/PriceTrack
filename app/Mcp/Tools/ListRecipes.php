@@ -12,7 +12,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Recetas guardadas, con porciones, rendimiento, tiempo, calificación (1 a 5), etiquetas y costo estimado (total y por porción, con el precio más barato de cada ingrediente; las sub-recetas se suman). Se puede filtrar por texto, categoría, etiqueta o calificación mínima.')]
+#[Description('Recetas guardadas, con porciones, rendimiento, tiempo, calificación (1 a 5), etiquetas y costo estimado (total y por porción, con el precio más barato de cada ingrediente; las sub-recetas se suman). Se puede filtrar por texto, categoría, etiqueta, calificación mínima o por lo que hay en la despensa (`pantry`: `ready` = se puede hacer con lo que hay, `almost` = le faltan 1 o 2 cosas; cada receta trae `pantry_check` con lo que falta). Lo escrito sin artículo (sal, agua) no se revisa (`unchecked`).')]
 #[IsReadOnly]
 class ListRecipes extends Tool
 {
@@ -23,6 +23,7 @@ class ListRecipes extends Tool
             'category' => ['nullable', 'string', 'max:60'],
             'tag' => ['nullable', 'string', 'max:60'],
             'min_rating' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'pantry' => ['nullable', 'in:ready,almost'],
         ]);
 
         $recipes = Recipe::withTree()->with('tags')
@@ -31,9 +32,13 @@ class ListRecipes extends Tool
             ->when(filled($data['tag'] ?? null), fn ($q) => $q->whereHas('tags', fn ($t) => $t->where('name', trim($data['tag']))))
             ->when(filled($data['min_rating'] ?? null), fn ($q) => $q->where('rating', '>=', $data['min_rating']))
             ->orderBy('name')->get();
+        $checks = Recipe::pantryChecks($recipes);
+        if (filled($data['pantry'] ?? null)) {
+            $recipes = Recipe::filterByPantry($recipes, $checks, $data['pantry']);
+        }
 
         return $this->json([
-            'recipes' => $recipes->map(fn (Recipe $r) => Present::recipe($r))->all(),
+            'recipes' => $recipes->map(fn (Recipe $r) => Present::recipe($r) + ['pantry_check' => $checks[$r->id]])->all(),
             'categories' => Recipe::categories()->all(),
             'tags' => Tag::names()->all(),
         ]);
@@ -46,6 +51,7 @@ class ListRecipes extends Tool
             'category' => $schema->string()->description('Solo recetas de esta categoría.'),
             'tag' => $schema->string()->description('Solo recetas con esta etiqueta.'),
             'min_rating' => $schema->integer()->description('Solo recetas calificadas con al menos esto (1 a 5).'),
+            'pantry' => $schema->string()->enum(['ready', 'almost'])->description('ready = se pueden hacer con la despensa; almost = les faltan 1 o 2 cosas.'),
         ];
     }
 }
