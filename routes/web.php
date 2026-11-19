@@ -25,6 +25,7 @@ use App\Http\Controllers\ShoppingListController;
 use App\Http\Controllers\ShoppingListItemController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskListController;
+use App\Mcp\Guide;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', DashboardController::class)->name('dashboard');
@@ -118,6 +119,13 @@ Route::scopeBindings()->prefix('debts/{debt}')->name('debts.')->controller(DebtC
     Route::post('payments', 'storePayment')->name('payments.store');
     Route::delete('payments/{payment}', 'destroyPayment')->name('payments.destroy');
 });
+// Cómo usar PriceTrack desde un asistente de IA (MCP): conexión y herramientas
+Route::get('assistant', fn () => view('assistant', [
+    'sections' => Guide::sections(),
+    'counts' => Guide::counts(),
+    'enabled' => (bool) config('services.mcp.enabled'),
+    'hasToken' => filled(config('services.mcp.token')),
+]))->name('assistant');
 Route::get('incomes', [IncomeController::class, 'index'])->name('incomes.index');
 Route::post('incomes', [IncomeController::class, 'store'])->name('incomes.store');
 Route::delete('incomes/{income}', [IncomeController::class, 'destroy'])->name('incomes.destroy');

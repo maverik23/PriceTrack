@@ -78,7 +78,9 @@
         @endforeach
     </nav>
     <div class="flex items-center justify-between gap-2 border-t border-slate-200/80 px-4 py-3">
-        <span class="text-xs text-slate-400">Tu casa, en orden</span>
+        <a href="{{ route('assistant') }}" class="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800" title="Usar PriceTrack desde un asistente de IA (MCP)">
+            <x-icon name="bot" class="size-4" /> Asistente (MCP)
+        </a>
         <x-theme-toggle />
     </div>
 </aside>

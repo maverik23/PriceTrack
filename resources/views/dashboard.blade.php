@@ -263,4 +263,8 @@
         </table>
     </div>
 </div>
+{{-- En celular la barra lateral no se ve: el acceso a la guía del asistente --}}
+<p class="mt-8 text-center text-xs text-slate-500 lg:hidden">
+    <a class="link inline-flex items-center gap-1" href="{{ route('assistant') }}"><x-icon name="bot" class="size-4" /> Asistente de IA (MCP)</a>
+</p>
 @endsection
