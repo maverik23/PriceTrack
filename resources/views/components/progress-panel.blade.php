@@ -3,9 +3,11 @@
     cuántos salieron bien y cuántos fallaron, botón para cancelar y, al final, el resumen con
     cada fallo y su motivo. Se liga a un objeto de createRun() (resources/js/online-prices.js)
     que vive en el x-data de la pantalla: <x-progress-panel run="run" />.
+    Dentro de una tarjeta va con `flat` (una franja, no otra tarjeta). Lo que se ponga dentro
+    de la etiqueta sale junto a «Cerrar» al terminar.
 --}}
-@props(['run' => 'run'])
-<div x-show="{{ $run }}.active || {{ $run }}.finished" x-cloak {{ $attributes->merge(['class' => 'card space-y-3']) }} role="status" aria-live="polite">
+@props(['run' => 'run', 'flat' => false])
+<div x-show="{{ $run }}.active || {{ $run }}.finished" x-cloak {{ $attributes->merge(['class' => ($flat ? 'rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200' : 'card').' space-y-3']) }} role="status" aria-live="polite">
     <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="min-w-0">
             <div class="font-semibold text-slate-900" x-text="{{ $run }}.title"></div>
@@ -16,7 +18,10 @@
         </div>
         <button type="button" x-show="{{ $run }}.active" class="btn btn-secondary btn-sm" @click="{{ $run }}.cancel()" :disabled="{{ $run }}.cancelled"
                 x-text="{{ $run }}.cancelled ? 'Cancelando…' : 'Cancelar'"></button>
-        <button type="button" x-show="!{{ $run }}.active" class="btn btn-ghost btn-sm" @click="{{ $run }}.dismiss()">Cerrar</button>
+        <div x-show="!{{ $run }}.active" class="flex flex-wrap items-center gap-2">
+            {{ $slot }}
+            <button type="button" class="btn btn-ghost btn-sm" @click="{{ $run }}.dismiss()">Cerrar</button>
+        </div>
     </div>
     <div class="h-2 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-label="Avance" :aria-valuenow="{{ $run }}.percent" aria-valuemin="0" aria-valuemax="100">
         <div class="h-full rounded-full transition-all duration-300" :class="{{ $run }}.failures.length ? 'bg-amber-500' : 'bg-brand'" :style="{ width: {{ $run }}.percent + '%' }"></div>

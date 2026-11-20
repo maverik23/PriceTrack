@@ -85,7 +85,15 @@
 </div>
 
 {{-- El artículo en cada tienda: su marca y código ahí, y la página para consultar el precio de hoy --}}
-<div class="card mb-6">
+@php
+    $fetchable = $links->whereNotNull('url')->map(fn ($link) => [
+        'url' => $link->url,
+        'provider' => $providers->firstWhere('id', $link->provider_id)?->name,
+        'provider_id' => $link->provider_id,
+        'fetch' => route('product-links.fetch', $link),
+    ])->values();
+@endphp
+<div class="card mb-6" x-data="productPrices({{ Js::from(['product' => $product->name, 'links' => $fetchable]) }})">
     <div class="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>
             <h2 class="card-title">En cada tienda</h2>
@@ -95,15 +103,7 @@
                 Código postal: <a class="link" href="{{ route('providers.index') }}">{{ $postalCode ?: 'sin definir' }}</a>.
             </p>
         </div>
-        @php
-            $fetchable = $links->whereNotNull('url')->map(fn ($link) => [
-                'url' => $link->url,
-                'provider' => $providers->firstWhere('id', $link->provider_id)?->name,
-                'provider_id' => $link->provider_id,
-                'fetch' => route('product-links.fetch', $link),
-            ])->values();
-        @endphp
-        <form method="POST" action="{{ route('products.prices.fetch', $product) }}" x-data="productPrices({{ Js::from(['product' => $product->name, 'links' => $fetchable]) }})"
+        <form method="POST" action="{{ route('products.prices.fetch', $product) }}"
               @submit.prevent="fetchAll()" class="w-full sm:w-auto">
             @csrf
             <button class="btn btn-primary btn-sm" @disabled($fetchable->isEmpty()) :disabled="run.active || {{ $fetchable->isEmpty() ? 'true' : 'false' }}"
@@ -111,10 +111,11 @@
                 <x-icon name="refresh-cw" class="size-3.5" ::class="run.active && 'animate-spin'" />
                 <span x-text="run.active ? 'Consultando…' : 'Obtener precios'">Obtener precios</span>
             </button>
-            <x-progress-panel run="run" class="mt-3 sm:w-[28rem]" />
-            <div x-show="run.finished && run.ok" x-cloak class="mt-2 text-right"><button type="button" class="btn btn-secondary btn-sm" @click="reload()">Ver los precios nuevos</button></div>
         </form>
     </div>
+    <x-progress-panel run="run" flat class="mb-4">
+        <button type="button" x-show="run.ok" class="btn btn-secondary btn-sm" @click="reload()">Ver los precios nuevos</button>
+    </x-progress-panel>
     <form method="POST" action="{{ route('products.links.update', $product) }}" class="space-y-3">
         @csrf @method('PUT')
         <datalist id="store-brands">
