@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Asset;
 use App\Models\Income;
 use App\Models\IncomeSource;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductLink;
 use App\Models\Recipe;
@@ -29,7 +30,7 @@ class Categories
         'product_brand' => ['Marca', [[Product::class, 'brand'], [ProductLink::class, 'brand']]],
         'recipe_category' => ['Categoría de receta', [[Recipe::class, 'category']]],
         'asset_category' => ['Categoría de bien', [[Asset::class, 'category']]],
-        'payment_category' => ['Categoría de pago recurrente', [[RecurringPayment::class, 'category']]],
+        'payment_category' => ['Categoría de pago', [[RecurringPayment::class, 'category'], [Payment::class, 'category']]],
         'income_category' => ['Categoría de ingreso', [[Income::class, 'category'], [IncomeSource::class, 'category']]],
     ];
 

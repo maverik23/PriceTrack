@@ -3,28 +3,33 @@
 namespace App\Http\Controllers\Api;
 
 use App\Api\Present;
+use App\Http\Controllers\IncomeController as WebIncome;
 use App\Models\Income;
 use App\Models\IncomeSource;
+use App\Models\Payment;
 use App\Services\IncomeReport;
 use App\Support\IncomeData;
-use Carbon\CarbonImmutable;
+use App\Support\PaymentData;
 use Illuminate\Http\Request;
 
-/** Ingresos para la app móvil: recurrentes, eventuales y el balance del mes (IncomeData, IncomeReport). */
+/**
+ * Ingresos y pagos para la app móvil: ingresos recurrentes y eventuales, lo pagado en el mes
+ * (recurrentes, únicos y abonos), pagos únicos y el balance (IncomeData, PaymentData, IncomeReport).
+ * Los pagos recurrentes están en RecurringPaymentController.
+ */
 class IncomeController extends Controller
 {
     /**
      * El mes (`month=AAAA-MM`; el actual por defecto): lo recibido (dinero y en especie, por
      * categoría), lo gastado (súper y pagos), el balance, la serie de 12 meses, el promedio, lo
-     * esperado al mes y los ingresos recurrentes.
+     * esperado al mes, los ingresos recurrentes y lo pagado en el mes (`paid`).
      */
     public function index(Request $request, IncomeReport $report)
     {
-        $month = preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month'))
-            ? CarbonImmutable::createFromFormat('!Y-m', $request->query('month'))
-            : CarbonImmutable::today()->startOfMonth();
+        $month = WebIncome::month($request);
         $r = $report->month($month);
         $series = $report->series($month);
+        $paymentSeries = $report->paymentSeries($month);
         $sources = IncomeSource::orderByDesc('active')->orderBy('next_on')->get();
 
         return response()->json(['data' => [
@@ -46,6 +51,17 @@ class IncomeController extends Controller
             'sources' => $sources->where('active', true)->map(fn (IncomeSource $s) => Present::incomeSource($s))->values(),
             'inactive' => $sources->where('active', false)->map(fn (IncomeSource $s) => Present::incomeSource($s))->values(),
             'categories' => Income::categories(),
+            'paid' => [
+                'total' => round($r['payments'], 2),
+                'recurring' => round($r['paymentsRecurring'], 2),
+                'one_time' => round($r['paymentsOneTime'], 2),
+                'debt' => round($r['paymentsDebt'], 2),
+                'by_category' => $r['paymentsByCategory']->map(fn ($v) => round($v, 2)),
+                'payments' => $r['paid']->map(fn (Payment $p) => Present::payment($p))->values(),
+                'series' => $paymentSeries->map(fn ($m) => ['month' => $m->key, 'label' => $m->label, 'recurring' => $m->recurring, 'one_time' => $m->one_time, 'total' => $m->total])->values(),
+                'expected_monthly' => $report->expectedPayments(),
+                'categories' => Payment::categories(),
+            ],
             'kinds' => Income::KINDS,
             'units' => self::units(IncomeSource::scheduleUnits(true)),
         ]]);
@@ -57,6 +73,14 @@ class IncomeController extends Controller
         $income = Income::create(IncomeData::validate($request->all()));
 
         return response()->json(['data' => Present::income($income), 'message' => "Ingreso «{$income->name}» de ".money($income->amount).' registrado.'], 201);
+    }
+
+    /** Un pago único: `name`, `amount`, `paid_on` (hasta hoy), `category?`, `notes?`. */
+    public function storePayment(Request $request)
+    {
+        $payment = PaymentData::create($request->all());
+
+        return response()->json(['data' => Present::payment($payment), 'message' => "Pago «{$payment->name}» de ".money($payment->amount).' registrado.'], 201);
     }
 
     /** Deshace un ingreso (si vino de una recurrente, su fecha regresa). */

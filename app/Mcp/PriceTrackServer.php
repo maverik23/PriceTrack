@@ -40,6 +40,7 @@ use App\Mcp\Tools\RecordAsset;
 use App\Mcp\Tools\RecordDebt;
 use App\Mcp\Tools\RecordIncome;
 use App\Mcp\Tools\RecordInvestment;
+use App\Mcp\Tools\RecordPayment;
 use App\Mcp\Tools\RecordPrice;
 use App\Mcp\Tools\RemoveListItem;
 use App\Mcp\Tools\RemoveMeal;
@@ -76,7 +77,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 #[Name('PriceTrack')]
 #[Version('1.0.0')]
 #[Instructions(<<<'MARKDOWN'
-    PriceTrack es la app del hogar de quien te habla: comparador de precios del súper y listas de compras, recetas y menú semanal, tareas, bienes con su mantenimiento, y finanzas (ingresos, pagos recurrentes con lecturas de medidor, deudas, inversiones y patrimonio). Casi todo se puede consultar, crear, corregir y borrar. Todo está en español de México, los montos en pesos (MXN) y las fechas en AAAA-MM-DD.
+    PriceTrack es la app del hogar de quien te habla: comparador de precios del súper y listas de compras, recetas y menú semanal, tareas, bienes con su mantenimiento, y finanzas (ingresos y pagos, recurrentes o únicos; lecturas de medidor en los recibos; deudas, inversiones y patrimonio). Casi todo se puede consultar, crear, corregir y borrar. Todo está en español de México, los montos en pesos (MXN) y las fechas en AAAA-MM-DD.
 
     - `get-help` explica qué puedes hacer en cada sección y con qué herramienta (y cómo se conecta este servidor). Empieza por `get-summary` si no sabes qué hay; las demás herramientas trabajan con los `id` que devuelven las de consulta.
     - Artículos: cada uno tiene una presentación habitual (size + unit). "El más barato" es el menor precio **por unidad** ($/L, $/kg, $/pza) entre el último precio de cada tienda; `latest_prices` ya viene en ese orden.
@@ -158,6 +159,7 @@ class PriceTrackServer extends Server
         'finanzas' => ['Finanzas', [
             GetFinances::class,
             MarkPaymentPaid::class,
+            RecordPayment::class,
             UpdatePayment::class,
             SaveRecurringPayment::class,
             GetIncomes::class,

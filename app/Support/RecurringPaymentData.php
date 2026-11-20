@@ -74,15 +74,24 @@ class RecurringPaymentData
         );
     }
 
-    /** Corrige un pago ya registrado (fecha, monto, lectura, notas). */
+    /**
+     * Corrige un pago ya registrado (fecha, monto, lectura, notas y, si se manda, concepto y
+     * categoría; en un pago único el concepto no puede quedar vacío).
+     */
     public static function correct(Payment $payment, array $input): Payment
     {
-        $payment->update(Validator::validate($input, [
+        $data = Validator::validate($input, [
             'paid_on' => ['required', 'date', 'before_or_equal:today'],
             'amount' => ['required', 'numeric', 'gt:0', 'max:99999999999'],
             'reading' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
             'notes' => ['nullable', 'string', 'max:255'],
-        ], [], ['paid_on' => 'fecha', 'amount' => 'monto', 'reading' => 'lectura']));
+            'name' => ['sometimes', $payment->isOneTime() ? 'required' : 'nullable', 'string', 'max:120'],
+            'category' => ['sometimes', 'nullable', 'string', 'max:60'],
+        ], [], ['paid_on' => 'fecha', 'amount' => 'monto', 'reading' => 'lectura', 'name' => 'concepto', 'category' => 'categoría']);
+        if (array_key_exists('category', $data)) {
+            $data['category'] = Payment::canonicalCategory($data['category']);
+        }
+        $payment->update($data);
 
         return $payment;
     }
@@ -90,6 +99,6 @@ class RecurringPaymentData
     /** El pago como entrada de correct(). @return array<string, mixed> */
     public static function paymentInput(Payment $payment): array
     {
-        return $payment->only(['amount', 'reading', 'notes']) + ['paid_on' => $payment->paid_on->toDateString()];
+        return $payment->only(['amount', 'reading', 'notes', 'name', 'category']) + ['paid_on' => $payment->paid_on->toDateString()];
     }
 }

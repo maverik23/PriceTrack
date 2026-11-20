@@ -54,22 +54,15 @@ class RecurringPayment extends Model
         $query->where('active', true);
     }
 
-    /** @return Collection<int, string> */
+    /** Las mismas categorías que los pagos únicos (Payment::categories()). @return Collection<int, string> */
     public static function categories(): Collection
     {
-        return static::query()->whereNotNull('category')->where('category', '!=', '')
-            ->distinct()->orderBy('category')->pluck('category')->values();
+        return Payment::categories();
     }
 
     public static function canonicalCategory(?string $value): ?string
     {
-        $value = trim(preg_replace('/\s+/u', ' ', (string) $value));
-        if ($value === '') {
-            return null;
-        }
-        $key = static fn (string $v) => Str::lower(Str::ascii($v));
-
-        return static::categories()->first(fn ($c) => $key($c) === $key($value)) ?? $value;
+        return Payment::canonicalCategory($value);
     }
 
     /** Unidad de la lectura que suele traer el recibo, por el nombre (luz → kWh, agua o gas → m³). */
@@ -116,6 +109,8 @@ class RecurringPayment extends Model
         return DB::transaction(function () use ($paidOn, $amount, $notes, $reading) {
             $payment = $this->payments()->create([
                 'debt_id' => $this->debt_id,
+                'name' => $this->name,
+                'category' => $this->category,
                 'paid_on' => ($paidOn ?? today())->toDateString(),
                 'amount' => $amount ?? $this->amount,
                 'reading' => $reading,

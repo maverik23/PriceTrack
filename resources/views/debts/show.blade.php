@@ -37,7 +37,7 @@
             @forelse ($debt->recurringPayments as $recurring)
                 <a class="link" href="{{ route('recurring.edit', $recurring) }}">{{ $recurring->name }}</a>@if (! $loop->last), @endif
             @empty
-                <a class="link" href="{{ route('recurring.index') }}">Agrega su mensualidad</a>
+                <a class="link" href="{{ route('incomes.index', ['tab' => 'payments']) }}">Agrega su mensualidad</a>
             @endforelse
         </div>
     </div>

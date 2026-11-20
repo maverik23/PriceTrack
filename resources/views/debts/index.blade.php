@@ -8,7 +8,7 @@
         <p class="text-sm text-slate-500">Lo que debes, cuánto pagas al mes y cuánto te falta. Se resta en tu patrimonio.</p>
     </div>
     <div class="flex gap-2">
-        <a href="{{ route('recurring.index') }}" class="btn btn-secondary">Pagos recurrentes</a>
+        <a href="{{ route('incomes.index', ['tab' => 'payments']) }}" class="btn btn-secondary">Ingresos y pagos</a>
         <a href="{{ route('debts.create') }}" class="btn btn-primary">+ Nueva deuda</a>
     </div>
 </div>
@@ -21,7 +21,7 @@
     <div class="card">
         <div class="stat-label">Pagas al mes</div>
         <div class="stat-value">{{ money($monthly) }}</div>
-        <div class="mt-1 text-xs text-slate-500">mensualidades ligadas a tus deudas en <a class="link" href="{{ route('recurring.index') }}">Pagos recurrentes</a></div>
+        <div class="mt-1 text-xs text-slate-500">mensualidades ligadas a tus deudas en <a class="link" href="{{ route('incomes.index', ['tab' => 'payments']) }}">Ingresos y pagos</a></div>
     </div>
 </div>
 

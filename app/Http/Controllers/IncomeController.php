@@ -2,37 +2,73 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Debt;
 use App\Models\Income;
 use App\Models\IncomeSource;
+use App\Models\Payment;
+use App\Models\RecurringPayment;
 use App\Services\IncomeReport;
 use App\Support\IncomeData;
+use App\Support\PaymentData;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
-/** Ingresos: recurrentes (sueldo, renta, vales) y eventuales, en dinero o en especie. */
+/**
+ * Ingresos y pagos, en un solo lugar: lo que entra (sueldo, renta, vales; ventas, bonos,
+ * regalos) y lo que sale (luz, agua, internet, mensualidades; gasolina, una comida fuera),
+ * cada uno recurrente o único, con el balance del mes.
+ */
 class IncomeController extends Controller
 {
-    /** El mes (?month=AAAA-MM; por defecto el actual): lo recibido, lo esperado y el balance. */
+    /** Pestañas de la pantalla (`?tab=`): ingresos (por defecto) o pagos. */
+    public const TABS = ['incomes' => 'Ingresos', 'payments' => 'Pagos'];
+
+    /** El mes (?month=AAAA-MM; por defecto el actual): lo recibido, lo pagado, lo esperado y el balance. */
     public function index(Request $request, IncomeReport $report)
     {
-        $month = preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month'))
-            ? CarbonImmutable::createFromFormat('!Y-m', $request->query('month'))
-            : CarbonImmutable::today()->startOfMonth();
+        $month = self::month($request);
+        $tab = array_key_exists($request->query('tab'), self::TABS) ? $request->query('tab') : 'incomes';
         $series = $report->series($month);
         $sources = IncomeSource::orderByDesc('active')->orderBy('next_on')->get();
+        $recurring = RecurringPayment::with(['debt', 'payments'])->orderBy('next_due_on')->get();
 
         return view('incomes.index', [
+            'tab' => $tab,
             'report' => $report->month($month),
             'series' => $series,
+            'paymentSeries' => $report->paymentSeries($month),
             'average' => IncomeReport::average($series),
             'expected' => $report->expectedMonthly(),
+            'expectedPayments' => $report->expectedPayments(),
             'sources' => $sources->where('active', true)->values(),
             'inactive' => $sources->where('active', false)->values(),
             'categories' => Income::categories(),
             'units' => IncomeSource::scheduleUnits(true),
             'source' => new IncomeSource(['next_on' => today()]),
+            'recurring' => $recurring->where('active', true)->values(),
+            'recurringInactive' => $recurring->where('active', false)->values(),
+            'paymentCategories' => Payment::categories(),
+            'debts' => Debt::orderBy('name')->get()->reject->isPaidOff(),
+            'payment' => new RecurringPayment(['next_due_on' => today()]),
             'isCurrentMonth' => $month->isSameMonth(today()),
         ]);
+    }
+
+    /** El mes pedido (`month=AAAA-MM`) o el actual. */
+    public static function month(Request $request): CarbonImmutable
+    {
+        return preg_match('/^\d{4}-\d{2}$/', (string) $request->query('month'))
+            ? CarbonImmutable::createFromFormat('!Y-m', $request->query('month'))
+            : CarbonImmutable::today()->startOfMonth();
+    }
+
+    /** Un pago único (gasolina, una comida fuera, una compra). */
+    public function storePayment(Request $request)
+    {
+        $payment = PaymentData::create($request->all());
+
+        return redirect()->route('incomes.index', ['tab' => 'payments', 'month' => $payment->paid_on->format('Y-m')])
+            ->with('success', "Pago «{$payment->name}» de ".money($payment->amount).' registrado.');
     }
 
     /** Un ingreso eventual (bono, venta, regalo…). */

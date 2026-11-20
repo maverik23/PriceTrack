@@ -5,13 +5,15 @@ namespace App\Services;
 use App\Models\Income;
 use App\Models\IncomeSource;
 use App\Models\Payment;
+use App\Models\RecurringPayment;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
- * Ingresos: lo recibido en un mes (dinero y en especie, por categoría), lo que se espera al mes
- * de las recurrentes, la serie de los últimos meses y el balance del mes contra lo gastado
- * (súper, con ReportService::spending(), y pagos registrados).
+ * Ingresos y pagos: lo recibido en un mes (dinero y en especie, por categoría), lo pagado
+ * (recurrentes, únicos y abonos a deudas, por categoría), lo que se espera al mes de los
+ * recurrentes, las series de los últimos meses y el balance del mes contra lo gastado (súper,
+ * con ReportService::spending(), y pagos registrados).
  */
 class IncomeReport
 {
@@ -29,7 +31,9 @@ class IncomeReport
 
         // Lo gastado en el mes: súper (lo comprado en las listas, con sus tickets) y pagos
         $super = (float) $this->reports->spending($from, $until->subDay(), 'all')['total'];
-        $payments = (float) Payment::where('paid_on', '>=', $from->toDateString())->where('paid_on', '<', $until->toDateString())->sum('amount');
+        $paid = Payment::with('recurringPayment', 'debt')->betweenDates($from, $until)->orderByDesc('paid_on')->orderByDesc('id')->get();
+        $payments = (float) $paid->sum('amount');
+        $byKind = fn (string $kind) => (float) $paid->filter(fn (Payment $p) => $p->kind() === $kind)->sum('amount');
 
         return [
             'month' => $from,
@@ -41,6 +45,12 @@ class IncomeReport
                 ->map(fn (Collection $g) => (float) $g->sum('amount'))->sortDesc(),
             'super' => $super,
             'payments' => $payments,
+            'paid' => $paid,
+            'paymentsRecurring' => $byKind('recurring'),
+            'paymentsOneTime' => $byKind('one_time'),
+            'paymentsDebt' => $byKind('debt'),
+            'paymentsByCategory' => $paid->groupBy(fn (Payment $p) => $p->categoryLabel())
+                ->map(fn (Collection $g) => (float) $g->sum('amount'))->sortDesc(),
             'spent' => $super + $payments,
             'balance' => $money + $inKind - $super - $payments,
         ];
@@ -53,6 +63,41 @@ class IncomeReport
         $sum = fn (string $kind) => round($sources->where('kind', $kind)->sum(fn (IncomeSource $s) => $s->monthlyAmount()), 2);
 
         return ['money' => $sum('money'), 'in_kind' => $sum('in_kind'), 'total' => $sum('money') + $sum('in_kind')];
+    }
+
+    /** Lo que se paga al mes en los pagos recurrentes activos. */
+    public function expectedPayments(): float
+    {
+        return round(RecurringPayment::active()->get()->sum(fn (RecurringPayment $r) => $r->monthlyAmount()), 2);
+    }
+
+    /**
+     * Pagos por mes (los últimos `$months` hasta `$month`): recurrentes y únicos (con los abonos
+     * sueltos a deudas).
+     *
+     * @return Collection<int, object{key: string, label: string, recurring: float, one_time: float, total: float}>
+     */
+    public function paymentSeries(CarbonImmutable $month, int $months = 12): Collection
+    {
+        $end = $month->startOfMonth()->addMonth();
+        $start = $end->subMonths($months);
+        $rows = Payment::betweenDates($start, $end)->get(['paid_on', 'recurring_payment_id', 'amount'])
+            ->groupBy(fn (Payment $p) => $p->paid_on->format('Y-m'));
+
+        return collect(range(0, $months - 1))->map(function (int $i) use ($start, $rows) {
+            $m = $start->addMonths($i);
+            $group = $rows->get($m->format('Y-m'), collect());
+            $recurring = (float) $group->whereNotNull('recurring_payment_id')->sum('amount');
+            $total = (float) $group->sum('amount');
+
+            return (object) [
+                'key' => $m->format('Y-m'),
+                'label' => ucfirst($m->translatedFormat('M y')),
+                'recurring' => $recurring,
+                'one_time' => $total - $recurring,
+                'total' => $total,
+            ];
+        });
     }
 
     /**

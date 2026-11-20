@@ -85,15 +85,14 @@ class PaginationAndSearchTest extends TestCase
         $this->get(route('tasks.index', ['q' => 'filtro']))->assertOk()->assertSee('Cambiar filtro del agua');
     }
 
-    public function test_recurring_payments_search_keeps_the_monthly_total_of_all_of_them(): void
+    public function test_recurring_payments_live_in_the_payments_tab_with_their_monthly_total(): void
     {
         RecurringPayment::create(['name' => 'Luz', 'category' => 'Servicios', 'amount' => 500, 'every' => 1, 'every_unit' => 'month', 'next_due_on' => today()]);
         RecurringPayment::create(['name' => 'Internet', 'category' => 'Servicios', 'amount' => 600, 'every' => 1, 'every_unit' => 'month', 'next_due_on' => today()]);
 
-        $this->get(route('recurring.index', ['q' => 'luz']))->assertOk()
-            ->assertSee('Luz')->assertDontSee('href="'.route('recurring.edit', RecurringPayment::where('name', 'Internet')->first()).'"', false)
-            ->assertSee('$1,100.00');
-        $this->get(route('recurring.index', ['q' => 'agua']))->assertSee('Ningún pago coincide');
+        $this->get(route('recurring.index'))->assertRedirect(route('incomes.index', ['tab' => 'payments']));
+        $this->get(route('incomes.index', ['tab' => 'payments']))->assertOk()
+            ->assertSee('Luz')->assertSee('Internet')->assertSee('$1,100.00/mes');
     }
 
     public function test_collection_pagination_clamps_to_the_last_page(): void

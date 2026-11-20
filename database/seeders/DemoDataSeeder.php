@@ -7,6 +7,7 @@ use App\Models\Debt;
 use App\Models\InvestmentAccount;
 use App\Models\MealDayNote;
 use App\Models\MealPlanEntry;
+use App\Models\Payment;
 use App\Models\Price;
 use App\Models\Product;
 use App\Models\Provider;
@@ -184,9 +185,19 @@ class DemoDataSeeder extends Seeder
             // Unos pagos pasados para el historial
             $due = $bill->advance($next, -3);
             foreach (range(1, 3) as $_) {
-                $bill->payments()->create(['paid_on' => $due, 'due_on' => $due, 'amount' => round($amount * mt_rand(92, 108) / 100, 2)]);
+                $bill->payments()->create(['name' => $name, 'category' => $category, 'paid_on' => $due, 'due_on' => $due, 'amount' => round($amount * mt_rand(92, 108) / 100, 2)]);
                 $due = $bill->advance($due);
             }
+        }
+
+        // Pagos únicos de los últimos 6 meses: gasolina cada semana y algunas comidas fuera
+        for ($day = $today->subMonths(6)->startOfMonth(); $day->lte($today); $day = $day->addDays(mt_rand(6, 9))) {
+            Payment::create(['name' => 'Gasolina', 'category' => 'Gasolina', 'paid_on' => $day, 'amount' => mt_rand(700, 950)]);
+        }
+        $outings = [['Tacos', 280, 520], ['Cena con amigos', 650, 1400], ['Pizza', 320, 480], ['Cine', 240, 420], ['Desayuno del domingo', 380, 620]];
+        for ($day = $today->subMonths(6)->startOfMonth()->addDays(3); $day->lte($today); $day = $day->addDays(mt_rand(8, 14))) {
+            [$name, $min, $max] = $outings[array_rand($outings)];
+            Payment::create(['name' => $name, 'category' => $name === 'Cine' ? 'Entretenimiento' : 'Comida fuera', 'paid_on' => $day, 'amount' => mt_rand($min, $max)]);
         }
     }
 

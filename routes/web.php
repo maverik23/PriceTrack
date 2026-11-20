@@ -127,6 +127,7 @@ Route::get('assistant', fn () => view('assistant', [
     'enabled' => (bool) config('services.mcp.enabled'),
     'hasToken' => filled(config('services.mcp.token')),
 ]))->name('assistant');
+// Ingresos y pagos (recurrentes y únicos) en una sola pantalla
 Route::get('incomes', [IncomeController::class, 'index'])->name('incomes.index');
 Route::post('incomes', [IncomeController::class, 'store'])->name('incomes.store');
 Route::delete('incomes/{income}', [IncomeController::class, 'destroy'])->name('incomes.destroy');
@@ -135,8 +136,11 @@ Route::get('income-sources/{incomeSource}/edit', [IncomeController::class, 'edit
 Route::put('income-sources/{incomeSource}', [IncomeController::class, 'updateSource'])->name('incomes.sources.update');
 Route::delete('income-sources/{incomeSource}', [IncomeController::class, 'destroySource'])->name('incomes.sources.destroy');
 Route::post('income-sources/{incomeSource}/receive', [IncomeController::class, 'receive'])->name('incomes.sources.receive');
-Route::resource('recurring', RecurringPaymentController::class)->except(['create', 'show'])
+// Los pagos recurrentes viven en la pestaña Pagos de Ingresos y pagos
+Route::get('recurring', fn () => redirect()->route('incomes.index', ['tab' => 'payments']))->name('recurring.index');
+Route::resource('recurring', RecurringPaymentController::class)->except(['index', 'create', 'show'])
     ->parameters(['recurring' => 'recurringPayment']);
+Route::post('paid', [IncomeController::class, 'storePayment'])->name('paid.store');
 Route::post('recurring/{recurringPayment}/pay', [RecurringPaymentController::class, 'pay'])->name('recurring.pay');
 Route::put('paid/{payment}', [RecurringPaymentController::class, 'updatePayment'])->name('paid.update');
 Route::delete('paid/{payment}', [RecurringPaymentController::class, 'destroyPayment'])->name('paid.destroy');

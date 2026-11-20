@@ -49,7 +49,7 @@ class RecurringReadingsTest extends TestCase
         $last = $water->load('payments')->history()[0];
         $this->assertSame([223.0, 18.0, 25.0], [$last['payment']->reading, $last['consumption'], $last['unit_price']]);
 
-        $this->get(route('recurring.index'))->assertOk()->assertSee('✓ Pagado')->assertSee('$25.00/m³')->assertSee('Próximo recibo');
+        $this->get(route('incomes.index', ['tab' => 'payments']))->assertOk()->assertSee('✓ Pagado')->assertSee('$25.00/m³')->assertSee('Próximo recibo');
         $this->get(route('recurring.edit', $water))->assertOk()->assertSee('+18 m³');
 
         // Corregir el recibo: era 220
@@ -83,7 +83,7 @@ class RecurringReadingsTest extends TestCase
         $this->assertFalse($netflix->asksReading());
 
         // La lectura va junto al monto, con la unidad propuesta por el nombre
-        $this->get(route('recurring.index'))->assertOk()
+        $this->get(route('incomes.index', ['tab' => 'payments']))->assertOk()
             ->assertSee('placeholder="Lectura"', false)->assertSee('name="meter_unit" value="kWh"', false);
 
         // Una lectura sin unidad no se acepta; con ella, la unidad se queda en el pago

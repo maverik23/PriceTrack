@@ -2,7 +2,7 @@
 @section('title', 'Editar pago')
 
 @section('content')
-<a href="{{ route('recurring.index') }}" class="link text-sm">← Pagos recurrentes</a>
+<a href="{{ route('incomes.index', ['tab' => 'payments']) }}" class="link text-sm">← Ingresos y pagos</a>
 <h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">{{ $payment->name }}</h1>
 
 <form method="POST" action="{{ route('recurring.update', $payment) }}" class="card max-w-3xl space-y-4">
@@ -19,7 +19,7 @@
     </label>
     <div class="flex gap-2">
         <button class="btn btn-primary">Guardar</button>
-        <a href="{{ route('recurring.index') }}" class="btn btn-secondary">Cancelar</a>
+        <a href="{{ route('incomes.index', ['tab' => 'payments']) }}" class="btn btn-secondary">Cancelar</a>
     </div>
 </form>
 

@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Mcp\Tool;
 use App\Models\Income;
 use App\Models\IncomeSource;
+use App\Models\Payment;
 use App\Services\IncomeReport;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -13,7 +14,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Ingresos de un mes (el actual por defecto): lo recibido (en dinero y en especie: vales, regalos, con su valor), por categoría, lo gastado (súper y pagos) y el balance; los ingresos recurrentes (sueldo, renta, vales) con su próxima fecha, y lo que se espera al mes.')]
+#[Description('Ingresos y pagos de un mes (el actual por defecto): lo recibido (en dinero y en especie: vales, regalos, con su valor), por categoría; lo pagado (`paid`: recurrentes, únicos y abonos a deudas, por categoría, cada pago con su `id` y `kind`); lo gastado (súper y pagos) y el balance; los ingresos recurrentes (sueldo, renta, vales) con su próxima fecha, y lo que se espera al mes. Los pagos recurrentes con su próximo recibo están en get-finances.')]
 #[IsReadOnly]
 class GetIncomes extends Tool
 {
@@ -40,6 +41,18 @@ class GetIncomes extends Tool
                 'interval' => $s->intervalLabel(), 'next_on' => $s->next_on->toDateString(), 'status' => $s->status(),
             ])->all(),
             'expected_monthly' => $report->expectedMonthly(),
+            'paid' => [
+                'total' => round($r['payments'], 2),
+                'recurring' => round($r['paymentsRecurring'], 2),
+                'one_time' => round($r['paymentsOneTime'], 2),
+                'debt' => round($r['paymentsDebt'], 2),
+                'by_category' => $r['paymentsByCategory']->map(fn ($v) => round($v, 2))->all(),
+                'payments' => $r['paid']->map(fn (Payment $p) => [
+                    'id' => $p->id, 'kind' => $p->kind(), 'name' => $p->label(), 'category' => $p->category ?? $p->recurringPayment?->category,
+                    'paid_on' => $p->paid_on->toDateString(), 'amount' => $p->amount,
+                ])->values()->all(),
+                'expected_monthly' => $report->expectedPayments(),
+            ],
         ]);
     }
 

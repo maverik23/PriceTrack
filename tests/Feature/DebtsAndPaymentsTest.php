@@ -96,7 +96,7 @@ class DebtsAndPaymentsTest extends TestCase
         $this->assertSame('2026-12-15', $item->fresh()->next_due_on->toDateString());
         $this->assertSame(1, Payment::count());
 
-        $this->get(route('recurring.index'))->assertOk()->assertSee('Mensualidad hipoteca')->assertSee('$8,000.00');
+        $this->get(route('incomes.index', ['tab' => 'payments']))->assertOk()->assertSee('Mensualidad hipoteca')->assertSee('$8,000.00');
         $this->get(route('debts.show', $debt))->assertOk()->assertSee('Mensualidad hipoteca');
         $this->get(route('debts.index'))->assertOk()->assertSee('Hipoteca');
     }

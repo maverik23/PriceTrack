@@ -42,10 +42,9 @@
         ]],
         'finanzas' => ['Finanzas', 'wallet', [
             ['net-worth', 'Patrimonio', 'net-worth', 'landmark'],
-            ['incomes.index', 'Ingresos', 'incomes.*', 'banknote'],
+            ['incomes.index', 'Ingresos y pagos', ['incomes.*', 'recurring.*'], 'banknote'],
             ['investments.index', 'Inversiones', 'investments.*', 'chart-line'],
             ['debts.index', 'Deudas', 'debts.*', 'credit-card'],
-            ['recurring.index', 'Pagos recurrentes', 'recurring.*', 'repeat'],
         ]],
     ];
     $current = collect($sections)->search(fn ($section) => collect($section[2])->contains(fn ($link) => request()->routeIs($link[2]))) ?: 'inicio';

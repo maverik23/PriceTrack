@@ -5,12 +5,14 @@ namespace Tests\Feature;
 use App\Mcp\PriceTrackServer;
 use App\Mcp\Tools\GetIncomes;
 use App\Mcp\Tools\RecordIncome;
+use App\Mcp\Tools\RecordPayment;
 use App\Models\Income;
 use App\Models\IncomeSource;
 use App\Models\Payment;
 use App\Models\Price;
 use App\Models\Product;
 use App\Models\Provider;
+use App\Models\RecurringPayment;
 use App\Models\ShoppingList;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -100,5 +102,51 @@ class IncomesTest extends TestCase
 
         PriceTrackServer::tool(GetIncomes::class, [])->assertOk()
             ->assertSee('12700')->assertSee('Vales de gasolina')->assertSee('in_kind');
+    }
+
+    public function test_payments_tab_has_one_time_and_recurring_payments_of_the_month(): void
+    {
+        $light = RecurringPayment::create(['name' => 'Luz', 'category' => 'Servicios', 'amount' => 600, 'every' => 2, 'every_unit' => 'month', 'next_due_on' => '2026-11-10']);
+        $this->post(route('recurring.pay', $light), ['amount' => 640])->assertSessionHasNoErrors();
+        $this->assertSame(['Luz', 'Servicios'], [Payment::firstOrFail()->name, Payment::firstOrFail()->category], 'El pago guarda el nombre y la categoría del recurrente');
+
+        // Pagos únicos: gasolina y una comida fuera (la categoría reusa la sugerida)
+        $this->post(route('paid.store'), ['name' => 'Gasolina', 'amount' => 850, 'paid_on' => '2026-11-18', 'category' => 'gasolina'])
+            ->assertRedirect(route('incomes.index', ['tab' => 'payments', 'month' => '2026-11']));
+        $this->post(route('paid.store'), ['name' => 'Tacos', 'amount' => 360, 'paid_on' => '2026-11-02', 'category' => 'Comida fuera']);
+        $this->post(route('paid.store'), ['name' => 'Cena', 'amount' => 900, 'paid_on' => '2026-10-20', 'category' => 'COMIDA FUERA']);
+        $this->post(route('paid.store'), ['name' => '', 'amount' => 0, 'paid_on' => '2026-11-25'])->assertSessionHasErrors(['name', 'amount', 'paid_on']);
+        $this->assertSame('Gasolina', Payment::where('name', 'Gasolina')->value('category'));
+        $this->assertSame('Comida fuera', Payment::where('name', 'Cena')->value('category'));
+        $this->assertTrue(Payment::where('name', 'Tacos')->firstOrFail()->isOneTime());
+
+        $response = $this->get(route('incomes.index', ['tab' => 'payments']))->assertOk()
+            ->assertSee('Pagado en noviembre')->assertSee('Gasolina')->assertSee('Tacos')->assertDontSee('Cena')
+            ->assertSee('Registrar pago único')->assertSee('Pagos recurrentes')->assertSee('Próximo recibo');
+        $report = $response->viewData('report');
+        $this->assertSame([1850.0, 640.0, 1210.0], [$report['payments'], $report['paymentsRecurring'], $report['paymentsOneTime']]);
+        $this->assertSame(['Gasolina' => 850.0, 'Servicios' => 640.0, 'Comida fuera' => 360.0], $report['paymentsByCategory']->all());
+        $this->assertSame(-1850.0, $report['balance'], 'El balance resta los pagos únicos y los recurrentes');
+        $this->assertSame(320.0, $response->viewData('expectedPayments'), 'La luz cada 2 meses: $640 de referencia ÷ 2');
+        $series = $response->viewData('paymentSeries')->keyBy('key');
+        $this->assertSame([900.0, 0.0], [$series['2026-10']->one_time, $series['2026-10']->recurring]);
+
+        // La pestaña Ingresos no muestra los pagos; el menú marca la pantalla en las dos
+        $this->get(route('incomes.index'))->assertOk()->assertSee('Registrar ingreso único')->assertDontSee('Tacos');
+        $this->get(route('recurring.edit', $light))->assertOk()->assertSee('Ingresos y pagos');
+
+        // Eliminar uno único no toca los recurrentes
+        $this->delete(route('paid.destroy', Payment::where('name', 'Tacos')->firstOrFail()))->assertRedirect();
+        $this->assertSame(3, Payment::count());
+        $this->assertSame('2027-01-10', $light->fresh()->next_due_on->toDateString());
+    }
+
+    public function test_mcp_records_one_time_payments(): void
+    {
+        PriceTrackServer::tool(RecordPayment::class, ['name' => 'Gasolina', 'amount' => 800, 'category' => 'gasolina'])->assertOk()->assertSee('2026-11-19')->assertSee('Gasolina');
+        PriceTrackServer::tool(RecordPayment::class, ['amount' => 5])->assertHasErrors(['concepto']);
+        PriceTrackServer::tool(RecordPayment::class, ['name' => 'Cine', 'amount' => 300, 'paid_on' => '2026-12-01'])->assertHasErrors(['fecha']);
+
+        PriceTrackServer::tool(GetIncomes::class, [])->assertOk()->assertSee('one_time')->assertSee('Gasolina')->assertSee('-800');
     }
 }

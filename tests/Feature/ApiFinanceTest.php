@@ -136,6 +136,29 @@ class ApiFinanceTest extends TestCase
         $this->assertSame(1, Income::count());
     }
 
+    public function test_one_time_payments_count_in_the_month(): void
+    {
+        $this->postJson('/api/v1/paid', ['name' => 'Gasolina', 'amount' => 850, 'paid_on' => today()->toDateString(), 'category' => 'gasolina'])
+            ->assertCreated()->assertJsonPath('data.kind', 'one_time')->assertJsonPath('data.name', 'Gasolina')->assertJsonPath('data.category', 'Gasolina');
+        $this->postJson('/api/v1/paid', ['name' => '', 'amount' => 0, 'paid_on' => today()->addDay()->toDateString()])
+            ->assertStatus(422)->assertJsonValidationErrors(['name', 'amount', 'paid_on']);
+        $recurring = RecurringPayment::create(['name' => 'Internet', 'category' => 'Servicios', 'amount' => 500, 'next_due_on' => today()]);
+        $recurring->markPaid();
+
+        $paid = $this->getJson('/api/v1/incomes')->assertOk()->json('data.paid');
+        $this->assertSame([1350, 500, 850], [$paid['total'], $paid['recurring'], $paid['one_time']]);
+        $this->assertSame(['Gasolina' => 850, 'Servicios' => 500], $paid['by_category']);
+        $this->assertSame(500, $paid['expected_monthly']);
+        $this->assertSame(['Gasolina', 'Internet'], collect($paid['payments'])->pluck('name')->sort()->values()->all());
+        $this->assertSame(1350, $this->getJson('/api/v1/incomes')->json('data.spent.payments'));
+
+        // Corregir uno único: también su concepto y categoría
+        $id = Payment::where('name', 'Gasolina')->value('id');
+        $this->putJson("/api/v1/paid/{$id}", ['name' => 'Gasolina y casetas', 'category' => 'Transporte'])->assertOk()
+            ->assertJsonPath('data.name', 'Gasolina y casetas')->assertJsonPath('data.category', 'Transporte')->assertJsonPath('data.amount', 850);
+        $this->putJson("/api/v1/paid/{$id}", ['name' => ''])->assertStatus(422)->assertJsonValidationErrors('name');
+    }
+
     public function test_grocery_reports(): void
     {
         $walmart = Provider::create(['name' => 'Walmart']);

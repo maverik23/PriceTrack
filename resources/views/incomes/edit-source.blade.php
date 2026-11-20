@@ -2,7 +2,7 @@
 @section('title', 'Editar ingreso recurrente')
 
 @section('content')
-<a href="{{ route('incomes.index') }}" class="link text-sm">← Ingresos</a>
+<a href="{{ route('incomes.index') }}" class="link text-sm">← Ingresos y pagos</a>
 <h1 class="mt-2 mb-6 text-3xl font-bold text-slate-900">Editar {{ $source->name }}</h1>
 
 <form method="POST" action="{{ route('incomes.sources.update', $source) }}" class="card max-w-3xl space-y-4">

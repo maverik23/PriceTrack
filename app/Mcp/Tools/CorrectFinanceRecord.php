@@ -14,7 +14,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Corrige un registro de finanzas ya hecho (solo lo que se manda): un movimiento de inversión (`investment_movement`), un valor de cuenta (`investment_value`), un saldo de deuda (`debt_balance`), un pago (`payment`: también su lectura) o un ingreso (`income`: también concepto, categoría y si es en especie). Los `id` salen de get-finance-records o get-incomes.')]
+#[Description('Corrige un registro de finanzas ya hecho (solo lo que se manda): un movimiento de inversión (`investment_movement`), un valor de cuenta (`investment_value`), un saldo de deuda (`debt_balance`), un pago (`payment`: también su lectura y, en uno único, concepto y categoría) o un ingreso (`income`: también concepto, categoría y si es en especie). Los `id` salen de get-finance-records o get-incomes.')]
 class CorrectFinanceRecord extends Tool
 {
     /** tipo => [modelo, qué es, columna de la fecha, columna del monto] */
@@ -54,7 +54,7 @@ class CorrectFinanceRecord extends Tool
         $allowed = match ($data['type']) {
             'investment_movement' => ['exchange_rate', 'notes', 'kind'],
             'investment_value' => ['exchange_rate'],
-            'payment' => ['reading', 'notes'],
+            'payment' => ['reading', 'notes', 'name', 'category'],
             'income' => ['name', 'notes', 'kind', 'category'],
             default => [],
         };
@@ -70,7 +70,7 @@ class CorrectFinanceRecord extends Tool
             }
         }
         if (isset($changes['category'])) {
-            $changes['category'] = Income::canonicalCategory($changes['category']);
+            $changes['category'] = $data['type'] === 'payment' ? Payment::canonicalCategory($changes['category']) : Income::canonicalCategory($changes['category']);
         }
         if (! $changes) {
             return Response::error('No mandaste nada que cambiar.');
@@ -90,8 +90,8 @@ class CorrectFinanceRecord extends Tool
             'exchange_rate' => $schema->number()->description('Inversiones en otra moneda.'),
             'kind' => $schema->string()->description('Movimiento: deposit, withdrawal, income, fee. Ingreso: money, in_kind.'),
             'reading' => $schema->number()->description('Pago: lectura del medidor.'),
-            'name' => $schema->string()->description('Ingreso: concepto.'),
-            'category' => $schema->string()->description('Ingreso: categoría.'),
+            'name' => $schema->string()->description('Ingreso o pago: concepto.'),
+            'category' => $schema->string()->description('Ingreso o pago: categoría.'),
             'notes' => $schema->string(),
         ];
     }

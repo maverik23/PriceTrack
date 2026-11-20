@@ -49,7 +49,7 @@
             </div>
             <div class="flex gap-3" data-nav="finanzas">
                 <span class="icon-tile"><x-icon name="wallet" class="size-5" /></span>
-                <p class="text-sm text-slate-600"><strong class="text-slate-900">Finanzas.</strong> Registra tus <a class="link" href="{{ route('investments.create') }}">inversiones</a>, <a class="link" href="{{ route('debts.create') }}">deudas</a> y <a class="link" href="{{ route('recurring.index') }}">pagos recurrentes</a> para ver tu patrimonio y lo que toca pagar.</p>
+                <p class="text-sm text-slate-600"><strong class="text-slate-900">Finanzas.</strong> Registra tus <a class="link" href="{{ route('investments.create') }}">inversiones</a>, <a class="link" href="{{ route('debts.create') }}">deudas</a> y <a class="link" href="{{ route('incomes.index') }}">ingresos y pagos</a> para ver tu patrimonio, tu balance y lo que toca pagar.</p>
             </div>
         </div>
     </div>
@@ -129,14 +129,14 @@
     <section class="card p-0">
         <div class="flex items-center justify-between px-4 pt-4 pb-2">
             <h2 class="card-title flex items-center gap-2" data-nav="finanzas"><span class="nav-dot"></span>Pagos por hacer ({{ \App\Models\RecurringPayment::SOON_DAYS }} días)</h2>
-            <a href="{{ route('recurring.index') }}" class="link text-xs">Pagos recurrentes</a>
+            <a href="{{ route('incomes.index', ['tab' => 'payments']) }}" class="link text-xs">Ingresos y pagos</a>
         </div>
         @if ($duePayments->isEmpty())
             <p class="px-4 pb-5 text-sm text-slate-500">
                 @if ($hasRecurring)
                     Nada por pagar esta semana.
                 @else
-                    Anota tus <a class="link" href="{{ route('recurring.index') }}">pagos recurrentes</a> (luz, internet, mensualidades) para verlos aquí.
+                    Anota tus <a class="link" href="{{ route('incomes.index', ['tab' => 'payments']) }}">pagos recurrentes</a> (luz, internet, mensualidades) para verlos aquí.
                 @endif
             </p>
         @else

@@ -115,6 +115,6 @@ class McpFeedbackFixesTest extends TestCase
         $this->assertSame('2026-12-15', $payment->fresh()->next_due_on->toDateString());
 
         $this->post(route('recurring.store'), ['name' => 'Vales', 'amount' => 500, 'every' => 1, 'every_unit' => 'fortnight', 'next_due_on' => '2026-11-30'])->assertSessionHasNoErrors();
-        $this->get(route('recurring.index'))->assertOk()->assertSee('quincena');
+        $this->get(route('incomes.index', ['tab' => 'payments']))->assertOk()->assertSee('quincena');
     }
 }

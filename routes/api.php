@@ -131,10 +131,11 @@ Route::middleware(ApiToken::class)->name('api.')->group(function () {
         Route::delete('payments/{payment}', 'destroyPayment');
     });
 
-    // Finanzas: pagos recurrentes y los pagos hechos
+    // Finanzas: pagos recurrentes, pagos únicos y los pagos hechos
     Route::get('recurring/options', [Api\RecurringPaymentController::class, 'options']);
     Route::apiResource('recurring', Api\RecurringPaymentController::class)->parameters(['recurring' => 'recurringPayment']);
     Route::post('recurring/{recurringPayment}/pay', [Api\RecurringPaymentController::class, 'pay']);
+    Route::post('paid', [Api\IncomeController::class, 'storePayment']);
     Route::put('paid/{payment}', [Api\RecurringPaymentController::class, 'updatePayment']);
     Route::delete('paid/{payment}', [Api\RecurringPaymentController::class, 'destroyPayment']);
 

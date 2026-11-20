@@ -196,24 +196,27 @@ Todo en pesos salvo `last_value` / `value` de una captura, que van en la moneda 
 | POST | `debts/{id}/payments` | Abono o pago suelto: `paid_on, amount, notes?` → `201` la ficha. Las mensualidades se pagan desde su pago recurrente |
 | DELETE | `debts/{id}/balances/{b}` · `…/payments/{p}` | → la ficha. Un pago de un pago recurrente se deshace (su fecha regresa) |
 
-## Finanzas: pagos recurrentes
+## Finanzas: pagos (recurrentes y únicos)
+
+En la web viven con los ingresos, en la pantalla «Ingresos y pagos» (pestaña Pagos). Cada pago registrado trae `kind`: `recurring` (de un pago recurrente), `one_time` (único: gasolina, una comida fuera) o `debt` (abono suelto a una deuda), con `name` (el concepto, el del recurrente o "Abono a …") y `category`.
 
 | Método | Ruta | Notas |
 |---|---|---|
 | GET | `recurring?q=&detail=` | Los activos, paginados por próxima fecha. Cada uno: `id, name, category, amount` (de referencia: el último pagado), `meter_unit, every, every_unit, interval` ("Cada 2 meses"), `next_due_on, status` (overdue, soon = en 7 días, ok, inactive), `paid_up, debt_id, debt, active, notes, monthly` (normalizado al mes), `asks_reading` (pedir la lectura al pagar: tiene unidad o por el nombre es luz, agua o gas), `suggested_meter_unit` (kWh, m³), `last_payment` (como en pagos, con `consumption` y `unit_price`). Además `inactive[]` (pausados, completos), `monthly, by_category {categoría: al mes}`, `recent[]` (últimos 15 pagos de todo). Con `detail=1`, fichas. Ejemplo: `recurring_index.json` |
-| GET | `recurring/options` | `categories, units, debts[] {id, name}` |
+| GET | `recurring/options` | `categories` (las mismas de los pagos únicos; sugeridas la primera vez), `units, debts[] {id, name}` |
 | GET | `recurring/{id}` | Más `history[]` (todos sus pagos, del más reciente: `id, recurring_payment_id, debt_id, paid_on, due_on` (el recibo que pagó), `amount, reading, consumption` (lectura − la anterior; null si el medidor se reinició), `unit_price` (monto ÷ consumo), `notes`) e `input`. Ejemplo: `recurring_show.json` |
 | POST | `recurring` | `name, amount, every, every_unit, next_due_on`; `category, meter_unit, debt_id` (mensualidad de una deuda), `active` (true por defecto), `notes` → `201` la ficha |
 | PUT · DELETE | `recurring/{id}` | Parcial (`active: false` lo pausa) · su historial se conserva |
 | POST | `recurring/{id}/pay` | Paga el recibo que toca: `amount?` (vacío = el de referencia; el pagado queda de referencia), `paid_on?` (hoy), `reading?` (lectura final del periodo; si el pago aún no tiene unidad pide `meter_unit`, que se guarda), `notes?` → `201 {data: ficha, payment_id, message}` ("… 210 kWh a $2.14/kWh. El siguiente recibo: …"). Avanza `next_due_on` un periodo desde la fecha que tocaba |
-| PUT | `paid/{payment}` | Corrige un pago (parcial: `paid_on, amount, reading, notes`) → `{data: pago, message}` |
-| DELETE | `paid/{payment}` | Lo deshace: si era el último de su pago recurrente, la fecha regresa |
+| POST | `paid` | Pago único: `name, amount, paid_on` (hasta hoy), `category?, notes?` → `201 {data: pago, message}`. Cuenta en `incomes` → `paid` y en el balance |
+| PUT | `paid/{payment}` | Corrige un pago (parcial: `paid_on, amount, reading, notes`; `name, category` también, y en uno único el concepto no puede quedar vacío) → `{data: pago, message}` |
+| DELETE | `paid/{payment}` | Lo deshace: si era el último de su pago recurrente, la fecha regresa (uno único solo se borra) |
 
 ## Finanzas: ingresos
 
 | Método | Ruta | Notas |
 |---|---|---|
-| GET | `incomes?month=AAAA-MM` | El mes (el actual por defecto): `month, label, prev, next, is_current_month, total, money, in_kind` (vales, regalos: lo que valen), `by_category`, `spent {super, payments, total}` (súper de todas las tiendas + pagos registrados), `balance`, `incomes[] {id, income_source_id, name, category, kind, kind_label, amount, notes, received_on, due_on}`, `series[]` (12 meses: `month, label, money, in_kind, total`), `average` (desde el primer mes con ingresos), `expected {money, in_kind, total}` (al mes, de las recurrentes activas), `sources[]` y `inactive[]` (recurrentes: `id, name, category, kind, kind_label, amount, every, every_unit, interval, next_on, status, monthly, active, notes, input`), `categories, kinds, units`. Ejemplo: `incomes.json` |
+| GET | `incomes?month=AAAA-MM` | El mes (el actual por defecto): `month, label, prev, next, is_current_month, total, money, in_kind` (vales, regalos: lo que valen), `by_category`, `spent {super, payments, total}` (súper de todas las tiendas + pagos registrados), `balance`, `incomes[] {id, income_source_id, name, category, kind, kind_label, amount, notes, received_on, due_on}`, `series[]` (12 meses: `month, label, money, in_kind, total`), `average` (desde el primer mes con ingresos), `expected {money, in_kind, total}` (al mes, de las recurrentes activas), `sources[]` y `inactive[]` (recurrentes: `id, name, category, kind, kind_label, amount, every, every_unit, interval, next_on, status, monthly, active, notes, input`), `categories, kinds, units` y `paid` (lo pagado en el mes: `total, recurring, one_time, debt` (abonos), `by_category`, `payments[]` (como en pagos), `series[]` (12 meses: `month, label, recurring, one_time, total`), `expected_monthly` (pagos recurrentes activos al mes), `categories`). Ejemplo: `incomes.json` |
 | POST | `incomes` | Eventual: `name, received_on, amount, kind` (money, in_kind), `category?, notes?` → `201 {data, message}` |
 | DELETE | `incomes/{id}` | Si vino de una recurrente, su fecha regresa |
 | POST | `income-sources` | `name, kind, amount, every, every_unit, next_on`; `category, active, notes` → `201 {data, message}` |

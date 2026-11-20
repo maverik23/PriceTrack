@@ -449,7 +449,8 @@ class Present
     }
 
     /**
-     * Un pago registrado; con `consumption` y `unit_price` si viene de RecurringPayment::history().
+     * Un pago registrado (`kind`: recurring, one_time = único, debt = abono a una deuda); con
+     * `consumption` y `unit_price` si viene de RecurringPayment::history().
      *
      * @return array<string, mixed>
      */
@@ -460,6 +461,9 @@ class Present
             'recurring_payment_id' => $payment->recurring_payment_id,
             'recurring' => $payment->relationLoaded('recurringPayment') ? $payment->recurringPayment?->name : null,
             'debt_id' => $payment->debt_id,
+            'kind' => $payment->kind(),
+            'name' => $payment->label(),
+            'category' => $payment->category ?? ($payment->relationLoaded('recurringPayment') ? $payment->recurringPayment?->category : null),
             'paid_on' => $payment->paid_on->toDateString(),
             'due_on' => $payment->due_on?->toDateString(),
             'amount' => $payment->amount,
