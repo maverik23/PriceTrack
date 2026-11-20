@@ -76,13 +76,13 @@
                      aria-label="{{ ucfirst($day['date']->translatedFormat('l d')) }}">
                 <header class="border-b border-slate-100 px-3 py-2"
                      x-data="{ body: {{ Js::from($notes->get($dateKey)?->body ?? '') }}, draft: '', editing: false, saving: false, error: '',
-                               edit() { this.draft = this.body; this.editing = true; this.$nextTick(() => document.getElementById('note-{{ $dateKey }}')?.focus()) },
-                               async save() {
-                                   if (!this.editing || this.saving) return;
-                                   if (this.draft.trim() === this.body) { this.editing = false; return }
+                               edit() { this.draft = this.body; this.error = ''; this.editing = true; this.$nextTick(() => document.getElementById('note-{{ $dateKey }}')?.focus()) },
+                               async save(text) {
+                                   if (this.saving) return;
+                                   if (text.trim() === this.body) { this.editing = false; return }
                                    this.saving = true; this.error = '';
                                    try {
-                                       const res = await fetch('{{ route('menu.note', $dateKey) }}', { method: 'PUT', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ body: this.draft }) });
+                                       const res = await fetch('{{ route('menu.note', $dateKey) }}', { method: 'PUT', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ body: text }) });
                                        const data = await res.json();
                                        if (!res.ok) throw new Error(data.message || 'No se pudo guardar');
                                        this.body = data.body ?? ''; this.editing = false;
@@ -94,18 +94,37 @@
                             <span class="truncate text-sm font-medium capitalize {{ $isToday ? 'text-emerald-700' : 'text-slate-600' }}">{{ $day['date']->translatedFormat('l') }}</span>
                         </div>
                         @if ($isToday)<span class="badge badge-cheap xl:hidden">Hoy</span>@endif
-                        <button type="button" x-show="!editing && !body" @click="edit()" class="icon-btn ml-auto size-8 shrink-0 text-slate-400" title="Nota del día" aria-label="Agregar nota del día"><x-icon name="sticky-note" class="size-4" /></button>
+                        {{-- Nota del día ("Mealprep: cocer arroz y pollo"): el icono abre una ventana para verla, editarla o borrarla --}}
+                        <button type="button" @click="edit()" class="icon-btn ml-auto size-8 shrink-0"
+                                :class="body ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:ring-amber-400' : 'text-slate-400'"
+                                :title="body || 'Nota del día'" :aria-label="body ? 'Ver la nota del día' : 'Agregar nota del día'" aria-haspopup="dialog"><x-icon name="sticky-note" class="size-4" /></button>
                     </div>
-                    {{-- Nota del día: "Mealprep: cocer arroz y pollo" --}}
-                    <button type="button" x-show="!editing && body" @click="edit()" class="mt-1.5 flex w-full min-w-0 items-start gap-1.5 rounded-lg bg-amber-50 px-2 py-1 text-left text-xs text-amber-900 ring-1 ring-amber-200 hover:ring-amber-400" title="Editar la nota del día">
-                        <x-icon name="sticky-note" class="mt-0.5 size-3 shrink-0 text-amber-600" /><span x-text="body"></span>
-                    </button>
-                    <form x-show="editing" x-cloak class="mt-1.5 flex items-center gap-1.5" @submit.prevent="save()">
-                        <input :id="'note-{{ $dateKey }}'" type="text" x-model="draft" maxlength="500" class="input py-1 text-sm" placeholder="Ej. Mealprep: cocer arroz"
-                               aria-label="Nota del {{ $day['date']->translatedFormat('l d') }}" @keydown.escape.prevent="editing = false" @blur="save()">
-                        <button class="btn btn-primary btn-sm" :disabled="saving" @mousedown.prevent><x-icon name="check" class="size-4" /></button>
-                    </form>
-                    <p x-show="error" class="text-xs text-red-600" x-text="error"></p>
+                    <template x-teleport="body">
+                        <div x-show="editing" x-cloak class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+                             @click.self="editing = false" @keydown.escape.window="editing = false"
+                             role="dialog" aria-modal="true" aria-labelledby="note-title-{{ $dateKey }}">
+                            <form class="flex max-h-[90vh] w-full max-w-md flex-col gap-3 rounded-t-3xl bg-surface p-5 shadow-2xl sm:rounded-2xl" @submit.prevent="save(draft)" data-no-busy>
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <h2 id="note-title-{{ $dateKey }}" class="font-display text-xl font-semibold text-slate-900">Nota del día</h2>
+                                        <p class="text-sm text-slate-500 capitalize">{{ $day['date']->translatedFormat('l j \d\e F') }}</p>
+                                    </div>
+                                    <button type="button" class="icon-btn shrink-0" @click="editing = false" aria-label="Cerrar"><x-icon name="x" class="size-5" /></button>
+                                </div>
+                                <textarea id="note-{{ $dateKey }}" x-model="draft" maxlength="500" rows="7" class="input text-base" placeholder="Ej. Mealprep: cocer arroz y pollo"
+                                          aria-labelledby="note-title-{{ $dateKey }}" @keydown.enter="($event.metaKey || $event.ctrlKey) && save(draft)"></textarea>
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-red-600" x-text="error"></span>
+                                    <span class="text-slate-500 tabular-nums" x-text="draft.length + ' / 500'"></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" x-show="body" class="btn btn-ghost text-red-600" :disabled="saving" @click="save('')"><x-icon name="trash" class="size-4" /> Eliminar</button>
+                                    <button type="button" class="btn btn-secondary ml-auto" @click="editing = false">Cancelar</button>
+                                    <button class="btn btn-primary" :disabled="saving || !draft.trim()" x-text="saving ? 'Guardando…' : 'Guardar'"></button>
+                                </div>
+                            </form>
+                        </div>
+                    </template>
                 </header>
 
                 @foreach ($day['meals'] as $meal => $slot)
