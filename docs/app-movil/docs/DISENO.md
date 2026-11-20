@@ -73,6 +73,6 @@ Se diseñan al empezar su fase tomando como base la pantalla equivalente de la w
 
 - **Cocina**: recetas con porciones ajustables (el servidor manda valores a factor 1 y la app multiplica, único cálculo permitido en el teléfono, igual que `recipe-show.js`); **modo cocinar** a pantalla completa, un paso a la vez, temporizadores por paso, pantalla siempre encendida; menú de la semana un día debajo de otro; revisión antes de mandar ingredientes a la lista.
 - **Hogar**: tareas en calendario con el día elegido abajo; mover de fecha con pulsación larga o desde editar (no arrastrar); completar con un toque; bienes con valor, lecturas, servicios y planes.
-- **Finanzas**: patrimonio con su gráfica, inversiones, deudas, pagos recurrentes (pagar con monto y lectura) e ingresos.
+- **Finanzas**: patrimonio con su gráfica, inversiones, deudas e **Ingresos y pagos** (una sola pantalla, como en la web: el mes con su balance y dos pestañas, Ingresos y Pagos; cada una con lo del mes, registrar uno único y sus recurrentes. En Pagos, los recurrentes se pagan con monto y lectura; los únicos son gasolina, una comida fuera…).
 
 Mientras una sección no exista en la app, su pestaña muestra «llega en la siguiente etapa» con lo que traerá; no se oculta.

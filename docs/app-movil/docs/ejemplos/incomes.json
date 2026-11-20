@@ -1,74 +1,142 @@
 {
-  "data": {
-    "month": "2026-11",
-    "label": "Noviembre 2026",
-    "prev": "2026-10",
-    "next": "2026-12",
-    "is_current_month": true,
-    "total": 0,
-    "money": 0,
-    "in_kind": 0,
-    "by_category": [],
-    "spent": {
-      "super": 1647,
-      "payments": 27133.07,
-      "total": 28780.07
-    },
-    "balance": -28780.07,
-    "incomes": [],
-    "series": [
-      {
-        "month": "2025-12",
-        "label": "Dic. 25",
+    "data": {
+        "month": "2026-11",
+        "label": "Noviembre 2026",
+        "prev": "2026-10",
+        "next": "2026-12",
+        "is_current_month": true,
+        "total": 0,
         "money": 0,
         "in_kind": 0,
-        "total": 0
-      },
-      {
-        "month": "2026-01",
-        "label": "Ene. 26",
-        "money": 0,
-        "in_kind": 0,
-        "total": 0
-      }
-    ],
-    "average": null,
-    "expected": {
-      "money": 0,
-      "in_kind": 0,
-      "total": 0
-    },
-    "sources": [],
-    "inactive": [],
-    "categories": [
-      "Sueldo",
-      "Aguinaldo"
-    ],
-    "kinds": {
-      "money": "Dinero",
-      "in_kind": "En especie"
-    },
-    "units": {
-      "day": {
-        "one": "día",
-        "many": "días"
-      },
-      "week": {
-        "one": "semana",
-        "many": "semanas"
-      },
-      "fortnight": {
-        "one": "quincena",
-        "many": "quincenas"
-      },
-      "month": {
-        "one": "mes",
-        "many": "meses"
-      },
-      "year": {
-        "one": "año",
-        "many": "años"
-      }
+        "by_category": [],
+        "spent": {
+            "super": 1257.95,
+            "payments": 32223.42,
+            "total": 33481.37
+        },
+        "balance": -33481.37,
+        "incomes": [],
+        "series": [
+            {
+                "month": "2025-12",
+                "label": "Dic. 25",
+                "money": 0,
+                "in_kind": 0,
+                "total": 0
+            },
+            {
+                "month": "2026-01",
+                "label": "Ene. 26",
+                "money": 0,
+                "in_kind": 0,
+                "total": 0
+            }
+        ],
+        "average": null,
+        "expected": {
+            "money": 0,
+            "in_kind": 0,
+            "total": 0
+        },
+        "sources": [],
+        "inactive": [],
+        "categories": [
+            "Sueldo",
+            "Aguinaldo"
+        ],
+        "paid": {
+            "total": 32223.42,
+            "recurring": 27173.42,
+            "one_time": 5050,
+            "debt": 0,
+            "by_category": {
+                "Deudas": 26501,
+                "Comida fuera": 2735,
+                "Gasolina": 2315,
+                "Servicios": 546,
+                "Suscripciones": 126.42
+            },
+            "payments": [
+                {
+                    "id": 180,
+                    "recurring_payment_id": null,
+                    "recurring": null,
+                    "debt_id": null,
+                    "kind": "one_time",
+                    "name": "Cena con amigos",
+                    "category": "Comida fuera",
+                    "paid_on": "2026-11-18",
+                    "due_on": null,
+                    "amount": 1348,
+                    "reading": null,
+                    "consumption": null,
+                    "unit_price": null,
+                    "notes": null
+                },
+                {
+                    "id": 161,
+                    "recurring_payment_id": null,
+                    "recurring": null,
+                    "debt_id": null,
+                    "kind": "one_time",
+                    "name": "Gasolina",
+                    "category": "Gasolina",
+                    "paid_on": "2026-11-15",
+                    "due_on": null,
+                    "amount": 738,
+                    "reading": null,
+                    "consumption": null,
+                    "unit_price": null,
+                    "notes": null
+                }
+            ],
+            "series": [
+                {
+                    "month": "2025-12",
+                    "label": "Dic. 25",
+                    "recurring": 26501,
+                    "one_time": 0,
+                    "total": 26501
+                },
+                {
+                    "month": "2026-01",
+                    "label": "Ene. 26",
+                    "recurring": 30073,
+                    "one_time": 0,
+                    "total": 30073
+                }
+            ],
+            "expected_monthly": 29908,
+            "categories": [
+                "Comida fuera",
+                "Deudas"
+            ]
+        },
+        "kinds": {
+            "money": "Dinero",
+            "in_kind": "En especie"
+        },
+        "units": {
+            "day": {
+                "one": "día",
+                "many": "días"
+            },
+            "week": {
+                "one": "semana",
+                "many": "semanas"
+            },
+            "fortnight": {
+                "one": "quincena",
+                "many": "quincenas"
+            },
+            "month": {
+                "one": "mes",
+                "many": "meses"
+            },
+            "year": {
+                "one": "año",
+                "many": "años"
+            }
+        }
     }
-  }
 }

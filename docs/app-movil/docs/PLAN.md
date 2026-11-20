@@ -12,7 +12,7 @@ Objetivo: una app Flutter (Android + iOS) con la misma información que la web d
 
 En `maverik23/PriceTrack` (`main`): `/api/v1` con token opcional (`API_ENABLED`, `API_TOKEN`), inicio, tiendas, artículos, despensa, precios, precios en línea y listas con la hoja calculada (`App\Api\ListSheet`). Tests en `tests/Feature/ApiTest.php`.
 
-**API de Cocina, Hogar y Finanzas ✅ hecha** (mismo repo, `main`): recetas, menú, envío a la lista, tareas y calendario, bienes, inversiones, patrimonio, deudas, pagos recurrentes, ingresos y reportes del súper. Tests en `ApiKitchenTest`, `ApiHomeTest` y `ApiFinanceTest`; ejemplos en `docs/ejemplos/`.
+**API de Cocina, Hogar y Finanzas ✅ hecha** (mismo repo, `main`): recetas, menú, envío a la lista, tareas y calendario, bienes, inversiones, patrimonio, deudas, ingresos y pagos (recurrentes y únicos: `POST paid`, bloque `paid` de `GET incomes`) y reportes del súper. Tests en `ApiKitchenTest`, `ApiHomeTest` y `ApiFinanceTest`; ejemplos en `docs/ejemplos/`.
 
 - [ ] Confirmar con el usuario que `main` del servidor está desplegado (si no, la app no tiene contra qué probar).
 
